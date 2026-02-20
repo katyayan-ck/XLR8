@@ -10,7 +10,7 @@
         $widgets['before_content'][] = [
             'type'        => 'jumbotron',
             'heading'     => trans('backpack::base.welcome'),
-            'heading_class' => 'display-3 '.(backpack_theme_config('layout') === 'horizontal_overlap' ? ' text-white' : ''),
+            'heading_class' => 'display-3 '.(backpack_theme_config('layout') === 'horizontal_overlap' ? ' text-black' : ''),
             'content'     => trans('backpack::base.use_sidebar'),
             'content_class' => backpack_theme_config('layout') === 'horizontal_overlap' ? 'text-white' : '',
             'button_link' => backpack_url('logout'),

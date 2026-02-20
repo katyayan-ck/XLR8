@@ -131,7 +131,7 @@ class CommonHelper
     public static function getUserName($id = null)
     {
         if (empty($id)) {
-            $id = auth()->id(); // current logged-in user
+            $id = backpack_auth()->id(); // current logged-in user
         }
 
         $user = \App\Models\User::find($id);

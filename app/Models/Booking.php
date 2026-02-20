@@ -23,7 +23,10 @@ class Booking extends BaseModel  implements HasMedia
 
 
 
-
+    public function segment()
+    {
+        return $this->belongsTo(\App\Models\EnumMaster::class, 'segment_id', 'id');
+    }
 
 
     /**

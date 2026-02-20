@@ -7,7 +7,11 @@ use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\File;
 use App\Http\Requests\BookingRequest;
-use DataTables, auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+
+use App\Http\Controllers\Admin\Cache;
+use DataTables;
 use Illuminate\Validation\Rule;
 use App\Http\Requests\MyBookingRequest; // We'll create this next
 use App\Services\BookingService;             // New service class
@@ -32,6 +36,7 @@ use App\Models\PinCodes;
 use App\Models\XExchange;
 use App\Models\XFinance;
 use App\Models\XlInsurer;
+use Illuminate\Support\Facades\Log;
 
 use App\Models\XlRto;
 
@@ -48,6 +53,7 @@ use App\Helpers\XpricingHelper;
 
 use App\Helpers\ChatHelper;
 use Carbon\Carbon;
+use Exception;
 use Illuminate\Http\Request;
 
 class BookingCrudController extends CrudController
@@ -65,35 +71,1127 @@ class BookingCrudController extends CrudController
         CRUD::setEntityNameStrings('booking', 'bookings');
     }
 
+
+    /**
+     * Centralized method to prepare complete booking data for show/edit/invoice views
+     *
+     * @param int $id Booking ID
+     * @param string $viewName Blade view name suffix (default: 'view')
+     * @return \Illuminate\View\View
+     */
+    private function getFullBookingData(int $id, string $viewName = 'view'): \Illuminate\View\View
+    {
+        $booking = Booking::findOrFail($id);
+        $booking->segment_name = 'N/A';
+        if ($booking->segment_id) {
+            $segment = \App\Models\EnumMaster::where('id', $booking->segment_id)
+                ->value('value');  // sirf name chahiye to value() best
+
+            $booking->segment_name = $segment ?? 'N/A (ID not found)';
+        }
+        $data = [
+            'booking'           => $booking,
+            'uid'               => Auth::id(),
+            'dsaname'           => 'N/A',
+            'comm'              => ChatHelper::get_communication(3, $id),
+            'receiptLogs'       => Bookingamount::where('bid', $id)
+                ->select('id', 'date', 'reciept', 'amount')
+                ->orderBy('date', 'desc')
+                ->get(),
+            'total_amount'      => 0,
+            'finance'           => XFinance::where('bid', $id)->first(),
+            'delivery'          => XlDelivery::where('bid', $id)->first(),
+            'insurance'         => XlInsurer::where('bid', $id)->first(),
+            'rto'               => XlRto::where('bid', $id)->first(),
+            'refund'            => null,
+            'deduction'         => 0,
+            'acc_proof'         => '',
+            'aadhar'            => '',
+            'pan'               => '',
+            'pay_proof'         => '',
+            'amount'            => $booking->booking_amount ?? 0,
+            'accessories'       => 'N/A',
+            'bchasis'           => 'Not Available',
+            'chassis'           => [],
+            'collector_name'    => 'N/A',
+            'make1'             => 'N/A',
+            'make2'             => 'N/A',
+            'branch'            => 'N/A',
+            'fbranch'           => 'N/A',
+            'location'          => 'N/A',
+            'flocation'         => 'N/A',
+
+            'segments'          => XpricingHelper::getSegments() ?? [],
+            'models'            => XpricingHelper::getModelsX() ?? [],
+            'variants'          => XpricingHelper::getVehiclesX() ?? [],
+            'colors'            => XpricingHelper::getColorX($booking->variant ?? null) ?? [],
+            'saleconsultants'   => XpricingHelper::selectfsc() ?? [],
+            'allusers'          => XpricingHelper::selectUsers() ?? [],
+            'financiers'        => [],
+            'insurances'        => [],
+            'rto_rules'         => [],
+            'dsa_details'       => [],
+            'branches'          => CommonHelper::getBranches() ?? [],
+            'locations'         => [],
+            'accessories_dropdown' => [],
+            'enum_master'       => [],
+            'oem_ids'           => array_filter(explode(',', $booking->exist_oem ?? '')),
+
+            'trade_used_map' => [
+                '1' => 'BKN AD User 1 (RJ0730024TC)',
+                '2' => 'BKN AD User 2 (RJ0730024TC)',
+                '3' => 'BKN AD User 3 (RJ0730024TC)',
+                '4' => 'SUJ AD (RJ44C0012TC)',
+                '5' => 'BKN LMM L5 (RJ07C0056TC)',
+                '6' => 'BKN LMM L3 (RJ07TC0322)',
+            ],
+            'sale_type_map' => [
+                '1' => 'Within State',
+                '2' => 'Outside State',
+            ],
+            'permit_map' => [
+                '1' => 'Private - U/C (4 Wheeler)',
+                '2' => 'Private - BH (4 Wheeler)',
+                '3' => 'Private - EV (4 Wheeler)',
+                '4' => 'Goods - G (4 Wheeler)',
+                '5' => 'Goods - G 3 Ton+ (4 Wheeler)',
+                '6' => 'Goods - G (3 Wheeler)',
+                '7' => 'Goods - G EV (3 Wheeler)',
+                '8' => 'Taxi - T (4 Wheeler)',
+                '9' => 'Passenger - P (3 Wheeler)',
+                '10' => 'Passenger - P EV (3 Wheeler)',
+                '11' => 'Ambulance (Misc.)',
+            ],
+            'body_type_map' => [
+                '1' => 'Complete',
+                '2' => 'CBC',
+            ],
+            'reg_no_type_map' => [
+                '1' => 'Regular',
+                '2' => 'BH',
+                '3' => 'Special',
+            ],
+            'registration_type_map' => [
+                '1' => 'Type 1',
+                '2' => 'Type 2',
+                '3' => 'Type 3',
+            ],
+        ];
+
+        // Total amount
+        $data['total_amount'] = $data['receiptLogs']->sum('amount');
+
+        // Branch & Location
+        $data['branch']   = X_Branch::find($booking->branch_id)?->name ?? 'N/A';
+        $data['fbranch']  = $data['branch'];
+        $data['location'] = $booking->location_id
+            ? (X_Location::find($booking->location_id)?->name ?? 'N/A')
+            : ($booking->location_other ?? 'N/A');
+        $data['flocation'] = $data['location'];
+        $segmentsFromHelper = XpricingHelper::getSegments() ?? [];
+
+        // Accessories
+        $accIds = array_filter(array_map('trim', explode(',', $booking->accessories ?? '')));
+        $accNames = [];
+        foreach ($accIds as $accId) {
+            if ($accessory = Xessories::find($accId)) {
+                $accNames[] = $accessory->item;
+            }
+        }
+        $data['accessories'] = $accNames ? implode(', ', $accNames) : 'N/A';
+
+        // Chassis
+        $data['chassis'] = Stock::where('model_code', 'code')->select('chasis_no', 'id')->get()->toArray();
+        $cr = Stock::find($booking->chasis_no);
+        if ($cr) {
+            $data['bchasis'] = $cr->chasis_no;
+            $data['chassis'] = Stock::where('model_code', $cr->model_code)->select('chasis_no', 'id')->get()->toArray();
+        }
+
+        // Collector name
+        $data['collector_name'] = match ((int)$booking->col_type) {
+            1 => 'N/A',
+            2 => User::find($booking->col_by)?->name . ' - (' . (User::find($booking->col_by)?->emp_code ?? '') . ')' ?? 'N/A',
+            3 => Xl_Dsa_Master::find($booking->col_by)?->name . ' - ' . Xl_Dsa_Master::find($booking->col_by)?->mobile ?? 'N/A',
+            default => 'N/A',
+        };
+
+        // DSA
+        $drec = Xl_Dsa_Master::find($booking->dsa_id);
+        $data['dsaname'] = $drec ? $drec->name . ' - ' . $drec->mobile : 'N/A';
+
+        // Makes
+        $data['make1'] = CommonHelper::enumValueById($booking->exist_oem1) ?? 'N/A';
+        $data['make2'] = CommonHelper::enumValueById($booking->exist_oem2) ?? 'N/A';
+
+        // ────────────────────────────────────────────────
+        // STATIC DATA – CACHE HATAA DIYA
+        // ────────────────────────────────────────────────
+        $data['financiers'] = XlFinancier::select('id', 'name', 'short_name')
+            ->get()
+            ->toArray() ?? [];
+
+        $data['insurances'] = XlInsurance::select('id', 'name', 'short_name')
+            ->get()
+            ->toArray() ?? [];
+
+        $data['rto_rules'] = XlRtoRules::select(
+            'sale_type',
+            'permit',
+            'body_type',
+            'reg_no_type',
+            'trc_number',
+            'trc_pay',
+            'trc_copy',
+            'app_no',
+            'tax_pay',
+            'veh_reg',
+            'tax_copy'
+        )->get()->toArray() ?? [];
+
+        $data['dsa_details'] = Xl_Dsa_Master::all()
+            ->map(fn($dsa) => [
+                'id'       => $dsa->id,
+                'name'     => $dsa->name,
+                'mobile'   => $dsa->mobile,
+                'email'    => $dsa->email,
+                'location' => $dsa->dlocation,
+            ])->toArray() ?? [];
+
+        // Locations for edit/create
+        $locations = XCommonHelper::getLocations($booking->branch_id) ?? [];
+        usort($locations, fn($a, $b) => strcmp(
+            ($a['name'] ?? '') . ' - ' . ($a['code'] ?? ''),
+            ($b['name'] ?? '') . ' - ' . ($b['code'] ?? '')
+        ));
+        $data['locations'] = $locations;
+
+        $data['accessories_dropdown'] = XpricingHelper::getAccessories(
+            CommonHelper::enumValueById($booking->segment_id ?? 0) ?? '',
+            $booking->model ?? '',
+            $booking->variant ?? ''
+        ) ?? [];
+
+        $data['enum_master'] = EnumMaster::where('master_id', 94)
+            ->select('id', 'value')
+            ->get() ?? [];
+
+        // Refund section
+        // $ref = Xl_Refunds::where('entity_type', 'booking')->where('entity_id', $id)->first();
+        // if ($ref) {
+        //     $data['acc_proof']  = $ref->getFirstMediaUrl('acc-proof')  ?: '';
+        //     $data['aadhar']     = $ref->getFirstMediaUrl('aadhar')     ?: '';
+        //     $data['pan']        = $ref->getFirstMediaUrl('pan')        ?: '';
+        //     $data['pay_proof']  = $ref->getFirstMediaUrl('pay-proof')  ?: '';
+
+        //     $refundDetails = Xl_Refunds::where('entity_id', $id)
+        //         ->select([
+        //             'id',
+        //             'entity_type',
+        //             'entity_id',
+        //             'bank_name',
+        //             'branch_name',
+        //             'account_type',
+        //             'account_number',
+        //             'holder_name',
+        //             'ifsc_code',
+        //             'req_date',
+        //             'amount',
+        //             'details',
+        //             'ref_date',
+        //             'mode',
+        //             'transaction_details',
+        //             'remark'
+        //         ])->first();
+
+        //     if ($refundDetails) {
+        //         $data['refund']    = $refundDetails->toArray();
+        //         $data['deduction'] = $data['amount'] - ($refundDetails->amount ?? 0);
+        //     }
+        // }
+        $comm    = $data['comm'];
+        //dd($comm);
+        return view("booking.{$viewName}", $data + get_defined_vars());
+    }
+
+    private function getBaseQuery(array $options = [])
+    {
+        $query = Booking::withoutGlobalScope(SoftDeletingScope::class)
+            ->from('xcelr8_booking_master as bookings')
+            ->select([
+                'bookings.id',
+                'bookings.b_type',
+                'bookings.b_cat',
+                'bookings.b_mode',
+                'bookings.col_type',
+                'bookings.col_by',
+                'bookings.sap_no',
+                'bookings.dms_no',
+                'bookings.b_source',
+                'bookings.dsa_id',
+                'bookings.online_bk_ref_no',
+                'bookings.booking_date',
+                'bookings.receipt_no',
+                'bookings.receipt_date',
+                'bookings.booking_amount',
+                'bookings.branch_id',
+                'bookings.location_id',
+                'bookings.location_other',
+                'bookings.c_dob',
+                'bookings.gender',
+                'bookings.occ',
+                'bookings.buyer_type',
+                'bookings.exist_oem1',  // Added from Exchange/Insurance/Rto
+                'bookings.exist_oem2',  // If exists in model, added
+                'bookings.vh1_detail',  // Added
+                'bookings.registration_no',  // Added
+                'bookings.make_year',  // Added for vehicle mfg year
+                'bookings.odo_reading',  // Added
+                'bookings.expected_price',  // Added
+                'bookings.offered_price',  // Added
+                'bookings.exchange_bonus',  // Added
+                'bookings.segment_id',
+                'bookings.model',
+                'bookings.variant',
+                'bookings.color',
+                'bookings.vh_id',
+                'bookings.seating',
+                'bookings.person_id',
+                'bookings.name',
+                'bookings.care_of',
+                'bookings.mobile',
+                'bookings.alt_mobile',
+                'bookings.pan_no',
+                'bookings.adhar_no',
+                'bookings.gstn',
+                'bookings.dms_otf',
+                'bookings.order',
+                'bookings.otf_date',
+                'bookings.dms_so',
+                'bookings.cpd',
+                'bookings.chasis_no',
+                'bookings.del_type',
+                'bookings.del_date',
+                'bookings.fin_mode',
+                'bookings.financier',
+                'bookings.loan_status',
+                'bookings.accessories',
+                'bookings.consultant',
+                'bookings.inv_no',
+                'bookings.inv_date',
+                'bookings.dealer_inv_no',
+                'bookings.dealer_inv_date',
+                'bookings.cancel_date',
+                'bookings.refund_request_date',
+                'bookings.refund_date',
+                'bookings.refund_rejection_date',
+                'bookings.dealer_status',
+                'bookings.details',
+                'bookings.pending',
+                'bookings.pending_remark',
+                'bookings.retail',
+                'bookings.payout',
+                'bookings.status',
+                'bookings.created_at',
+                'bookings.created_by',
+                'bookings.updated_at',
+                'bookings.updated_by'
+            ]);
+
+        // Optional Joins (already good, no change needed – all controllers use these)
+        if (!empty($options['withFinance'])) {
+            $query->leftJoin('xcelr8_finance as f', 'bookings.id', '=', 'f.bid')
+                ->addSelect([
+                    'f.id as finance_id',
+                    'f.vh_id as finance_vh_id',
+                    'f.fin_mode as finance_fin_mode',
+                    'f.financier as finance_financier_id',
+                    'f.loan_status as finance_loan_status',
+                    'f.verification_status as finance_verification_status',
+                    'f.case_status as finance_case_status',
+                    'f.case_lost_reason as finance_case_lost_reason',
+                    'f.instrument_type as finance_instrument_type',
+                    'f.instrument_ref_no as finance_instrument_ref_no',
+                    'f.loan_amount as finance_loan_amount',
+                    'f.margin as finance_margin',
+                    'f.file_charge as finance_file_charge',
+                    'f.fin_loan_amount as finance_fin_loan_amount',
+                    'f.payout_category as finance_payout_category',
+                    'f.nopayout_reason as finance_nopayout_reason',
+                    'f.expected_payout_pct as finance_expected_payout_pct',
+                    'f.gst_included as finance_gst_included',
+                    'f.inv1_no as finance_inv1_no',
+                    'f.inv1_name as finance_inv1_name',
+                    'f.inv1_prov_gst as finance_inv1_prov_gst',
+                    'f.inv2_no as finance_inv2_no',
+                    'f.inv2_name as finance_inv2_name',
+                    'f.inv2_prov_gst as finance_inv2_prov_gst',
+                    'f.status as finance_status',
+                    'f.created_at as finance_created_at',
+                    'f.created_by as finance_created_by',
+                    'f.updated_at as finance_updated_at',
+                    'f.updated_by as finance_updated_by'
+                ]);
+        }
+        if (!empty($options['withExchange'])) {
+            $query->leftJoin('xcelr8_exchange as e', 'bookings.id', '=', 'e.bid')
+                ->addSelect([
+                    'e.id as exchange_id',
+                    'e.vh_id as exchange_vh_id',
+                    'e.purchase_type as exchange_purchase_type',
+                    'e.verification_status as exchange_verification_status',
+                    'e.case_status as exchange_case_status',
+                    'e.status as exchange_status',
+                    'e.created_at as exchange_created_at',
+                    'e.created_by as exchange_created_by',
+                    'e.updated_at as exchange_updated_at',
+                    'e.updated_by as exchange_updated_by'
+                ]);
+        }
+        if (!empty($options['withInsurance'])) {
+            $query->leftJoin('xcelr8_booking_insurance as ins', 'bookings.id', '=', 'ins.bid')
+                ->addSelect([
+                    'ins.id as insurance_id',
+                    'ins.source as insurance_source',
+                    'ins.insurer as insurance_insurer_id',
+                    'ins.pol_no as insurance_pol_no',
+                    'ins.pol_date as insurance_pol_date',
+                    'ins.pol_type as insurance_pol_type',
+                    'ins.status as insurance_status',
+                    'ins.created_at as insurance_created_at',
+                    'ins.created_by as insurance_created_by',
+                    'ins.updated_at as insurance_updated_at',
+                    'ins.updated_by as insurance_updated_by'
+                ]);
+        }
+        if (!empty($options['withRto'])) {
+            $query->leftJoin('xcelr8_booking_rto as rto', 'bookings.id', '=', 'rto.bid')
+                ->addSelect([
+                    'rto.id as rto_id',
+                    'rto.trade_used as rto_trade_used',
+                    'rto.sale_type as rto_sale_type',
+                    'rto.permit as rto_permit',
+                    'rto.body_type as rto_body_type',
+                    'rto.rgn_type as rto_rgn_type',
+                    'rto.rgn_no_type as rto_rgn_no_type',
+                    'rto.trc_no as rto_trc_no',
+                    'rto.trc_payment_no as rto_trc_payment_no',
+                    'rto.app_no as rto_app_no',
+                    'rto.tax_payment_bank_ref_no as rto_tax_payment_bank_ref_no',
+                    'rto.vh_rgn_no as rto_vh_rgn_no',
+                    'rto.status as rto_status',
+                    'rto.created_at as rto_created_at',
+                    'rto.created_by as rto_created_by',
+                    'rto.updated_at as rto_updated_at',
+                    'rto.updated_by as rto_updated_by'
+                ]);
+        }
+        if (!empty($options['withDelivered'])) {
+            $query->leftJoin('xcelr8_booking_delivered as del', 'bookings.id', '=', 'del.bid')
+                ->addSelect([
+                    'del.id as delivered_id',
+                    'del.verification as delivered_verification',
+                    'del.remarks as delivered_remarks',
+                    'del.status as delivered_status',
+                    'del.created_at as delivered_created_at',
+                    'del.created_by as delivered_created_by',
+                    'del.updated_at as delivered_updated_at',
+                    'del.updated_by as delivered_updated_by'
+                ]);
+        }
+        if (!empty($options['withRefund'])) {
+            $query->leftJoin('xcelr8_refunds as ref', function ($join) {
+                $join->on('bookings.id', '=', DB::raw('CAST(ref.entity_id AS UNSIGNED)'))
+                    ->where('ref.entity_type', 'booking');
+            })
+                ->addSelect([
+                    'ref.id as refund_id',
+                    'ref.bank_name as refund_bank_name',
+                    'ref.branch_name as refund_branch_name',
+                    'ref.account_type as refund_account_type',
+                    'ref.account_number as refund_account_number',
+                    'ref.holder_name as refund_holder_name',
+                    'ref.ifsc_code as refund_ifsc_code',
+                    'ref.req_date as refund_req_date',
+                    'ref.req_by as refund_req_by',
+                    'ref.ref_date as refund_ref_date',
+                    'ref.ref_by as refund_ref_by',
+                    'ref.transaction_details as refund_transaction_details',
+                    'ref.mode as refund_mode',
+                    'ref.amount as refund_amount',
+                    'ref.details as refund_details',
+                    'ref.remark as refund_remark',
+                    'ref.status as refund_status',
+                    'ref.created_at as refund_created_at',
+                    'ref.created_by as refund_created_by'
+                ]);
+        }
+
+        return $query->orderBy('bookings.id', 'DESC');
+    }
+
+    private function mapBookingForGrid($booking)
+    {
+        $consultant = User::find($booking->consultant);
+        $consultantName = $consultant?->name ?? 'N/A';
+
+        $collectedBy = $booking->col_by ? User::find($booking->col_by) : null;
+        $collectedByName = $collectedBy?->name ?? 'N/A';
+
+        $branchName = $booking->branch?->name ?? 'N/A';
+        $locationName = $booking->location?->name ?? ($booking->location_other ?? 'N/A');
+
+        $statusBadge = $this->getStatusBadge($booking->status ?? 8);
+
+        $bookingNo = $booking->id;
+
+        $invoiceDate = $booking->inv_date ? Carbon::parse($booking->inv_date)->format('d-M-Y')
+            : ($booking->dealer_inv_date ? Carbon::parse($booking->dealer_inv_date)->format('d-M-Y') : 'N/A');
+
+        $invoiceNo = $booking->inv_no ?? $booking->dealer_inv_no ?? 'N/A';
+
+        $dsaName = $booking->dsa_id ? (Xl_DSA_Master::find($booking->dsa_id)?->name ?? 'N/A') : 'N/A';
+
+        $daysOld = $booking->booking_date
+            ? Carbon::parse($booking->booking_date)->diffInDays(now())
+            : Carbon::parse($booking->created_at)->diffInDays(now());
+        $financierName = 'N/A';
+
+        if ($booking->financier) {
+            $financierRecord = XlFinancier::find($booking->financier);
+            $financierName = $financierRecord ? $financierRecord->name : 'N/A';
+        }
+
+        $liveCount = Booking::where('model', $booking->model)
+            ->where('variant', $booking->variant)
+            ->where('color', $booking->color)
+            ->whereIn('status', [1, 8])
+            ->count();
+
+
+
+        // Stock Count: same vehicle ke stock mein kitne units hain
+        // (assuming X_Vh_Stock table mein vh_id se link hai, aur available stock count karna hai)
+        $stockCount = Stock::where('vh_id', $booking->vh_id)
+            ->where('status', 'available')  // ya jo bhi tumhara stock status field hai
+            ->count();
+
+
+        // ────────────────────────────────────────────────
+        // Final mapped object – sab kuch yahan daal do
+        // ────────────────────────────────────────────────
+        return (object) [
+            'id'                    => $booking->id,
+            'serial_no'             => null, // listing mein add hoga
+            'booking_no'            => $bookingNo,
+            // ─── Dates (sabse pehle) ───────────────────────────────
+            'created_at'              => Carbon::parse($booking->created_at)->format('d-M-Y'),
+            'booking_date'            => $booking->booking_date ? Carbon::parse($booking->booking_date)->format('d-M-Y') : 'N/A',
+            'cancel_date'             => $booking->cancel_date ? Carbon::parse($booking->cancel_date)->format('d-M-Y') : 'N/A',
+            'refund_request_date'     => $booking->refund_request_date ? Carbon::parse($booking->refund_request_date)->format('d-M-Y') : 'N/A',
+            'refund_date'             => $booking->refund_date ? Carbon::parse($booking->refund_date)->format('d-M-Y') : 'N/A',
+            'refund_rejection_date'   => $booking->refund_rejection_date ? Carbon::parse($booking->refund_rejection_date)->format('d-M-Y') : 'N/A',
+            'receipt_date'            => $booking->receipt_date ? Carbon::parse($booking->receipt_date)->format('d-M-Y') : 'N/A',
+            'invoice_date'            => $invoiceDate,
+            'cpd'                     => $booking->cpd ? Carbon::parse($booking->cpd)->format('d-M-Y') : 'N/A',
+            'del_date'                => $booking->del_date ? Carbon::parse($booking->del_date)->format('d-M-Y') : 'N/A',
+            'otf_date'                => $booking->otf_date ? Carbon::parse($booking->otf_date)->format('d-M-Y') : 'N/A',
+
+            // ─── Customer Details ──────────────────────────────────
+            'name'                    => $booking->name ?? 'N/A',
+            'care_of'                 => $booking->care_of ?? 'N/A',
+            'mobile'                  => $booking->mobile ?? 'N/A',
+
+            'pan_no'                  => $booking->pan_no ?? 'N/A',
+            'adhar_no' => !empty(trim($booking->adhar_no ?? '')) && strlen(trim($booking->adhar_no ?? '')) > 3
+                ? trim($booking->adhar_no)
+                : 'N/A',
+            // GSTN – same logic (blank, null, ya 0 → N/A)
+            'gstn'         => !empty($booking->gstn) && $booking->gstn !== '0' && $booking->gstn !== 0
+                ? $booking->gstn
+                : 'N/A',
+            // Segment – lookup from EnumMaster ya direct value
+            'segment' => $booking->segment_id
+                ? (EnumMaster::find($booking->segment_id)?->value ?? 'N/A')
+                : 'N/A',
+            'model'                 => $booking->model ?? 'N/A',
+            'variant'               => $booking->variant ?? 'N/A',
+            'color'                 => $booking->color ?? 'N/A',
+            'booking_amount'        => $booking->booking_amount,
+
+            'consultant'            => $consultantName,
+            'branch_name'           => $branchName,
+            'location_name'         => $locationName,
+            'days_count'            => $daysOld,
+            'b_type'                => $booking->b_type ?? 'N/A',
+            'b_mode'                => $booking->b_mode ?? 'N/A',
+            'b_source'              => $booking->b_source ?? 'N/A',
+            'col_type'              => match ((int)$booking->col_type) {
+                1 => 'Receipt',
+                2 => 'Field (Sales)',
+                3 => 'Field (DSA)',
+                default => 'Unknown'
+            },
+            'col_by'                => $collectedByName,
+            'dsa_name'              => $dsaName,
+            'fin_mode'              => $booking->fin_mode ?? 'N/A',
+            'financier' => $financierName,
+            'loan_status'           => $booking->loan_status ?? 'N/A',
+            'sap_no'                => $booking->sap_no ?? 'N/A',
+            'dms_no'                => $booking->dms_no ?? 'N/A',
+            'dms_otf'               => $booking->dms_otf ?? 'N/A',
+            'dms_so'                => $booking->dms_so ?? 'N/A',
+            'online_bk_ref_no'      => $booking->online_bk_ref_no ?? 'N/A',
+            'receipt_no'            => $booking->receipt_no ?? 'N/A',
+            'receipt_date'          => $booking->receipt_date ? Carbon::parse($booking->receipt_date)->format('d-M-Y') : 'N/A',
+            'chasis_no'             => $booking->chasis_no ?? 'N/A',
+            'del_type'              => $booking->del_type ?? 'N/A',
+            'invoice_no'            => $invoiceNo,
+            // listing mein add hoga
+            // Extra fields jo kabhi chahiye to yahan daal dena
+            'pan_no'                => $booking->pan_no ?? 'N/A',
+            'adhar_no'              => $booking->adhar_no ?? 'N/A',
+            'care_of'               => $booking->care_of ?? 'N/A',
+            'livecount'             => $liveCount ?? 'N/A',
+            'stockcount'            => $stockCount ?? 'N/A',
+            'action'                => '',
+        ];
+    }
+    private function getExtraColumns($listingType): array
+    {
+        return match ($listingType) {
+            'finance', 'finance_pending', 'finance_complete' => [
+                ['headerName' => 'Verification Status', 'field' => 'finance_verification', 'width' => 140, 'cellClass' => 'text-center'],
+                ['headerName' => 'Loan Status', 'field' => 'finance_loan_status', 'width' => 140],
+                ['headerName' => 'Case Status', 'field' => 'finance_case_status', 'width' => 140],
+                ['headerName' => 'Payout Category', 'field' => 'finance_payout_category', 'width' => 140],
+                ['headerName' => 'Payout Remarks', 'field' => 'payout_remarks', 'width' => 200], // if you added this in mapping
+            ],
+
+            'exchange', 'exchange_buy', 'exchange_scrappage', 'exchange_not_interested' => [
+                ['headerName' => 'Brand Make 1', 'field' => 'brand_make_1', 'width' => 140],
+                ['headerName' => 'Model Variant 1', 'field' => 'model_variant_1', 'width' => 160],
+                ['headerName' => 'Vehicle Reg No', 'field' => 'vehicle_reg_no', 'width' => 140],
+                ['headerName' => 'Mfg Year', 'field' => 'vehicle_mfg_year', 'width' => 120],
+                ['headerName' => 'Odo Reading', 'field' => 'vehicle_odo_reading', 'width' => 130],
+                ['headerName' => 'Expected Price', 'field' => 'used_vehicle_exp_price', 'width' => 130, 'cellClass' => 'text-right'],
+                ['headerName' => 'Offered Price', 'field' => 'used_vehicle_off_price', 'width' => 130, 'cellClass' => 'text-right'],
+                ['headerName' => 'Exc Bonus', 'field' => 'new_vehicle_exc_bonus', 'width' => 130, 'cellClass' => 'text-right'],
+                ['headerName' => 'Price Gap', 'field' => 'price_gap', 'width' => 130, 'cellClass' => 'text-right font-weight-bold'],
+                ['headerName' => 'Purchase Type', 'field' => 'exchange_purchase_type', 'width' => 140],
+                ['headerName' => 'Exchange Ver Status', 'field' => 'exchange_verification_status', 'width' => 140],
+            ],
+
+            'insurance', 'insurance_pending', 'insurance_closed' => [
+                ['headerName' => 'Source', 'field' => 'insurance_source', 'width' => 160],
+                ['headerName' => 'Company', 'field' => 'insurance_company', 'width' => 180],
+                ['headerName' => 'Short Name', 'field' => 'insurance_short_name', 'width' => 140],
+                ['headerName' => 'Policy No', 'field' => 'policy_no', 'width' => 140],
+                ['headerName' => 'Policy Date', 'field' => 'policy_date', 'width' => 130, 'type' => 'date'],
+                ['headerName' => 'Policy Type', 'field' => 'policy_type', 'width' => 160],
+                ['headerName' => 'Insurance Status', 'field' => 'insurance_status', 'width' => 120],
+            ],
+
+            'rto', 'rto_pending', 'rto_closed', 'rto_pending_reg_no' => [
+                ['headerName' => 'Trade Used', 'field' => 'rto_trade_used', 'width' => 200],
+                ['headerName' => 'Sale Type', 'field' => 'rto_sale_type', 'width' => 140],
+                ['headerName' => 'Permit', 'field' => 'rto_permit', 'width' => 180],
+                ['headerName' => 'Body Type', 'field' => 'rto_body_type', 'width' => 140],
+                ['headerName' => 'RTO Reg No', 'field' => 'rto_vh_rgn_no', 'width' => 140],
+                ['headerName' => 'RTO Status', 'field' => 'rto_status', 'width' => 120],
+                ['headerName' => 'TRC No', 'field' => 'rto_trc_no', 'width' => 130],
+                ['headerName' => 'App No', 'field' => 'rto_app_no', 'width' => 130],
+            ],
+
+            'refund', 'refund_queued', 'refund_refunded', 'refund_rejected' => [
+                ['headerName' => 'Req Date', 'field' => 'refund_req_date', 'width' => 130, 'type' => 'date'],
+                ['headerName' => 'Refund Date', 'field' => 'refund_date', 'width' => 130, 'type' => 'date'],
+                ['headerName' => 'Amount', 'field' => 'refund_amount', 'width' => 130, 'cellClass' => 'text-right'],
+                ['headerName' => 'Refund Status', 'field' => 'refund_status', 'width' => 120],
+                ['headerName' => 'Mode', 'field' => 'refund_mode', 'width' => 120],
+            ],
+
+            // Common for On Hold, Cancelled, Invoiced (no extra, or minimal)
+            'hold', 'cancelled', 'invoiced' => [
+                // Agar kuch extra chahiye to yahan add kar sakte ho
+                // Example: ['headerName' => 'Cancel Date', 'field' => 'cancel_date', 'width' => 130, 'type' => 'date'],
+            ],
+
+            default => [],
+        };
+    }
+
+
+    private function getAgGridColumns(array $extraColumns = []): array
+    {
+        $columns = [
+
+            // Pinned left – hamesha dikhe
+            ['headerName' => 'S.No',       'field' => 'serial_no',     'width' => 80,  'pinned' => 'left', 'sortable' => false, 'filter' => false],
+            ['headerName' => 'XB No',      'field' => 'booking_no',     'width' => 140, 'pinned' => 'left', 'sortable' => true],
+
+
+            ['headerName' => 'Created',            'field' => 'created_at',            'width' => 110, 'type' => 'date'],
+            ['headerName' => 'Booking Date',       'field' => 'booking_date',          'width' => 120, 'type' => 'date'],
+            ['headerName' => 'Cancel Date',        'field' => 'cancel_date',           'width' => 110, 'type' => 'date'],
+            ['headerName' => 'Refund Req Date',    'field' => 'refund_request_date',   'width' => 130, 'type' => 'date'],
+            ['headerName' => 'Refunded Date',      'field' => 'refund_date',           'width' => 120, 'type' => 'date'],
+            ['headerName' => 'Refund Reject Date', 'field' => 'refund_rejection_date', 'width' => 140, 'type' => 'date'],
+            ['headerName' => 'Invoice Date',       'field' => 'invoice_date',          'width' => 120, 'type' => 'date'],
+            ['headerName' => 'Receipt Date',       'field' => 'receipt_date',          'width' => 120, 'type' => 'date'],
+            ['headerName' => 'CPD',                'field' => 'cpd',                   'width' => 100, 'type' => 'date'],
+            ['headerName' => 'Delivery Date',      'field' => 'del_date',              'width' => 120, 'type' => 'date'],
+            ['headerName' => 'OTF Date',      'field' => 'otf_date',              'width' => 120, 'type' => 'date'],
+
+
+            // ─── Customer Details ────────────────────────────────────────
+            ['headerName' => 'Customer Name',  'field' => 'name',         'width' => 180, 'filter' => true],
+            ['headerName' => 'Care Of',        'field' => 'care_of',      'width' => 140],
+            ['headerName' => 'Mobile',         'field' => 'mobile',       'width' => 120],
+            ['headerName' => 'PAN No',         'field' => 'pan_no',       'width' => 110],
+            ['headerName' => 'Aadhaar No',     'field' => 'adhar_no',     'width' => 130],
+            ['headerName' => 'GSTN',           'field' => 'gstn',         'width' => 120],
+            // Vehicle
+            ['headerName' => 'Segment',          'field' => 'segment',          'width' => 140],
+            ['headerName' => 'Model',          'field' => 'model',          'width' => 140],
+            ['headerName' => 'Variant',        'field' => 'variant',        'width' => 150],
+            ['headerName' => 'Color',          'field' => 'color',          'width' => 100],
+            ['headerName' => 'Chassis',        'field' => 'chasis_no',      'width' => 130],
+
+            // Amount & Finance
+            ['headerName' => 'Amount',         'field' => 'booking_amount', 'width' => 120, 'type' => 'number'],
+            ['headerName' => 'Finance Mode',   'field' => 'fin_mode',       'width' => 130],
+            ['headerName' => 'Financier',      'field' => 'financier',      'width' => 140],
+            ['headerName' => 'Loan Status',    'field' => 'loan_status',    'width' => 130],
+
+            // People & Source
+            ['headerName' => 'Consultant',     'field' => 'consultant',     'width' => 140],
+            ['headerName' => 'Branch',         'field' => 'branch_name',    'width' => 140, 'filter' => true],
+            ['headerName' => 'Location',       'field' => 'location_name',  'width' => 160, 'filter' => true],
+            ['headerName' => 'Booking Type',   'field' => 'b_type',         'width' => 110],
+            ['headerName' => 'Source',         'field' => 'b_source',       'width' => 110],
+            ['headerName' => 'Collection Type', 'field' => 'col_type',       'width' => 150],
+            ['headerName' => 'Collected By',   'field' => 'col_by',         'width' => 140],
+
+
+            ['headerName' => 'Days Old',       'field' => 'days_count',     'width' => 100, 'type' => 'number', 'cellClass' => 'text-right'],
+
+            // DMS / Refs
+            ['headerName' => 'SAP No',         'field' => 'sap_no',         'width' => 110],
+            ['headerName' => 'DMS No',         'field' => 'dms_no',         'width' => 110],
+            ['headerName' => 'DMS OTF',        'field' => 'dms_otf',        'width' => 110],
+            ['headerName' => 'DMS SO',         'field' => 'dms_so',         'width' => 110],
+            ['headerName' => 'Online Ref',     'field' => 'online_bk_ref_no', 'width' => 130],
+            // Yeh do lines update kar do
+            ['headerName' => 'Live Count',     'field' => 'livecount',   'width' => 130, 'type' => 'number'],
+            ['headerName' => 'Stock Count',    'field' => 'stockcount',  'width' => 130, 'type' => 'number'],
+            // Action – right pinned
+        ];
+
+        return array_merge($columns, $extraColumns);
+    }
+
+    private function getStatusBadge($status)
+    {
+        return match ((int)$status) {
+            1 => '<span class="badge badge-success">Live</span>',
+            2 => 'Invoiced',
+            3 => '<span class="badge badge-danger">Cancelled</span>',
+            4 => '<span class="badge badge-warning">Refund Queued</span>',
+            5 => '<span class="badge badge-info">Refunded</span>',
+            6 => '<span class="badge badge-warning text-dark">On Hold</span>',
+            7 => '<span class="badge badge-dark">Refund Rejected</span>',
+            8 => 'Pending',
+            default => '<span class="badge badge-light">Unknown</span>',
+        };
+    }
+    public function showInvoiced($id)
+    {
+        $this->crud->hasAccessOrFail('show');
+
+        $entry = $this->crud->getEntry($id);
+        if ((int)$entry->status !== 2) {
+            abort(404, 'Yeh booking invoiced nahi hai.');
+        }
+
+        return $this->getFullBookingData($id, 'show-invoiced');
+    }
+
     protected function setupListOperation()
     {
         $this->crud->setListView('booking.list');
 
-        $bookings = \App\Models\Booking::query()
-            ->with(['branch', 'location'])
-            ->whereIn('status', [1, 8])
-            // ->where('b_type', 'Active')
-            ->orderBy('id', 'desc')
-            ->get();
+        // We will handle everything in the index() method instead
+        // This method can stay almost empty now
+    }
+    // All Live Bookings (main page)
 
-        $bookings = $bookings->map(function ($booking) {
-            // Consultant name
-            $consultant = \App\Models\User::find($booking->consultant);
+    public function index()
+    {
+        $this->crud->hasAccessOrFail('list');
+
+        $this->data['crud'] = $this->crud;
+        $this->data['title'] = 'All Live Bookings';
+
+        // Base query
+        $query = $this->getBaseQuery();
+
+        // Live bookings only
+        $query->whereIn('bookings.status', [1, 8]);
+        // $query->where('bookings.b_type', 'Active'); // optional
+
+        $query->orderBy('bookings.id', 'desc');
+
+        // This line MUST exist – this is what creates $paginatedBookings
+        $paginatedBookings = $query->paginate(50);
+
+        // Mapping with serial number & action
+        $gridData = $paginatedBookings->map(function ($booking, $index) use ($paginatedBookings) {
+            $mapped = $this->mapBookingForGrid($booking);
+
+            // Serial number – using the paginated collection
+            $mapped->serial_no = ($paginatedBookings->currentPage() - 1) * $paginatedBookings->perPage() + $index + 1;
+
+            // Action buttons
+            $editUrl   = backpack_url("booking/{$booking->id}/edit");
+            $showUrl   = backpack_url("booking/{$booking->id}/show");
+            $amountUrl = backpack_url("booking/{$booking->id}/add-amount"); // comment if route missing
+
+            $mapped->action = '
+        <div class="btn-group btn-group-sm" role="group">
+            <a href="' . $editUrl . '" class="btn btn-link text-primary px-2 py-1" title="Edit">
+                <i class="la la-edit la-lg"></i>
+            </a>
+            <a href="' . $amountUrl . '" class="btn btn-link text-success px-2 py-1" title="Add Amount">
+                <i class="la la-plus-circle la-lg"></i>
+            </a>
+            <a href="' . $showUrl . '" class="btn btn-link text-info px-2 py-1" title="View">
+                <i class="la la-eye la-lg"></i>
+            </a>
+        </div>';
+
+            return $mapped;
+        })->values();
+
+        // dd([
+        //     'total_rows'     => $gridData->count(),
+        //     'current_page'   => $paginatedBookings->currentPage(),
+        //     'per_page'       => $paginatedBookings->perPage(),
+        //     'first_record'   => $gridData->first(),           // pehla row ka pura object
+        //     'sample_3_rows'  => $gridData->take(3)->toArray(), // pehle 3 rows array mein
+        //     'all_fields_of_first' => array_keys((array) $gridData->first() ?? []), // saare column names
+        // ]);
+        // Columns
+        $columns = $this->getAgGridColumns();
+        //dd($this->getAgGridColumns());
+        // Add action column if not already in getAgGridColumns()
+        $columns[] = [
+            'headerName'    => 'Action',
+            'field'         => 'action',
+            'width'         => 160,
+            'sortable'      => false,
+            'filter'        => false,
+            'cellRenderer'  => 'htmlRenderer',
+            'pinned'        => 'right',
+            'cellClass'     => 'text-center',
+        ];
+
+        // Pass to view
+        $this->data['gridConfig'] = [
+            'columns' => $columns,
+            'data'    => $gridData,
+        ];
+        // dd([
+        //     'columns'     => $columns,                   // ← yeh headings ka exact order dega
+        //     'first_data'  => $gridData->first(),
+        //     'data_fields' => array_keys((array)$gridData->first()),
+        // ]);
+
+
+        return view('booking.list', $this->data);
+    }
+
+    public function hold()
+    {
+        $this->crud->hasAccessOrFail('list');
+
+        $this->crud->setListView('admin.booking.list'); // same view
+
+        $this->data['crud'] = $this->crud;
+        $this->data['title'] = 'On-Hold Bookings';
+
+        // ────────────────────────────────────────────────
+        // Query – On-Hold bookings ke liye
+        // ────────────────────────────────────────────────
+        $query = $this->getBaseQuery();  // agar getBaseQuery() mein koi common joins hain to fayda milega
+
+        // On-Hold filter
+        $query->where('bookings.status', 6);
+
+        // Sorting
+        $query->orderBy('bookings.id', 'desc');
+
+        // Pagination – same 50 per page
+        $paginatedBookings = $query->paginate(50);
+
+        // ────────────────────────────────────────────────
+        // Mapping + serial_no + action buttons (index jaisa hi)
+        // ────────────────────────────────────────────────
+        $gridData = $paginatedBookings->map(function ($booking, $index) use ($paginatedBookings) {
+            $mapped = $this->mapBookingForGrid($booking);  // ya mapBookingForList() agar alag function hai
+
+            // Serial number with pagination
+            $mapped->serial_no = ($paginatedBookings->currentPage() - 1) * $paginatedBookings->perPage() + $index + 1;
+
+            // Action buttons – same as index
+            // $editUrl   = backpack_url("booking/{$booking->id}/edit");
+            $showUrl   = backpack_url("booking/{$booking->id}/show");
+            // $amountUrl = backpack_url("booking/{$booking->id}/add-amount"); // comment if not needed
+
+            $mapped->action = '
+        <div class="btn-group btn-group-sm" role="group" aria-label="Actions">
+            <a href="' . $showUrl . '"
+               class="btn btn-link text-info px-2 py-1" title="View Details">
+                <i class="la la-eye la-lg"></i>
+            </a>
+        </div>';
+
+            return $mapped;
+        })->values();
+
+        // ────────────────────────────────────────────────
+        // Columns – same reusable function
+        // ────────────────────────────────────────────────
+        $columns = $this->getAgGridColumns();
+
+        // Action column add (sirf agar getAgGridColumns() mein nahi hai to)
+        // Agar pehle se hai to yeh line comment kar dena
+        $columns[] = [
+            'headerName'    => 'Action',
+            'field'         => 'action',
+            'width'         => 160,
+            'minWidth'      => 140,
+            'sortable'      => false,
+            'filter'        => false,
+            'resizable'     => false,
+            'cellRenderer'  => 'htmlRenderer',
+            'pinned'        => 'right',
+            'cellClass'     => 'text-center p-0',
+            'suppressSizeToFit' => true,
+        ];
+
+        // ────────────────────────────────────────────────
+        // View ko data pass
+        // ────────────────────────────────────────────────
+        $this->data['gridConfig'] = [
+            'columns' => $columns,
+            'data'    => $gridData,
+        ];
+
+        // Optional pagination info
+        $this->data['pagination'] = [
+            'total'       => $paginatedBookings->total(),
+            'perPage'     => $paginatedBookings->perPage(),
+            'currentPage' => $paginatedBookings->currentPage(),
+            'lastPage'    => $paginatedBookings->lastPage(),
+        ];
+
+        return view('booking.list', $this->data);
+    }
+
+    public function invoiced()
+    {
+        $this->crud->hasAccessOrFail('list');
+
+        $this->crud->setListView('admin.booking.list'); // same view
+
+        $this->data['crud'] = $this->crud;
+        $this->data['title'] = 'Invoiced Bookings';
+
+        // ────────────────────────────────────────────────
+        // Query – Invoiced bookings ke liye (status = 2)
+        // ────────────────────────────────────────────────
+        $query = $this->getBaseQuery();
+
+        // Invoiced filter
+        $query->where('bookings.status', 2);
+
+        // Sorting – latest pehle
+        $query->orderBy('bookings.id', 'desc');
+
+        // Pagination
+        $paginatedBookings = $query->paginate(50);
+
+        // ────────────────────────────────────────────────
+        // Mapping + serial_no + same action buttons
+        // ────────────────────────────────────────────────
+        $gridData = $paginatedBookings->map(function ($booking, $index) use ($paginatedBookings) {
+            $mapped = $this->mapBookingForGrid($booking);  // ya mapBookingForList() agar alag function hai
+
+            // Serial number with pagination support
+            $mapped->serial_no = ($paginatedBookings->currentPage() - 1) * $paginatedBookings->perPage() + $index + 1;
+
+            // Action buttons – same as index & hold
+            // $editUrl   = backpack_url("booking/{$booking->id}/edit");
+            $showUrl   = backpack_url("booking/$booking->id/invoiced-show");
+            // $amountUrl = backpack_url("booking/{$booking->id}/add-amount"); // agar route nahi hai to comment kar dena
+
+            $mapped->action = '
+        <div class="btn-group btn-group-sm" role="group" aria-label="Actions">
+
+            <a href="' . $showUrl . '"
+               class="btn btn-link text-info px-2 py-1" title="View Details">
+                <i class="la la-eye la-lg"></i>
+            </a>
+        </div>';
+
+            return $mapped;
+        })->values();
+
+        // ────────────────────────────────────────────────
+        // Columns – same reusable function
+        // ────────────────────────────────────────────────
+        $columns = $this->getAgGridColumns();
+
+        // Action column add karo (sirf agar getAgGridColumns() mein nahi hai to)
+        // Agar pehle se hai to yeh line comment kar dena
+        $columns[] = [
+            'headerName'    => 'Action',
+            'field'         => 'action',
+            'width'         => 160,
+            'minWidth'      => 140,
+            'sortable'      => false,
+            'filter'        => false,
+            'resizable'     => false,
+            'cellRenderer'  => 'htmlRenderer',
+            'pinned'        => 'right',
+            'cellClass'     => 'text-center p-0',
+            'suppressSizeToFit' => true,
+        ];
+
+        // ────────────────────────────────────────────────
+        // View ko data pass
+        // ────────────────────────────────────────────────
+        $this->data['gridConfig'] = [
+            'columns' => $columns,
+            'data'    => $gridData,
+        ];
+
+        // Optional pagination info (agar blade mein use kar rahe ho)
+        $this->data['pagination'] = [
+            'total'       => $paginatedBookings->total(),
+            'perPage'     => $paginatedBookings->perPage(),
+            'currentPage' => $paginatedBookings->currentPage(),
+            'lastPage'    => $paginatedBookings->lastPage(),
+        ];
+
+        return view('booking.list', $this->data);
+    }
+
+    public function cancelled()
+    {
+        $this->crud->hasAccessOrFail('list');
+
+        $this->crud->setListView('admin.booking.list'); // same view
+
+        $this->data['crud'] = $this->crud;
+        $this->data['title'] = 'Cancelled Bookings';
+
+        // ────────────────────────────────────────────────
+        // Query – Cancelled bookings ke liye (status = 3)
+        // ────────────────────────────────────────────────
+        $query = $this->getBaseQuery();
+
+        // Cancelled filter
+        $query->where('bookings.status', 3);
+
+        // Sorting – latest pehle
+        $query->orderBy('bookings.id', 'desc');
+
+        // Pagination
+        $paginatedBookings = $query->paginate(50);
+
+        // ────────────────────────────────────────────────
+        // Mapping + serial_no + same action buttons
+        // ────────────────────────────────────────────────
+        $gridData = $paginatedBookings->map(function ($booking, $index) use ($paginatedBookings) {
+            $mapped = $this->mapBookingForGrid($booking);  // ya mapBookingForList() agar alag function hai
+
+            // Serial number with pagination
+            $mapped->serial_no = ($paginatedBookings->currentPage() - 1) * $paginatedBookings->perPage() + $index + 1;
+
+            // Action buttons – same as index, hold, invoiced
+            // $editUrl   = backpack_url("booking/{$booking->id}/edit");
+            $showUrl   = backpack_url("booking/{$booking->id}/show");
+            // $amountUrl = backpack_url("booking/{$booking->id}/add-amount"); // agar route nahi hai to comment kar dena
+
+            $mapped->action = '
+        <div class="btn-group btn-group-sm" role="group" aria-label="Actions">
+            <a href="' . $showUrl . '"
+               class="btn btn-link text-info px-2 py-1" title="View Details">
+                <i class="la la-eye la-lg"></i>
+            </a>
+        </div>';
+
+            return $mapped;
+        })->values();
+
+        // ────────────────────────────────────────────────
+        // Columns – same reusable function
+        // ────────────────────────────────────────────────
+        $columns = $this->getAgGridColumns();
+
+        // Action column add karo (sirf agar getAgGridColumns() mein nahi hai to)
+        // Agar pehle se hai to yeh line comment kar dena
+        $columns[] = [
+            'headerName'    => 'Action',
+            'field'         => 'action',
+            'width'         => 160,
+            'minWidth'      => 140,
+            'sortable'      => false,
+            'filter'        => false,
+            'resizable'     => false,
+            'cellRenderer'  => 'htmlRenderer',
+            'pinned'        => 'right',
+            'cellClass'     => 'text-center p-0',
+            'suppressSizeToFit' => true,
+        ];
+
+        // ────────────────────────────────────────────────
+        // View ko data pass
+        // ────────────────────────────────────────────────
+        $this->data['gridConfig'] = [
+            'columns' => $columns,
+            'data'    => $gridData,
+        ];
+
+        // Optional pagination info
+        $this->data['pagination'] = [
+            'total'       => $paginatedBookings->total(),
+            'perPage'     => $paginatedBookings->perPage(),
+            'currentPage' => $paginatedBookings->currentPage(),
+            'lastPage'    => $paginatedBookings->lastPage(),
+        ];
+
+        return view('booking.list', $this->data);
+    }
+
+    // Yeh helper method sab jagah data ko same tarike se format karega
+    private function mapBookingsForList($bookings)
+    {
+        return $bookings->map(function ($booking) {
+            $consultant = User::find($booking->consultant);
             $consultantName = $consultant?->name ?? 'Unknown';
 
-            // Collected By name
-            $collectedByUser = $booking->col_by ? \App\Models\User::find($booking->col_by) : null;
+            $collectedByUser = $booking->col_by ? User::find($booking->col_by) : null;
             $collectedByName = $collectedByUser?->name ?? 'N/A';
 
-            // Status badge (tumhare pass method hai toh use karo, warna simple text)
             $statusBadge = $this->getStatusBadge($booking->status ?? 8);
 
-            // Booking No
             $bookingNo = $booking->sap_no
                 ? 'SAP: ' . $booking->sap_no
                 : ($booking->dms_no ? 'DMS: ' . $booking->dms_no : 'N/A');
 
-            // Action buttons - PURE PHP (no Blade syntax!)
             $action = '<div class="btn-group" role="group">
             <a href="' . backpack_url("booking/{$booking->id}/edit") . '" class="btn btn-sm btn-link text-primary me-3" title="Edit">
                 <i class="la la-edit"></i>
@@ -101,18 +1199,16 @@ class BookingCrudController extends CrudController
             <a href="' . backpack_url("booking/{$booking->id}/show") . '" class="btn btn-sm btn-link text-info me-2" title="View">
                 <i class="la la-eye"></i>
             </a>
-
         </div>';
 
-            // Object return karo (array nahi!)
-            $booking->id = $booking->id;
-            $booking->booking_no = $bookingNo;
-            $booking->booking_date = $booking->booking_date ? \Carbon\Carbon::parse($booking->booking_date)->format('d-m-Y') : '-';
-            $booking->name = $booking->name ?? '-';
-            $booking->mobile = $booking->mobile ?? '-';
-            $booking->model = $booking->model ?? '-';
-            $booking->variant = $booking->variant ?? '-';
-            $booking->color = $booking->color ?? '-';
+            $booking->id             = $booking->id;
+            $booking->booking_no     = $bookingNo;
+            $booking->booking_date   = $booking->booking_date ? Carbon::parse($booking->booking_date)->format('d-m-Y') : '-';
+            $booking->name           = $booking->name ?? '-';
+            $booking->mobile         = $booking->mobile ?? '-';
+            $booking->model          = $booking->model ?? '-';
+            $booking->variant        = $booking->variant ?? '-';
+            $booking->color          = $booking->color ?? '-';
             $booking->booking_amount = $booking->booking_amount ? number_format($booking->booking_amount) : '0';
             $booking->booking_source = $booking->b_source ?? '-';
             $booking->collection_type = match ((int)$booking->col_type) {
@@ -121,40 +1217,24 @@ class BookingCrudController extends CrudController
                 3 => 'DSA',
                 default => 'N/A'
             };
-            $booking->collected_by = $collectedByName;
-            $booking->dsa_name = $booking->dsa_id ?? '-';
-            $booking->fin_mode = $booking->fin_mode ?? '-';
-            $booking->financier = $booking->financier ?? '-';
-            $booking->consultant = $consultantName;
-            $booking->branch = $booking->branch?->name ?? '-';
-            $booking->location = $booking->location?->name ?? '-';
-            $booking->b_mode = $booking->b_mode ?? '-';
-            $booking->b_type = $booking->b_type ?? '-';
-            $booking->status = $statusBadge;
-            $booking->days_count = \Carbon\Carbon::parse($booking->created_at)->diffInDays(now());
-            $booking->action = $action; // action field set
+            $booking->collected_by   = $collectedByName;
+            $booking->dsa_name       = $booking->dsa_id ?? '-';
+            $booking->fin_mode       = $booking->fin_mode ?? '-';
+            $booking->financier      = $booking->financier ?? '-';
+            $booking->consultant     = $consultantName;
+            $booking->branch_name    = $booking->branch?->name ?? '-';
+            $booking->location_name  = $booking->location?->name ?? '-';
+            $booking->b_mode         = $booking->b_mode ?? '-';
+            $booking->b_type         = $booking->b_type ?? '-';
+            $booking->status         = $statusBadge;
+            $booking->days_count     = (int) Carbon::parse($booking->created_at)->diffInDays(now());
+            $booking->action         = $action;
 
             return $booking;
         });
-
-        $this->data['bookings'] = $bookings;
-        $this->data['title'] = 'All Live Bookings';
     }
 
-    private function getStatusBadge($status)
-    {
-        return match ((int)$status) {
-            1 => '<span class="badge badge-success">Live</span>',
-            2 => '<span class="badge badge-primary">Invoiced</span>',
-            3 => '<span class="badge badge-danger">Cancelled</span>',
-            4 => '<span class="badge badge-warning">Refund Queued</span>',
-            5 => '<span class="badge badge-info">Refunded</span>',
-            6 => '<span class="badge badge-warning text-dark">On Hold</span>',
-            7 => '<span class="badge badge-dark">Refund Rejected</span>',
-            8 => '<span class="badge badge-secondary">Pending</span>',
-            default => '<span class="badge badge-light">Unknown</span>',
-        };
-    }
+
 
     protected function setupCreateOperation()
     {
@@ -178,7 +1258,7 @@ class BookingCrudController extends CrudController
         $data['colors']         = [];
 
         $data['locations']      = [];
-        $data['person_id']      = auth()->id();
+        $data['person_id']      = backpack_auth()->id();
 
         // DSA Details — object bana do
         $data['dsa_details'] = \App\Models\Xl_DSA_Master::all()->map(function ($dsa) {
@@ -352,7 +1432,7 @@ class BookingCrudController extends CrudController
         $booking->vh_id = $request->input('vhid');  // vh_id → vhid
         $booking->order = $request->input('makeorder');  // order → makeorder (assuming)
         $booking->seating = $request->input('seating');
-        $booking->person_id = auth()->id();
+        $booking->person_id = backpack_auth()->id();
         $booking->name = $request->input('name');
         $booking->care_of_type = $request->input('careof');  // care_of_type → careof
         $booking->care_of = $request->input('careofname');  // care_of → careofname
@@ -462,6 +1542,7 @@ class BookingCrudController extends CrudController
             $finance->save();
         }
 
+
         // ====== CHATHELPER (same as save()) ======
         ChatHelper::add_communication(3, "Booking Created", "Booking created successfully", $booking->id);
         $commid = ChatHelper::get_commid(3, $booking->id, "Booking Created");
@@ -472,7 +1553,7 @@ class BookingCrudController extends CrudController
         }
 
         // Backpack redirect (index route pe jayega)
-        return redirect()->backpack_url('booking')->with('success', 'Booking added successfully!');
+        return redirect(backpack_url('booking'))->with('success', 'Booking added successfully!');
     }
 
     protected function setupUpdateOperation()
@@ -587,12 +1668,326 @@ class BookingCrudController extends CrudController
             $data['collector_name'] = $dsa ? $dsa->name . ' - ' . $dsa->mobile : '—';
         }
 
+        // dd([
+        //     "Enum Master Count"          => $data['enum_master']->count(),
+        //     "Sample first 5 records"     => $data['enum_master']->take(5)->toArray(),
+        //     "Does 19747 exist?"          => $data['enum_master']->contains('id', 19747),
+        //     "Does 19723 exist?"          => $data['enum_master']->contains('id', 19723),
+        //     "Name of ID 19747 (if found)" => $data['enum_master']->firstWhere('id', 19747)?->value ?? 'NOT FOUND',
+        //     "Name of ID 19723 (if found)" => $data['enum_master']->firstWhere('id', 19723)?->value ?? 'NOT FOUND',
+        //     "Raw exist_oem1"             => $entry->exist_oem1,
+        //     "Raw exist_oem2"             => $entry->exist_oem2
+        // ]);
+
         // Final assign
         $this->data['entry'] = $entry;
         $this->data['data'] = $data;
         //dd($this->data);
+
     }
 
+    public function addAmountForm($id)
+    {
+        $booking = Booking::findOrFail($id);
+
+        // Optional: pass already added receipts for display/history
+        $receipts = Bookingamount::where('bid', $id)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return view('booking.amount', compact('booking', 'receipts'));
+    }
+
+    public function addAmount(Request $request, $id)
+    {
+        try {
+            $booking = Booking::findOrFail($id);
+
+            // Optional safety check
+            if ($request->filled('bid') && $request->bid != $id) {
+                throw new \Exception('Booking ID mismatch.');
+            }
+
+            $validator = Validator::make($request->all(), [
+                'hidden_receipt_date' => 'required|date_format:Y-m-d',
+                'reciept_no' => [
+                    'required',
+                    'string',
+                    'max:255',
+
+                ],
+                'amount' => 'required|numeric|min:0.01',
+                'amount_proof' => 'required|file|mimes:jpeg,png,jpg,pdf|max:2048',
+            ]);
+
+            if ($validator->fails()) {
+                return redirect()->back()
+                    ->withInput()
+                    ->withErrors($validator)
+                    ->with('error', $validator->errors()->first());
+            }
+
+            return DB::transaction(function () use ($request, $booking) {
+
+                $tempDir = public_path('Uploads/temp/');
+                if (!File::exists($tempDir)) {
+                    File::makeDirectory($tempDir, 0755, true);
+                }
+
+                $file     = $request->file('amount_proof');
+                $ext      = $file->extension();
+                $fileName = 'tf_ap_' . date('d-m-Y_His') . '.' . $ext;
+
+                // Move file temporarily
+                $file->move($tempDir, $fileName);
+
+                // Create receipt record
+                $amountRecord = new Bookingamount();
+                $amountRecord->bid     = $booking->id;
+                $amountRecord->date    = $request->hidden_receipt_date;
+                $amountRecord->amount  = $request->amount;
+                $amountRecord->reciept = $request->reciept_no;
+                $amountRecord->save();
+
+                // Attach file using Spatie Media Library (assuming you're using it)
+                $amountRecord->addMedia($tempDir . $fileName)
+                    ->toMediaCollection('amount-proof');
+
+                // ────────────────────────────────────────────────
+                // Your business logic below – kept almost as-is
+                // ────────────────────────────────────────────────
+
+                $remarks = [];
+
+                $oldReceipt = $booking->receipt_no;
+                $oldDate    = $booking->receipt_date;
+                $newAmount  = $request->amount;
+                $newReceipt = $request->reciept_no;
+                $newDate    = $request->hidden_receipt_date;
+
+                if ($oldReceipt !== $newReceipt) {
+                    $remarks[] = "Receipt No. changed from " . ($oldReceipt ?? 'N/A') . " to $newReceipt";
+                }
+                if ($oldDate !== $newDate) {
+                    $remarks[] = "Receipt Date changed from " . ($oldDate ?? 'N/A') . " to $newDate";
+                }
+                if ($newAmount > 0) {
+                    $remarks[] = "Amount received: $newAmount";
+                }
+
+                // Dummy → Active conversion
+                $wasDummy = strtolower($booking->b_type ?? '') === 'dummy';
+                if ($wasDummy) {
+                    $remarks[] = "Booking activated from Dummy to Active";
+                }
+
+                // Update booking totals & flags
+                $oldBookingAmount = $booking->booking_amount ?? 0;
+                $booking->receipt_no     = $newReceipt;
+                $booking->receipt_date   = $newDate;
+                $booking->booking_amount = $oldBookingAmount + $newAmount;
+                $booking->b_type         = 'Active';
+
+                $remarks[] = "Booking amount updated from $oldBookingAmount to {$booking->booking_amount}";
+
+                // Pending fields logic (only if was dummy)
+                if ($wasDummy) {
+                    $pending = 0;
+                    $pendingFields = [];
+
+                    if ($booking->b_mode === 'Online' && empty($booking->online_bk_ref_no)) {
+                        $pending++;
+                        $pendingFields[] = 'Online booking reference number';
+                    }
+                    if (empty($booking->pan_no)) {
+                        $pending++;
+                        $pendingFields[] = 'PAN number';
+                    }
+                    if (empty($booking->adhar_no)) {
+                        $pending++;
+                        $pendingFields[] = 'Aadhar number';
+                    }
+                    if (empty($booking->dms_no)) {
+                        $pending++;
+                        $pendingFields[] = 'Sales force number';
+                    }
+                    if (empty($booking->dms_otf)) {
+                        $pending++;
+                        $pendingFields[] = 'DMS OTF';
+                    }
+                    if (empty($booking->otf_date)) {
+                        $pending++;
+                        $pendingFields[] = 'DMS OTF Date';
+                    }
+                    if (empty($booking->dms_so)) {
+                        $pending++;
+                        $pendingFields[] = 'DMS SO number';
+                    }
+
+                    $booking->pending        = $pending;
+                    $booking->pending_remark = implode(', ', $pendingFields);
+                    $booking->status         = $pending > 0 ? 8 : 0; // 8 = pending, 0 = complete?
+                }
+
+                $booking->save();
+
+                // Logging / follow-up
+                if (!empty($remarks)) {
+                    try {
+                        $commid = ChatHelper::get_commid(3, $booking->id, "Booking Created");
+                        ChatHelper::add_followup(
+                            $commid,
+                            "Booking Amount Updated",
+                            implode(", ", $remarks),
+                            $tempDir . $fileName,  // might not be needed anymore
+                            1
+                        );
+                    } catch (\Exception $e) {
+                        Log::warning("ChatHelper failed: " . $e->getMessage());
+                    }
+                }
+
+                // Cleanup
+                if (File::exists($tempDir . $fileName)) {
+                    File::delete($tempDir . $fileName);
+                }
+
+                return redirect()
+                    ->route('booking.index')   // or 'bookings' if that's your route name
+                    ->with('success', 'Amount & receipt added successfully!');
+            });
+        } catch (\Exception $e) {
+            Log::error("addAmount failed: " . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Something went wrong. Please try again.');
+        }
+    }
+
+    public function addReceipt(Request $request, $id)
+    {
+        $booking = Booking::findOrFail($id);
+
+        $validator = Validator::make($request->all(), [
+            'hidden_receipt_date' => 'required|date_format:Y-m-d',
+            'reciept_no' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('xcelr8_booking_amount', 'reciept')
+                    ->whereNull('deleted_at')
+                    ->ignore($request->input('receipt_id')), // agar edit mode mein ho to ignore
+            ],
+            'amount' => 'required|numeric|min:0.01',
+            'amount_proof' => 'required|file|mimes:jpeg,png,jpg,pdf|max:2048',
+        ]);
+
+        if ($validator->fails()) {
+            return redirect()->back()
+                ->withInput()
+                ->withErrors($validator)
+                ->with('error', $validator->errors()->first());
+        }
+
+        try {
+            return DB::transaction(function () use ($request, $booking) {
+
+                $receiptDate = $request->input('hidden_receipt_date');
+                $receiptNo   = $request->input('reciept_no');
+                $amount      = (float) $request->input('amount');
+
+                // Create receipt record
+                $receipt = new Bookingamount();
+                $receipt->bid     = $booking->id;
+                $receipt->date    = $receiptDate;
+                $receipt->amount  = $amount;
+                $receipt->reciept = $receiptNo;
+                $receipt->save();
+
+                // Attach proof directly (no temp file needed)
+                $receipt->addMediaFromRequest('amount_proof')
+                    ->toMediaCollection('amount-proof');
+
+                // Remarks for logging
+                $remarks = [];
+                if ($booking->receipt_no !== $receiptNo) {
+                    $remarks[] = "Receipt No. updated to {$receiptNo}";
+                }
+                if ($booking->receipt_date !== $receiptDate) {
+                    $remarks[] = "Receipt Date updated to {$receiptDate}";
+                }
+                $remarks[] = "Amount received: {$amount}";
+
+                // Update latest receipt info on booking (if your logic requires it)
+                $booking->receipt_no   = $receiptNo;
+                $booking->receipt_date = $receiptDate;
+
+                // Calculate total received
+                $totalReceived = Bookingamount::where('bid', $booking->id)
+                    ->whereNull('deleted_at')
+                    ->sum('amount');
+
+                // Activate if full amount received
+                if ($totalReceived >= ($booking->booking_amount ?? 0) && $booking->booking_amount > 0) {
+                    if (strtolower($booking->b_type) === 'dummy') {
+                        $remarks[] = "Booking activated from Dummy to Active (Full amount received)";
+                    }
+                    $booking->b_type = 'Active';
+                }
+
+                // If still dummy → check pending KYC fields
+                if (strtolower($booking->b_type) === 'dummy') {
+                    $pendingFields = [];
+                    if ($booking->b_mode === 'Online' && empty($booking->online_bk_ref_no)) {
+                        $pendingFields[] = 'Online booking reference number';
+                    }
+                    if (empty($booking->pan_no))     $pendingFields[] = 'PAN number';
+                    if (empty($booking->adhar_no))   $pendingFields[] = 'Aadhar number';
+                    if (empty($booking->dms_no))     $pendingFields[] = 'Sales force number';
+                    if (empty($booking->dms_otf))    $pendingFields[] = 'DMS OTF';
+                    if (empty($booking->otf_date))   $pendingFields[] = 'DMS OTF Date';
+                    if (empty($booking->dms_so))     $pendingFields[] = 'DMS SO number';
+
+                    $booking->pending        = count($pendingFields);
+                    $booking->pending_remark = implode(', ', $pendingFields);
+                    $booking->status         = count($pendingFields) > 0 ? 8 : 0;
+                }
+
+                $booking->save();
+
+                // Log changes
+                if (!empty($remarks)) {
+                    try {
+                        $commid = ChatHelper::get_commid(3, $booking->id, "Booking Created");
+                        ChatHelper::add_followup(
+                            $commid,
+                            "Receipt Added",
+                            implode(", ", $remarks),
+                            null,  // no file path needed
+                            1
+                        );
+                    } catch (\Exception $e) {
+                        Log::warning("ChatHelper failed: " . $e->getMessage());
+                    }
+                }
+
+                return redirect()->route('booking.pending-edit', [
+                    'id' => $booking->id,
+                    'pending_flag' => $request->boolean('pending_flag') ? 1 : 0
+                ])->with('success', 'Receipt added successfully!');
+            });
+        } catch (\Exception $e) {
+            Log::error('addReceipt failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'booking_id' => $id
+            ]);
+
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Failed to add receipt. Please try again.');
+        }
+    }
 
     public function update(Request $request, $id)
     {
@@ -752,9 +2147,9 @@ class BookingCrudController extends CrudController
             $booking->cpd = $request->cpd_actual;
         }
 
-        if ($booking->refrence_no != $request->refrence_no) {
-            $rem[] = "Reference No Changed from " . ($booking->refrence_no ?? '0') . " to " . $request->refrence_no;
-            $booking->refrence_no = $request->refrence_no;
+        if ($booking->online_bk_ref_no  != $request->refrence_no) {
+            $rem[] = "Reference No Changed from " . ($booking->online_bk_ref_no  ?? '0') . " to " . $request->refrence_no;
+            $booking->online_bk_ref_no  = $request->refrence_no;
         }
 
         if ($booking->b_source != $request->booking_source) {
@@ -1063,11 +2458,149 @@ class BookingCrudController extends CrudController
             ->with('success', 'Booking updated successfully!');
     }
 
-
-    protected function setupShowOperation()
+    public function storeFollowup(Request $request)
     {
-        $this->crud->setShowView('booking.show');
+        $validator = Validator::make($request->all(), [
+            'id'     => 'required|exists:xcelr8_booking_master,id',
+            'remark' => 'required|string|min:3',
+            'status' => 'nullable|in:0,1,2,3,4,5,6,7,8',
+            'fdoc'   => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'dept'   => 'nullable|string',
+        ]);
+
+        if ($validator->fails()) {
+            return redirect()->back()
+                ->withErrors($validator)
+                ->withInput()
+                ->with('error', 'Please fill required fields correctly.');
+        }
+
+        try {
+            $id = $request->input('id');
+            $booking = Booking::findOrFail($id);
+
+            $user = backpack_auth()->id();
+
+            // Invoice fields handling only when status = 2 (Invoiced)
+            if ($request->status == 2) {
+                $booking->inv_no           = $request->invoice_number;
+                $booking->inv_date         = $request->invoice_date;
+                $booking->dealer_inv_no    = $request->dealer_invoice_number;
+                $booking->dealer_inv_date  = $request->dealer_invoice_date;
+
+                // Determine dealer_status
+                $normalFilled = !empty($request->invoice_number) && !empty($request->invoice_date);
+                $dealerFilled = !empty($request->dealer_invoice_number) && !empty($request->dealer_invoice_date);
+
+                if ($normalFilled && $dealerFilled) {
+                    $booking->dealer_status = 2;     // Both filled
+                } elseif (!$normalFilled && $dealerFilled) {
+                    $booking->dealer_status = 1;     // Only dealer filled
+                } else {
+                    $booking->dealer_status = 0;     // Default / incomplete
+                }
+
+                // Auto-copy normal invoice → dealer if dealer fields empty
+                if ($normalFilled && empty($request->dealer_invoice_number) && empty($request->dealer_invoice_date)) {
+                    $booking->dealer_inv_no   = $request->invoice_number;
+                    $booking->dealer_inv_date = $request->invoice_date;
+
+                    Log::info('Auto-copied invoice details to dealer fields', [
+                        'booking_id'       => $id,
+                        'invoice_number'   => $request->invoice_number,
+                        'invoice_date'     => $request->invoice_date,
+                    ]);
+                }
+            }
+
+            // Status change logic
+            $newStatus = (int) $request->input('status', 0); // 0 = no change
+
+            $oldStatusName = $this->getStatusName($booking->status);
+
+            if ($newStatus !== 0) {
+                $booking->status = $newStatus;
+
+                // Special date fields
+                if ($newStatus == 3) {
+                    $booking->cancel_date = Carbon::now()->format('Y-m-d');
+                }
+                if ($newStatus == 7) {
+                    $booking->refund_rejection_date = Carbon::now()->format('Y-m-d');
+                }
+
+                $booking->save();
+            }
+
+            // $newStatusName = ($newStatus !== 0) ? $this->getStatusName($newStatus) : $oldStatusName;
+
+            // // Follow-up message
+            // $rem = ($newStatus !== 0)
+            //     ? "{$user->name} ने booking status बदलकर {$oldStatusName} से {$newStatusName} किया"
+            //     : "{$user->name} ने remark जोड़ा";
+
+            // $commid = ChatHelper::get_commid(3, $booking->id, "Booking Follow-up");
+
+            // $file = $request->hasFile('fdoc') ? $request->file('fdoc') : null;
+
+            // $followupAdded = ChatHelper::add_followup(
+            //     $commid,
+            //     $request->remark,
+            //     $rem,
+            //     $file,
+            //     1,                          // type (adjust if needed)
+            //     $request->dept ?? 'admin'
+            // );
+
+
+            return redirect()->route('booking.index') // ya jo bhi list route hai
+                ->with('success', 'Booking update aur followup successfully save ho gaya.');
+        } catch (\Exception $e) {
+            Log::error('Booking followup error', [
+                'booking_id' => $request->id ?? 'N/A',
+                'error'      => $e->getMessage(),
+                'trace'      => $e->getTraceAsString(),
+            ]);
+
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Kuch technical issue aa gaya: ' . $e->getMessage());
+        }
     }
+
+    private function getStatusName($status)
+    {
+        return match ((int) $status) {
+            1  => 'Active',
+            2  => 'Invoiced',
+            3  => 'Cancelled',
+            4  => 'In Refund Queue',
+            5  => 'Closed',
+            6  => 'On-Hold',
+            7  => 'Refund Rejected',
+            8  => 'Active (Pending)',
+            0  => 'No Change',
+            default => 'Unknown (' . $status . ')'
+        };
+    }
+
+    // protected function setupShowOperation()
+    // {
+    //     $this->crud->setShowView('booking.show');
+    // }
+
+    public function show($id)
+    {
+        $this->crud->hasAccessOrFail('show');
+
+        // Yeh line important hai – Backpack ko entry set karne deta hai
+        // taaki $this->crud->getEntry($id) sahi se kaam kare
+        $this->crud->getEntry($id);
+
+        // Ab humara centralized data loader call karte hain
+        return $this->getFullBookingData($id, 'show');
+    }
+
     public function getModels($segment_id)
     {
         $models = XpricingHelper::getModelsX($segment_id);
@@ -1105,11 +2638,13 @@ class BookingCrudController extends CrudController
         //print_r($data);
         return $data;
     }
+
     public function getAccessories($segment, $model, $variant)
     {
         $accessories = XpricingHelper::getAccessories($segment, $model, $variant);
         return response()->json($accessories);
     }
+
     public function getLocations($state_id)
     {
 
@@ -1118,6 +2653,7 @@ class BookingCrudController extends CrudController
 
         return response()->json($locations);
     }
+
     public function getLocationsByPincode($pincode)
     {
         $locations = PinCodes::where('pincode', $pincode)->get(['id', 'name']);
@@ -1128,6 +2664,7 @@ class BookingCrudController extends CrudController
             return response()->json([]);
         }
     }
+
     public function getStateByLocation($location_id)
     {
         $location = PinCodes::where('id', $location_id)->first(['id', 'parent', 'level']);
@@ -1144,5 +2681,7656 @@ class BookingCrudController extends CrudController
         return response()->json([
             'state_id' => $location ? $location->id : null
         ]);
+    }
+    // ======= ORDER VERIFICATION FUNCTION (ADD THIS) =======
+    // ================================= ORDER VERIFICATION =================================
+
+    // public function orderVerification(Request $request)
+    // {
+    //     $this->crud->hasAccessOrFail('list');
+
+    //     $this->data['crud'] = $this->crud;
+    //     $this->data['title'] = 'Order Verification';
+
+    //     // ────────────────────────────────────────────────
+    //     // Query – no manual select, full model le rahe hain
+    //     // ────────────────────────────────────────────────
+    //     $query = Booking::query();
+
+    //     // Status filter (order field)
+    //     $status_filter = $request->input('status_filter', '1'); // default Pending
+
+    //     if ($status_filter === 'all') {
+    //         $query->whereIn('order', [0, 1, 2]);
+    //     } else {
+    //         $query->where('order', $status_filter);
+    //     }
+
+    //     $query->orderBy('id', 'DESC');
+
+    //     // Pagination – same 50
+    //     $paginatedBookings = $query->paginate(50);
+
+    //     // ────────────────────────────────────────────────
+    //     // Preloads (N+1 avoid) – yeh rakho kyunki live_count/live_order ke liye zaroori
+    //     // ────────────────────────────────────────────────
+    //     $lookups = $this->getCommonLookups();
+    //     extract($lookups);
+
+    //     $user = backpack_user();
+    //     $allowedUsers = [5, 23, 123];
+
+    //     // Live counts preload
+    //     $liveCounts = [];
+    //     $countsQuery = Booking::selectRaw('segment_id, model, variant, color, COUNT(*) as cnt')
+    //         ->groupBy('segment_id', 'model', 'variant', 'color')
+    //         ->get();
+
+    //     foreach ($countsQuery as $row) {
+    //         $key = "{$row->segment_id}|{$row->model}|{$row->variant}|{$row->color}";
+    //         $liveCounts[$key] = $row->cnt;
+    //     }
+
+    //     // lorder preload
+    //     $vhIds = $paginatedBookings->pluck('vh_id')->filter()->unique();
+    //     $lorders = XVehicleMaster::whereIn('id', $vhIds)->pluck('lorder', 'id')->toArray();
+
+    //     // ────────────────────────────────────────────────
+    //     // Mapping – action logic same
+    //     // ────────────────────────────────────────────────
+    //     $gridData = $paginatedBookings->map(function ($t, $index) use (
+    //         $paginatedBookings,
+    //         $segments,
+    //         $liveCounts,
+    //         $lorders,
+    //         $user,
+    //         $allowedUsers
+    //     ) {
+    //         $row = $this->mapBookingForGrid($t);
+
+    //         // Serial number (agar column mein hai)
+    //         $row->serial_no = ($paginatedBookings->currentPage() - 1) * $paginatedBookings->perPage() + $index + 1;
+
+    //         // Action buttons – tumhara original logic (overwrite kar rahe hain)
+    //         if (in_array($user->id, $allowedUsers)) {
+    //             $action = '<div style="display:flex;gap:8px;justify-content:center;">';
+    //             if ($t->order == 1) {
+    //                 $action .= '<a href="' . route('booking.orderupdate', ['id' => $t->id, 'status' => 2]) . '"
+    //                         class="btn btn-success btn-sm">Accept</a>';
+    //                 $action .= '<a href="' . route('booking.orderupdate', ['id' => $t->id, 'status' => 0]) . '"
+    //                         class="btn btn-danger btn-sm">Reject</a>';
+    //             } elseif ($t->order == 2) {
+    //                 $action .= '<a href="' . route('booking.orderupdate', ['id' => $t->id, 'status' => 0]) . '"
+    //                         class="btn btn-danger btn-sm">Reject</a>';
+    //             } elseif ($t->order == 0) {
+    //                 $action .= '<a href="' . route('booking.orderupdate', ['id' => $t->id, 'status' => 2]) . '"
+    //                         class="btn btn-success btn-sm">Accept</a>';
+    //             }
+    //             $action .= '</div>';
+    //             $row->action = $action;
+    //         } else {
+    //             $row->action = '<div class="text-center text-muted">---</div>';
+    //         }
+
+    //         return $row;
+    //     })->values();
+
+    //     // ────────────────────────────────────────────────
+    //     // Columns – sirf reusable call
+    //     // ────────────────────────────────────────────────
+    //     $columns = $this->getAgGridColumns();
+
+    //     // Agar getAgGridColumns() mein action column nahi hai to yahan add karo
+    //     // warna comment rakh do (duplicate se bachne ke liye)
+
+    //     $columns[] = [
+    //         'field'         => 'action',
+    //         'headerName'    => 'Action',
+    //         'width'         => 150,
+    //         'pinned'        => 'right',
+    //         'sortable'      => false,
+    //         'filter'        => false,
+    //         'cellRenderer'  => 'htmlRenderer',
+    //         'cellClass'     => 'text-center p-0',
+    //     ];
+
+
+    //     // ────────────────────────────────────────────────
+    //     // Final grid config
+    //     // ────────────────────────────────────────────────
+    //     $this->data['gridConfig'] = [
+    //         'columns' => $columns,
+    //         'data'    => $gridData,
+    //     ];
+
+    //     return view('booking.order-verification', $this->data);
+    // }
+    public function orderVerification(Request $request)
+    {
+        $this->crud->hasAccessOrFail('list');
+
+        $this->data['crud'] = $this->crud;
+        $this->data['title'] = 'Order Verification';
+
+        $query = $this->getBaseQuery();
+
+        $status_filter = $request->input('status_filter', '1');
+
+        if ($status_filter === 'all') {
+            $query->whereIn('bookings.order', [0, 1, 2]);
+        } else {
+            $query->where('bookings.order', $status_filter);
+        }
+
+        $query->orderBy('bookings.id', 'DESC');
+
+        $paginatedBookings = $query->paginate(50);
+
+        $lookups = $this->getCommonLookups();
+        extract($lookups);
+
+        $user = backpack_user();
+        $allowedUsers = [5, 23, 123];
+
+        $gridData = $paginatedBookings->map(function ($t, $index) use (
+            $paginatedBookings,
+            $segments,
+            $user,
+            $allowedUsers
+        ) {
+            $row = $this->mapBookingForGrid($t);
+
+            $row->serial_no = ($paginatedBookings->currentPage() - 1) * $paginatedBookings->perPage() + $index + 1;
+
+            if (in_array($user->id, $allowedUsers)) {
+                $action = '<div style="display:flex;gap:8px;justify-content:center;">';
+                if ($t->order == 1) {
+                    $action .= '<a href="' . route('booking.orderupdate', ['id' => $t->id, 'status' => 2]) . '"
+                            class="btn btn-success btn-sm">Accept</a>';
+                    $action .= '<a href="' . route('booking.orderupdate', ['id' => $t->id, 'status' => 0]) . '"
+                            class="btn btn-danger btn-sm">Reject</a>';
+                } elseif ($t->order == 2) {
+                    $action .= '<a href="' . route('booking.orderupdate', ['id' => $t->id, 'status' => 0]) . '"
+                            class="btn btn-danger btn-sm">Reject</a>';
+                } elseif ($t->order == 0) {
+                    $action .= '<a href="' . route('booking.orderupdate', ['id' => $t->id, 'status' => 2]) . '"
+                            class="btn btn-success btn-sm">Accept</a>';
+                }
+                $action .= '</div>';
+                $row->action = $action;
+            } else {
+                $row->action = '<div class="text-center text-muted">---</div>';
+            }
+
+            return $row;
+        })->values();
+
+        $columns = $this->getAgGridColumns();
+
+        $hasAction = collect($columns)->contains('field', 'action');
+        if (!$hasAction) {
+            $columns[] = [
+                'field'         => 'action',
+                'headerName'    => 'Action',
+                'width'         => 180,
+                'pinned'        => 'right',
+                'sortable'      => false,
+                'filter'        => false,
+                'cellRenderer'  => 'htmlRenderer',
+                'cellClass'     => 'text-center p-0',
+                'autoHeight'    => true,
+            ];
+        }
+
+        $gridConfig = [
+            'columns' => $columns,
+            'data'    => $gridData,
+        ];
+
+        $this->data['gridConfig'] = $gridConfig;
+
+        return view('booking.order-verification', $this->data);
+    }
+
+    private function getCommonLookups()
+    {
+        return [
+            'segments' => XpricingHelper::getSegments(),
+            'saleConsultants' => collect(XpricingHelper::selectfsc()),
+            'financiers' => XlFinancier::select('id', 'name')->get()->keyBy('id')->toArray(),
+        ];
+    }
+    public function orderUpdate(Request $request, $id, $status)
+    {
+        // Authorization: sirf specific users hi is route ko access kar sakte hain
+        if (! in_array(backpack_user()->id, [5, 23, 123])) {
+            abort(403, 'Unauthorized');
+        }
+
+        // Valid status values (tumhare buttons ke hisaab se: 0,2,4,5)
+        $allowedStatuses = [0, 2, 4, 5];
+        if (! in_array($status, $allowedStatuses)) {
+            return redirect()->back()->with('error', 'Invalid status value');
+        }
+
+        // Booking find karo
+        $booking = Booking::find($id);
+        if (!$booking) {
+            return redirect()->back()->with('error', 'Booking not found.');
+        }
+
+        // Remark message status ke hisaab se set karo
+        $rem = '';
+        switch ($status) {
+            case 0:
+                $rem = "Verifier rejected the order request";
+                break;
+            case 2:
+                $rem = "Verifier accepted the order request";
+                break;
+            case 4:
+                $rem = "Verifier accepted the DMS request";
+                break;
+            case 5:
+                $rem = "Verifier rejected the DMS request";
+                break;
+            default:
+                $rem = "Order status updated by verifier";
+                break;
+        }
+
+        // ChatHelper se followup add karo
+        try {
+            $commid = ChatHelper::get_commid(3, $booking->id, "Booking Created");
+            ChatHelper::add_followup($commid, "Booking Edited", $rem, null, 1);
+        } catch (\Exception $e) {
+            // Agar ChatHelper fail ho to silently log karo, user ko disturb mat karo
+            \Log::error('ChatHelper followup failed in orderUpdate', [
+                'booking_id' => $id,
+                'status'     => $status,
+                'error'      => $e->getMessage()
+            ]);
+        }
+
+        // Booking update
+        $booking->order = (int) $status;
+        $booking->save();
+
+        // Success message
+        $messages = [
+            0 => 'Order request rejected successfully',
+            2 => 'Order accepted successfully',
+            4 => 'DMS request accepted successfully',
+            5 => 'DMS request rejected successfully',
+        ];
+
+        $message = $messages[$status] ?? 'Booking status updated successfully';
+
+        return redirect()->back()->with('success', $message);
+    }
+
+    public function orderedVerification(Request $request)
+    {
+        $this->crud->hasAccessOrFail('list');
+
+        $this->data['crud'] = $this->crud;
+        $this->data['title'] = 'Ordered Verification';
+
+        $query = $this->getBaseQuery();
+
+        $query->where('bookings.order', 2);
+
+        if ($request->has('customer_type') && $request->customer_type !== 'all') {
+            $filterType = $request->customer_type === 'actual' ? 'active' : $request->customer_type;
+            $query->where('bookings.b_type', $filterType);
+        }
+
+        $query->orderBy('bookings.id', 'DESC');
+
+        $paginatedBookings = $query->paginate(50);
+
+        $lookups = $this->getCommonLookups();
+        extract($lookups);
+
+        $user = backpack_user();
+        $allowedUsers = [5, 23, 123];
+
+        $gridData = $paginatedBookings->map(function ($t, $index) use (
+            $paginatedBookings,
+            $user,
+            $allowedUsers
+        ) {
+            $row = $this->mapBookingForGrid($t);
+
+            $row->serial_no = ($paginatedBookings->currentPage() - 1) * $paginatedBookings->perPage() + $index + 1;
+
+            if (in_array($user->id, $allowedUsers)) {
+                $row->action = '<div class="table-actions text-center">
+                <a href="' . route('dms-edit', $t->id) . '" title="Edit DMS / SO">
+                    <i class="la la-edit f-16 text-success"></i>
+                </a>
+            </div>';
+            } else {
+                $row->action = '<div class="table-actions text-center text-muted">---</div>';
+            }
+
+            return $row;
+        })->values();
+
+        $columns = $this->getAgGridColumns();
+
+        $hasAction = collect($columns)->contains('field', 'action');
+        if (!$hasAction) {
+            $columns[] = [
+                'field'         => 'action',
+                'headerName'    => 'Action',
+                'width'         => 120,
+                'pinned'        => 'right',
+                'sortable'      => false,
+                'filter'        => false,
+                'cellRenderer'  => 'htmlRenderer',
+                'cellClass'     => 'text-center p-0',
+                'autoHeight'    => true,
+            ];
+        }
+
+        $gridConfig = [
+            'columns' => $columns,
+            'data'    => $gridData,
+        ];
+
+        $this->data['gridConfig'] = $gridConfig;
+
+        return view('booking.ordered-verification', $this->data);
+    }
+
+    // public function dmsedit($id)
+    // {
+    //     $booking = Booking::findOrFail($id);
+    //     // yahan DMS edit form view return karo ya logic likho
+    //     return view('booking.dmsedit', compact('booking'));
+    // }
+    public function dmsedit($id)
+    {
+        $booking = Booking::findOrFail($id);
+
+        $branchName    = X_Branch::find($booking->branch_id)->name ?? 'N/A';
+        $locationName  = !empty($booking->location_id) && $booking->location_id > 0
+            ? (X_Location::find($booking->location_id)->name ?? 'N/A')
+            : ($booking->location_other ?? 'N/A');
+        $collectorName = $booking->col_by
+            ? (User::find($booking->col_by)->name ?? 'N/A')
+            : 'N/A';
+
+        $data = [
+            'branch'         => $branchName,
+            'location'       => $locationName,
+            'collector_name' => $collectorName,
+            'accessories'    => $booking->accessories ?? 'N/A',
+            'total_amount'   => $booking->total_amount ?? 0,
+        ];
+
+
+        return view('booking.dms-edit', compact('booking', 'data'));
+    }
+
+    public function dmsupdate(Request $request, $id)
+    {
+        Log::info('Starting dmsupdate', [
+            'booking_id'    => $id,
+            'user_id'       => backpack_auth()->id(),
+            'pending_flag'  => $request->has('pending_flag'),
+            'ip'            => $request->ip(),
+        ]);
+
+        $booking = Booking::findOrFail($id);
+
+        // Uppercase important fields (backend safety + consistency)
+        $request->merge([
+            'dms_no'  => strtoupper(trim($request->input('dms_no', ''))),
+            'dms_otf' => strtoupper(trim($request->input('dms_otf', ''))),
+            'dms_so'  => strtoupper(trim($request->input('dms_so', ''))),
+        ]);
+
+        // Validation Rules (same strict format as frontend)
+        $rules = [
+            'dms_no'          => ['required', 'regex:/^B-\d{8}$/'],
+            'dms_otf'         => ['required', 'regex:/^OTF\d{2}[A-Z]\d{6}$/'],
+            'otf_date'        => ['required', 'date_format:d-m-Y'],          // ← changed to numeric
+            'hidden_otf_date' => ['required', 'date:Y-m-d'],                 // stricter
+        ];
+
+        if ($booking->order == 2) {
+            $rules['dms_so'] = ['required', 'regex:/^\d{10}$/'];
+        }
+
+        $messages = [
+            'dms_no.required'    => 'Sales Force Booking Number is required.',
+            'dms_no.regex'       => 'Please enter a valid Sales Force Booking number (e.g., B-12345678).',
+            'dms_otf.required'   => 'DMS OTF Number is required.',
+            'dms_otf.regex'      => 'Please enter a valid OTF number (e.g., OTF00A123456).',
+            'dms_so.required'    => 'DMS SO Number is required.',
+            'dms_so.regex'       => 'Please enter a valid SO number (exactly 10 digits).',
+        ];
+
+        $validator = Validator::make($request->all(), $rules, $messages);
+
+        if ($validator->fails()) {
+            Log::warning('Validation failed in dmsupdate', [
+                'booking_id' => $id,
+                'errors'     => $validator->errors()->toArray(),
+            ]);
+
+            return redirect()->back()
+                ->withErrors($validator)
+                ->withInput();
+        }
+
+        // Prepare changes for remarks
+        $remarks = [];
+
+        if ($booking->dms_no !== $request->dms_no) {
+            $remarks[] = "DMS Booking No updated to {$request->dms_no}";
+        }
+        if ($booking->dms_otf !== $request->dms_otf) {
+            $remarks[] = "DMS OTF updated to {$request->dms_otf}";
+        }
+        if ($booking->otf_date !== $request->hidden_otf_date) {
+            $remarks[] = "DMS OTF Date updated to {$request->hidden_otf_date}";
+        }
+        if ($booking->order == 2 && $booking->dms_so !== $request->dms_so) {
+            $remarks[] = "DMS SO Number updated to {$request->dms_so}";
+        }
+
+        // Update using mass assignment (safer & cleaner)
+        $updateData = [
+            'dms_no'   => $request->dms_no,
+            'dms_otf'  => $request->dms_otf,
+            'otf_date' => $request->hidden_otf_date,   // already in Y-m-d
+        ];
+
+        if ($booking->order == 2) {
+            $updateData['dms_so'] = $request->dms_so;
+        }
+
+        $booking->update($updateData);
+
+        // ── Pending remark logic ────────────────────────────────────────────────
+        $existingPending = $booking->pending_remark
+            ? explode(' , ', trim($booking->pending_remark))
+            : [];
+
+        $dmsPendingItems = [
+            'Sales force number needs to be updated',
+            'DMS OTF needs to be updated',
+            'DMS OTF Date needs to be updated',
+            'DMS SO number needs to be updated',
+        ];
+
+        // Keep only non-DMS pending items
+        $remainingPending = array_diff($existingPending, $dmsPendingItems);
+
+        // Check if any DMS field is still empty (unlikely after validation, but safety)
+        $newPending = [];
+        if (empty($booking->dms_no))   $newPending[] = 'Sales force number needs to be updated';
+        if (empty($booking->dms_otf))  $newPending[] = 'DMS OTF needs to be updated';
+        if (empty($booking->otf_date)) $newPending[] = 'DMS OTF Date needs to be updated';
+        if ($booking->order == 2 && empty($booking->dms_so)) {
+            $newPending[] = 'DMS SO number needs to be updated';
+        }
+
+        $finalPending = array_merge($remainingPending, $newPending);
+        $finalPending = array_unique(array_filter($finalPending));
+
+        $booking->pending_remark = $finalPending ? implode(' , ', $finalPending) : null;
+        $booking->pending = count($finalPending);
+
+        // ── Status & Order updates ──────────────────────────────────────────────
+        if ($booking->pending === 0) {
+            $booking->status = 1;
+            Log::info('Booking status set to 1 (no pending fields left)', ['booking_id' => $id]);
+        }
+
+        if ($booking->order == 2 && !empty($booking->dms_so)) {
+            $booking->order = 3;
+            Log::info('Order upgraded to 3 after DMS SO was provided', ['booking_id' => $id]);
+        }
+
+        $booking->saveQuietly(); // avoid events if not needed
+
+        // ── Log remarks to chat/followup if changes were made ───────────────────
+        if (!empty($remarks)) {
+            $rem_string = implode(', ', $remarks);
+            Log::info('DMS changes recorded', ['booking_id' => $id, 'remarks' => $rem_string]);
+
+            try {
+                $commid = ChatHelper::get_commid(3, $booking->id, "Booking Created");
+                ChatHelper::add_followup(
+                    $commid,
+                    $rem_string,
+                    "Pending DMS Data Updated",
+                    null,
+                    1
+                );
+            } catch (\Exception $e) {
+                Log::error('ChatHelper followup failed', [
+                    'booking_id' => $id,
+                    'error'      => $e->getMessage(),
+                ]);
+            }
+        }
+
+        // ── Redirect based on final order ───────────────────────────────────────
+        $message = 'DMS details updated successfully!';
+
+        if ($booking->order == 3) {
+            return redirect()->route('booking.ordered-verification')
+                ->with('success', $message);
+        }
+
+        return redirect()->route('dms')
+            ->with('success', $message);
+    }
+
+
+    // ======= PENDING KYC FUNCTION ======
+
+    public function pendingKyc(Request $request)
+    {
+        $this->crud->hasAccessOrFail('list');
+
+        $this->data['crud'] = $this->crud;
+        $this->data['title'] = 'Pending KYC';
+
+        $query = $this->getBaseQuery();
+
+        $query->whereIn('bookings.status', [1, 8]);
+
+        $query->where(function ($q) {
+            $q->whereNull('bookings.pan_no')
+                ->orWhere('bookings.pan_no', '')
+                ->orWhereNull('bookings.adhar_no')
+                ->orWhere('bookings.adhar_no', '');
+        });
+
+        $query->orderBy('bookings.id', 'desc');
+
+        $paginatedBookings = $query->paginate(50);
+
+        $gridData = $paginatedBookings->map(function ($t, $index) use ($paginatedBookings) {
+            $row = $this->mapBookingForGrid($t);
+
+            $row->serial_no = ($paginatedBookings->currentPage() - 1) * $paginatedBookings->perPage() + $index + 1;
+
+            $row->action = '<a href="' . route('booking.kyc.edit', $t->id) . '"
+                        class="btn-sm btn-warning" title="Complete KYC">
+                            <i class="la la-edit la-lg"></i>
+                       </a>';
+
+            return $row;
+        })->values();
+
+        $columns = $this->getAgGridColumns();
+
+        $hasAction = collect($columns)->contains('field', 'action');
+        if (!$hasAction) {
+            $columns[] = [
+                'field'         => 'action',
+                'headerName'    => 'Action',
+                'width'         => 160,
+                'pinned'        => 'right',
+                'sortable'      => false,
+                'filter'        => false,
+                'cellRenderer'  => 'htmlRenderer',
+                'cellClass'     => 'text-center p-0',
+                'autoHeight'    => true,
+            ];
+        }
+
+        $gridConfig = [
+            'columns' => $columns,
+            'data'    => $gridData,
+        ];
+
+        $this->data['gridConfig'] = $gridConfig;
+
+        if ($gridData->isEmpty()) {
+            session()->flash('info', 'No pending KYC bookings found.');
+        }
+
+        return view('booking.pending-kyc', $this->data);
+    }
+
+    // Show the KYC edit form
+    // KYC Edit Page
+    public function kycEdit($id)
+    {
+        $this->crud->hasAccessOrFail('update');
+
+        $booking = Booking::findOrFail($id);
+
+        // Extra data अगर blade में इस्तेमाल हो रही है
+        $data = [
+            'branches'       => X_Branch::pluck('name', 'id')->toArray(),
+            'locations'      => X_Location::pluck('name', 'id')->toArray(),
+            'segments'       => XpricingHelper::getSegments() ?? [],
+            'saleconsultants' => collect(XpricingHelper::selectfsc()),
+        ];
+
+        return view('booking.kyc-edit', compact('booking', 'data'));
+    }
+
+
+
+
+    // KYC Update (Form Submit)
+    public function kycUpdate(Request $request, $id)
+    {
+        $booking = Booking::findOrFail($id);
+
+        $validated = $request->validate([
+            'pan_no'   => [
+                'required',
+                'string',
+                'size:10',
+                'regex:/^[A-Z]{5}[0-9]{4}[A-Z]$/',
+            ],
+            'adhar_no' => [
+                'required',
+                'string',
+                'regex:/^[2-9]{1}[0-9]{3}[ -]?[0-9]{4}[ -]?[0-9]{4}$/',
+            ],
+            'gst_no'   => [
+                'nullable',
+                'string',
+                'size:15',
+                'regex:/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/',
+            ],
+        ]);
+
+        // GST logic
+        $gstValue = $request->has('gst_not_required') && $request->gst_not_required
+            ? '0'
+            : ($validated['gst_no'] ?? $booking->gstn ?? '0');
+
+        $booking->update([
+            'pan_no'   => strtoupper($validated['pan_no']),
+            'adhar_no' => preg_replace('/[ -]/', '', $validated['adhar_no']),
+            'gstn'     => $gstValue,
+            // अगर KYC status track करते हो तो यहाँ अपडेट कर सकते हो
+            // 'kyc_status' => 'completed',
+        ]);
+
+        // Success मैसेज के साथ Bookings index पर redirect
+        return redirect()
+            ->route('booking.pending-kyc')  // अगर आपका route name अलग है तो बदल लें
+            ->with('success', "Booking #{$booking->id} की KYC successfully complete हो गई है!");
+    }
+
+    public function pendingDms(Request $request)
+    {
+        $this->crud->hasAccessOrFail('list');
+
+        $this->data['crud'] = $this->crud;
+        $this->data['title'] = 'Pending DMS';
+
+        $query = $this->getBaseQuery();
+
+        $query->whereIn('bookings.status', [1, 8]);
+        $query->where('bookings.b_type', 'Active');
+
+        $query->where(function ($q) {
+            $q->whereNull('bookings.dms_no')->orWhere('bookings.dms_no', '')
+                ->orWhereNull('bookings.dms_otf')->orWhere('bookings.dms_otf', '')
+                ->orWhereNull('bookings.otf_date')->orWhere('bookings.otf_date', '');
+        });
+
+        $status_filter = $request->input('status_filter', '');
+        if ($status_filter === '' || $status_filter === 'pending') {
+            $query->where(function ($q) {
+                $q->whereNull('bookings.order')->orWhere('bookings.order', 0);
+            });
+        } elseif ($status_filter == '4') {
+            $query->where('bookings.order', 4);
+        } elseif ($status_filter == '5') {
+            $query->where('bookings.order', 5);
+        }
+
+        $query->orderBy('bookings.id', 'desc');
+
+        $paginatedBookings = $query->paginate(50);
+
+        $lookups = $this->getCommonLookups();
+        extract($lookups);
+
+        $user = backpack_user();
+        $allowedUsers = [5, 23, 123];
+
+        $gridData = $paginatedBookings->map(function ($t, $index) use (
+            $paginatedBookings,
+            $user,
+            $allowedUsers
+        ) {
+            $row = $this->mapBookingForGrid($t);
+
+            $row->serial_no = ($paginatedBookings->currentPage() - 1) * $paginatedBookings->perPage() + $index + 1;
+
+            $actionHtml = '<div class="d-flex gap-2 justify-content-center flex-wrap">';
+            $currentOrder = $t->order ?? 0;
+            if ($currentOrder == 0) {
+                $actionHtml .= '<a href="' . route('booking.orderupdate', ['id' => $t->id, 'status' => 4]) . '"
+                            class="btn btn-sm btn-success">Accept</a>';
+                $actionHtml .= '<a href="' . route('booking.orderupdate', ['id' => $t->id, 'status' => 5]) . '"
+                            class="btn btn-sm btn-danger">Reject</a>';
+            } elseif ($currentOrder == 4) {
+                $actionHtml .= '<a href="' . route('booking.orderupdate', ['id' => $t->id, 'status' => 5]) . '"
+                            class="btn btn-sm btn-danger">Reject</a>';
+                $actionHtml .= '<a href="' . route('dms-edit', $t->id) . '"
+                            class="btn btn-sm btn-warning">Edit DMS</a>';
+            } elseif ($currentOrder == 5) {
+                $actionHtml .= '<a href="' . route('booking.orderupdate', ['id' => $t->id, 'status' => 4]) . '"
+                            class="btn btn-sm btn-success">Accept</a>';
+            }
+            $actionHtml .= '</div>';
+
+            $row->action = $actionHtml;
+
+            return $row;
+        })->values();
+
+        $columns = $this->getAgGridColumns();
+
+        $hasAction = collect($columns)->contains('field', 'action');
+        if (!$hasAction) {
+            $columns[] = [
+                'field'         => 'action',
+                'headerName'    => 'Action',
+                'width'         => 180,
+                'pinned'        => 'right',
+                'sortable'      => false,
+                'filter'        => false,
+                'cellRenderer'  => 'htmlRenderer',
+                'cellClass'     => 'text-center p-0',
+                'autoHeight'    => true,
+            ];
+        }
+
+        $gridConfig = [
+            'columns' => $columns,
+            'data'    => $gridData,
+        ];
+
+        $this->data['gridConfig'] = $gridConfig;
+
+        if ($gridData->isEmpty()) {
+            session()->flash('info', 'No pending DMS bookings found.');
+        }
+
+        return view('booking.pending-dms', $this->data);
+    }
+
+
+    // public function Exchange(Request $request)
+    // {
+    //     $this->crud->hasAccessOrFail('list');
+
+    //     $this->data['crud'] = $this->crud;
+    //     $this->data['title'] = 'Int in Exchange';
+
+    //     // ────────────────────────────────────────────────
+    //     // Query – full model (no manual select)
+    //     // ────────────────────────────────────────────────
+    //     $query = Booking::query()
+    //         ->where('buyer_type', 'Exchange Buy')
+    //         ->orderBy('id', 'DESC');
+
+    //     $paginatedBookings = $query->paginate(50);
+
+    //     // ────────────────────────────────────────────────
+    //     // Preloads
+    //     // ────────────────────────────────────────────────
+    //     $lookups = $this->getCommonLookups();
+    //     extract($lookups);
+
+    //     $saleConsultants = $lookups['saleConsultants'] ?? [];
+
+    //     // ────────────────────────────────────────────────
+    //     // Mapping
+    //     // ────────────────────────────────────────────────
+    //     $gridData = $paginatedBookings->map(function ($t, $index) use (
+    //         $paginatedBookings,
+    //         $segments,
+    //         $saleConsultants
+    //     ) {
+    //         $row = $this->mapBookingForGrid($t);
+
+    //         $row->serial_no = ($paginatedBookings->currentPage() - 1) * $paginatedBookings->perPage() + $index + 1;
+
+    //         // Exchange-specific calculated fields
+    //         $price_gap = ($t->expected_price ?? 0) - ($t->offered_price ?? 0);
+    //         $row->price_gap = number_format($price_gap);
+
+    //         $row->exist_oem1 = CommonHelper::enumValueById($t->brand_make_1 ?? null);
+
+    //         // Location logic (same as before)
+    //         $location = $t->location_id && $t->location_id > 0
+    //             ? (X_Location::find($t->location_id)->name ?? 'N/A')
+    //             : ($t->location_other ?? 'N/A');
+
+    //         $row->location = $location;
+
+    //         // Action button
+    //         $row->action = '<div class="text-center">
+    //             <a href="' . route('exchange-edit', $t->id) . '#exch"
+    //             class="btn btn-sm btn-success"
+    //             title="Edit Exchange">
+    //                 <i class="la la-edit"></i>
+    //             </a>
+    //         </div>';
+
+    //         return $row;
+    //     })->values();
+
+    //     // ────────────────────────────────────────────────
+    //     // Columns – sirf reusable wala call
+    //     // ────────────────────────────────────────────────
+    //     $columns = $this->getAgGridColumns();  // ← yeh line rakho (custom function hata do)
+
+    //     // Action column add agar missing hai (duplicate avoid)
+    //     $hasAction = collect($columns)->contains('field', 'action');
+    //     if (!$hasAction) {
+    //         $columns[] = [
+    //             'field'         => 'action',
+    //             'headerName'    => 'Actions',
+    //             'width'         => 150,
+    //             'pinned'        => 'right',
+    //             'sortable'      => false,
+    //             'filter'        => false,
+    //             'cellRenderer'  => 'htmlRenderer',
+    //             'cellClass'     => 'text-center p-0',
+    //             'autoHeight'    => true,
+    //         ];
+    //     }
+
+    //     // Optional: Exchange-specific formatting (prices right-align)
+    //     foreach ($columns as &$col) {
+    //         if (in_array($col['field'], ['expected_price', 'offered_price', 'exchange_bonus', 'price_gap'])) {
+    //             $col['type'] = 'rightAligned';
+    //             $col['cellClass'] = 'text-right';
+    //         }
+    //     }
+    //     unset($col);
+
+    //     $gridConfig = [
+    //         'columns' => $columns,
+    //         'data'    => $gridData,
+    //     ];
+
+    //     $this->data['gridConfig'] = $gridConfig;
+
+    //     if ($gridData->isEmpty()) {
+    //         session()->flash('info', 'No exchange interested bookings found.');
+    //     }
+
+    //     return view('booking.exchange', $this->data);
+    // }
+    public function Exchange(Request $request)
+    {
+        $this->crud->hasAccessOrFail('list');
+
+        $this->data['crud'] = $this->crud;
+        $this->data['title'] = 'Int in Exchange';
+
+        // ────────────────────────────────────────────────
+        // Query – getBaseQuery() se start karo
+        // ────────────────────────────────────────────────
+        $query = $this->getBaseQuery();
+
+        // Exchange-specific filter
+        $query->where('bookings.buyer_type', 'Exchange Buy');
+
+        $query->orderBy('bookings.id', 'DESC');
+
+        $paginatedBookings = $query->paginate(50);
+
+        // ────────────────────────────────────────────────
+        // Preloads
+        // ────────────────────────────────────────────────
+        $lookups = $this->getCommonLookups();
+        extract($lookups);
+
+        $saleConsultants = $lookups['saleConsultants'] ?? [];
+
+        // ────────────────────────────────────────────────
+        // Mapping
+        // ────────────────────────────────────────────────
+        $gridData = $paginatedBookings->map(function ($t, $index) use (
+            $paginatedBookings,
+            $segments,
+            $saleConsultants
+        ) {
+            $row = $this->mapBookingForGrid($t);
+
+            $row->serial_no = ($paginatedBookings->currentPage() - 1) * $paginatedBookings->perPage() + $index + 1;
+
+            // Exchange-specific calculated fields
+            $price_gap = ($t->expected_price ?? 0) - ($t->offered_price ?? 0);
+            $row->price_gap = number_format($price_gap);
+
+            $row->exist_oem1 = CommonHelper::enumValueById($t->brand_make_1 ?? null);
+
+            // Location logic
+            $location = $t->location_id && $t->location_id > 0
+                ? (X_Location::find($t->location_id)->name ?? 'N/A')
+                : ($t->location_other ?? 'N/A');
+
+            $row->location = $location;
+
+            // Action button
+            $row->action = '<div class="text-center">
+            <a href="' . route('exchange-edit', $t->id) . '#exch"
+               class="btn btn-sm btn-success"
+               title="Edit Exchange">
+                <i class="la la-edit"></i>
+            </a>
+        </div>';
+
+            return $row;
+        })->values();
+
+        // ────────────────────────────────────────────────
+        // Columns – sirf reusable wala call
+        // ────────────────────────────────────────────────
+        $columns = $this->getAgGridColumns();
+
+        // Action column add agar missing hai (duplicate avoid)
+        $hasAction = collect($columns)->contains('field', 'action');
+        if (!$hasAction) {
+            $columns[] = [
+                'field'         => 'action',
+                'headerName'    => 'Actions',
+                'width'         => 150,
+                'pinned'        => 'right',
+                'sortable'      => false,
+                'filter'        => false,
+                'cellRenderer'  => 'htmlRenderer',
+                'cellClass'     => 'text-center p-0',
+                'autoHeight'    => true,
+            ];
+        }
+
+        // Optional: Exchange-specific formatting (prices right-align)
+        foreach ($columns as &$col) {
+            if (in_array($col['field'], ['expected_price', 'offered_price', 'exchange_bonus', 'price_gap'])) {
+                $col['type'] = 'rightAligned';
+                $col['cellClass'] = 'text-right';
+            }
+        }
+        unset($col);
+
+        $gridConfig = [
+            'columns' => $columns,
+            'data'    => $gridData,
+        ];
+
+        $this->data['gridConfig'] = $gridConfig;
+
+        if ($gridData->isEmpty()) {
+            session()->flash('info', 'No exchange interested bookings found.');
+        }
+
+        return view('booking.exchange', $this->data);
+    }
+
+    // public function Scrappage(Request $request)
+    // {
+    //     $this->crud->hasAccessOrFail('list');
+
+    //     // Query logic inspired from your ExchangeController's exchangeList()
+    //     // Filter for "Int in Scrappage" (assuming buyer_type or similar field)
+    //     $query = Booking::query()
+    //         ->select([
+    //             'id',
+    //             'booking_date',
+    //             'branch_id',
+    //             'location_id',
+    //             'location_other',
+    //             'segment_id',
+    //             'model',
+    //             'variant',
+    //             'color',
+    //             'name',
+    //             'exist_oem1',
+    //             'vh1_detail',
+    //             'registration_no',
+    //             'make_year',
+    //             'odo_reading',
+    //             'expected_price',
+    //             'offered_price',
+    //             'exchange_bonus',
+    //             // Add more if needed
+    //         ])
+    //         ->where('buyer_type', 'Scrappage') // Change this condition to match your actual field/logic
+    //         ->orderBy('id', 'DESC');
+
+    //     $bookings = $query->get();
+
+    //     // Lookups (similar to what you had)
+    //     $segments = XpricingHelper::getSegments(); // assuming this helper exists
+
+    //     $gridData = [];
+    //     foreach ($bookings as $t) {
+    //         $price_gap = ($t->expected_price ?? 0) - (($t->offered_price ?? 0) + ($t->exchange_bonus ?? 0));
+
+    //         $gridData[] = [
+    //             'booking_no'            => $t->id,
+    //             'booking_date'          => $t->booking_date
+    //                 ? \Carbon\Carbon::parse($t->booking_date)->format('d-M-Y')
+    //                 : 'N/A',
+    //             'branch'                => X_Branch::find($t->branch_id)->name ?? 'N/A',
+    //             'location'              => $t->location_id
+    //                 ? X_Location::find($t->location_id)->name
+    //                 : ($t->location_other ?? 'N/A'),
+    //             'segment'               => $segments[$t->segment_id]['name'] ?? 'N/A',
+    //             'model'                 => $t->model ?? 'N/A',
+    //             'variant'               => $t->variant ?? 'N/A',
+    //             'color'                 => $t->color ?? 'N/A',
+    //             'customer'              => $t->name ?? 'N/A',
+    //             'exist_oem1'            => $t->exist_oem1 ?? 'N/A',
+    //             'vh1_detail'            => $t->vh1_detail ?? 'N/A',
+    //             'registration_no'       => $t->registration_no ?? 'N/A',
+    //             'make_year'             => $t->make_year ?? 'N/A',
+    //             'odo_reading'           => $t->odo_reading ?? 'N/A',
+    //             'expected_price'        => '₹ ' . number_format($t->expected_price ?? 0),
+    //             'offered_price'         => '₹ ' . number_format($t->offered_price ?? 0),
+    //             'exchange_bonus'        => '₹ ' . number_format($t->exchange_bonus ?? 0),
+    //             'price_gap'             => '₹ ' . number_format($price_gap),
+    //             'action'                => '
+    //             <div class="text-center">
+    //                 <a href="' . route('exchange-edit', $t->id) . '#exch"
+    //                    class="btn btn-info btn-sm"
+    //                    title="Edit Scrappage">
+    //                     <i class="fas fa-edit"></i> Edit
+    //                 </a>
+    //             </div>'
+    //         ];
+    //     }
+
+    //     $gridConfig = [
+    //         'columns' => $this->getAgGridColumnsForIntInScrappage(),
+    //         'data'    => $gridData
+    //     ];
+
+    //     return view('booking.scrappage', compact('gridConfig'));
+    // }
+
+    /**
+     * Columns for Int in Scrappage page (same as Int in Exchange + ag-grid style)
+     */
+    // private function getAgGridColumnsForIntInScrappage()
+    // {
+    //     return [
+    //         ['headerName' => 'Booking No',       'field' => 'booking_no',       'width' => 120, 'pinned' => 'left'],
+    //         ['headerName' => 'Booking Date',     'field' => 'booking_date',     'width' => 140],
+    //         ['headerName' => 'Branch',           'field' => 'branch',           'width' => 140],
+    //         ['headerName' => 'Location',         'field' => 'location',         'width' => 150],
+    //         ['headerName' => 'Segment',          'field' => 'segment',          'width' => 120],
+    //         ['headerName' => 'Model',            'field' => 'model',            'width' => 130],
+    //         ['headerName' => 'Variant',          'field' => 'variant',          'width' => 170],
+    //         ['headerName' => 'Color',            'field' => 'color',            'width' => 110],
+    //         ['headerName' => 'Customer',         'field' => 'customer',         'width' => 180],
+    //         ['headerName' => 'Exist OEM1',       'field' => 'exist_oem1',       'width' => 140],
+    //         ['headerName' => 'VH1 Detail',       'field' => 'vh1_detail',       'width' => 180],
+    //         ['headerName' => 'Registration No',  'field' => 'registration_no',  'width' => 140],
+    //         ['headerName' => 'Mfg Year',         'field' => 'make_year',        'width' => 110],
+    //         ['headerName' => 'Odo Reading',      'field' => 'odo_reading',      'width' => 130],
+    //         ['headerName' => 'Expected Price',   'field' => 'expected_price',   'width' => 140, 'type' => 'rightAligned'],
+    //         ['headerName' => 'Offered Price',    'field' => 'offered_price',    'width' => 140, 'type' => 'rightAligned'],
+    //         ['headerName' => 'Exchange Bonus',   'field' => 'exchange_bonus',   'width' => 140, 'type' => 'rightAligned'],
+    //         ['headerName' => 'Price Gap',        'field' => 'price_gap',        'width' => 140, 'type' => 'rightAligned'],
+    //         ['headerName' => 'Actions',          'field' => 'action',           'width' => 150, 'pinned' => 'right', 'sortable' => false, 'filter' => false],
+    //     ];
+    // }
+
+    // public function Scrappage(Request $request)
+    // {
+    //     $this->crud->hasAccessOrFail('list');
+
+    //     $this->data['crud'] = $this->crud;
+    //     $this->data['title'] = 'Int in Scrappage';
+
+    //     // ────────────────────────────────────────────────
+    //     // Query – full model (no manual select)
+    //     // ────────────────────────────────────────────────
+    //     $query = Booking::query()
+    //         ->where('buyer_type', 'Scrappage')  // yeh condition adjust kar lena agar field alag hai
+    //         ->orderBy('id', 'DESC');
+
+    //     $paginatedBookings = $query->paginate(50);
+
+    //     // ────────────────────────────────────────────────
+    //     // Preloads
+    //     // ────────────────────────────────────────────────
+    //     $lookups = $this->getCommonLookups();
+    //     extract($lookups);
+
+    //     $saleConsultants = $lookups['saleConsultants'] ?? [];
+
+    //     // ────────────────────────────────────────────────
+    //     // Mapping – action button tumhara original
+    //     // ────────────────────────────────────────────────
+    //     $gridData = $paginatedBookings->map(function ($t, $index) use (
+    //         $paginatedBookings,
+    //         $segments,
+    //         $saleConsultants
+    //     ) {
+    //         $row = $this->mapBookingForGrid($t);
+
+    //         $row->serial_no = ($paginatedBookings->currentPage() - 1) * $paginatedBookings->perPage() + $index + 1;
+
+    //         // Scrappage-specific calculated fields
+    //         $price_gap = ($t->expected_price ?? 0) - (($t->offered_price ?? 0) + ($t->exchange_bonus ?? 0));
+    //         $row->price_gap = number_format($price_gap);
+
+    //         $row->expected_price = '₹ ' . number_format($t->expected_price ?? 0);
+    //         $row->offered_price   = '₹ ' . number_format($t->offered_price ?? 0);
+    //         $row->exchange_bonus  = '₹ ' . number_format($t->exchange_bonus ?? 0);
+
+    //         // Location logic (same as Exchange)
+    //         $location = $t->location_id && $t->location_id > 0
+    //             ? (X_Location::find($t->location_id)->name ?? 'N/A')
+    //             : ($t->location_other ?? 'N/A');
+
+    //         $row->location = $location;
+
+    //         // Action button (tumhara original)
+    //         $row->action = '
+    //         <div class="text-center">
+    //             <a href="' . route('exchange-edit', $t->id) . '#exch"
+    //                class="btn btn-info btn-sm"
+    //                title="Edit Scrappage">
+    //                 <i class="fas fa-edit"></i> Edit
+    //             </a>
+    //         </div>';
+
+    //         return $row;
+    //     })->values();
+
+    //     // ────────────────────────────────────────────────
+    //     // Columns – sirf reusable wala call
+    //     // ────────────────────────────────────────────────
+    //     $columns = $this->getAgGridColumns();  // ← yeh line rakho (custom function hata do)
+
+    //     // Action column add agar missing hai (duplicate avoid)
+    //     $hasAction = collect($columns)->contains('field', 'action');
+    //     if (!$hasAction) {
+    //         $columns[] = [
+    //             'field'         => 'action',
+    //             'headerName'    => 'Actions',
+    //             'width'         => 150,
+    //             'pinned'        => 'right',
+    //             'sortable'      => false,
+    //             'filter'        => false,
+    //             'cellRenderer'  => 'htmlRenderer',
+    //             'cellClass'     => 'text-center p-0',
+    //             'autoHeight'    => true,
+    //         ];
+    //     }
+
+    //     // Optional: price columns ko right-align karna (Scrappage specific)
+    //     foreach ($columns as &$col) {
+    //         if (in_array($col['field'], ['expected_price', 'offered_price', 'exchange_bonus', 'price_gap'])) {
+    //             $col['type'] = 'rightAligned';
+    //             $col['cellClass'] = 'text-right';
+    //         }
+    //     }
+    //     unset($col);
+
+    //     $gridConfig = [
+    //         'columns' => $columns,
+    //         'data'    => $gridData,
+    //     ];
+
+    //     $this->data['gridConfig'] = $gridConfig;
+
+    //     if ($gridData->isEmpty()) {
+    //         session()->flash('info', 'No scrappage interested bookings found.');
+    //     }
+
+    //     return view('booking.scrappage', $this->data);
+    // }
+    public function Scrappage(Request $request)
+    {
+        $this->crud->hasAccessOrFail('list');
+
+        $this->data['crud'] = $this->crud;
+        $this->data['title'] = 'Int in Scrappage';
+
+        // ────────────────────────────────────────────────
+        // Query – getBaseQuery() se start karo
+        // ────────────────────────────────────────────────
+        $query = $this->getBaseQuery();
+
+        // Scrappage-specific filter
+        $query->where('bookings.buyer_type', 'Scrappage');
+
+        $query->orderBy('bookings.id', 'DESC');
+
+        $paginatedBookings = $query->paginate(50);
+
+        // ────────────────────────────────────────────────
+        // Preloads
+        // ────────────────────────────────────────────────
+        $lookups = $this->getCommonLookups();
+        extract($lookups);
+
+        $saleConsultants = $lookups['saleConsultants'] ?? [];
+
+        // ────────────────────────────────────────────────
+        // Mapping – action button tumhara original
+        // ────────────────────────────────────────────────
+        $gridData = $paginatedBookings->map(function ($t, $index) use (
+            $paginatedBookings,
+            $segments,
+            $saleConsultants
+        ) {
+            $row = $this->mapBookingForGrid($t);
+
+            $row->serial_no = ($paginatedBookings->currentPage() - 1) * $paginatedBookings->perPage() + $index + 1;
+
+            // Scrappage-specific calculated fields
+            $price_gap = ($t->expected_price ?? 0) - (($t->offered_price ?? 0) + ($t->exchange_bonus ?? 0));
+            $row->price_gap = number_format($price_gap);
+
+            $row->expected_price = '₹ ' . number_format($t->expected_price ?? 0);
+            $row->offered_price   = '₹ ' . number_format($t->offered_price ?? 0);
+            $row->exchange_bonus  = '₹ ' . number_format($t->exchange_bonus ?? 0);
+
+            // Location logic (same as Exchange)
+            $location = $t->location_id && $t->location_id > 0
+                ? (X_Location::find($t->location_id)->name ?? 'N/A')
+                : ($t->location_other ?? 'N/A');
+
+            $row->location = $location;
+
+            // Action button (tumhara original)
+            $row->action = '
+            <div class="text-center">
+                <a href="' . route('exchange-edit', $t->id) . '#exch"
+                   class="btn btn-info btn-sm"
+                   title="Edit Scrappage">
+                    <i class="fas fa-edit"></i> Edit
+                </a>
+            </div>';
+
+            return $row;
+        })->values();
+
+        // ────────────────────────────────────────────────
+        // Columns – sirf reusable wala call
+        // ────────────────────────────────────────────────
+        $columns = $this->getAgGridColumns();
+
+        // Action column add agar missing hai (duplicate avoid)
+        $hasAction = collect($columns)->contains('field', 'action');
+        if (!$hasAction) {
+            $columns[] = [
+                'field'         => 'action',
+                'headerName'    => 'Actions',
+                'width'         => 150,
+                'pinned'        => 'right',
+                'sortable'      => false,
+                'filter'        => false,
+                'cellRenderer'  => 'htmlRenderer',
+                'cellClass'     => 'text-center p-0',
+                'autoHeight'    => true,
+            ];
+        }
+
+        // Optional: price columns ko right-align karna (Scrappage specific)
+        foreach ($columns as &$col) {
+            if (in_array($col['field'], ['expected_price', 'offered_price', 'exchange_bonus', 'price_gap'])) {
+                $col['type'] = 'rightAligned';
+                $col['cellClass'] = 'text-right';
+            }
+        }
+        unset($col);
+
+        $gridConfig = [
+            'columns' => $columns,
+            'data'    => $gridData,
+        ];
+
+        $this->data['gridConfig'] = $gridConfig;
+
+        if ($gridData->isEmpty()) {
+            session()->flash('info', 'No scrappage interested bookings found.');
+        }
+
+        return view('booking.scrappage', $this->data);
+    }
+
+
+    public function exchnotInterested(Request $request)
+    {
+        $this->crud->hasAccessOrFail('list');
+
+        $this->data['crud'] = $this->crud;
+        $this->data['title'] = 'Not Interested';
+
+        // ────────────────────────────────────────────────
+        // Query – getBaseQuery() se start karo
+        // ────────────────────────────────────────────────
+        $query = $this->getBaseQuery();
+
+        // Not Interested filter (tumhara original logic)
+        $query->whereIn('bookings.buyer_type', ['First time Buyer', 'Additional Buy']);
+
+        $query->orderBy('bookings.id', 'DESC');
+
+        $paginatedBookings = $query->paginate(50);
+
+        // ────────────────────────────────────────────────
+        // Preloads
+        // ────────────────────────────────────────────────
+        $lookups = $this->getCommonLookups();
+        extract($lookups);
+
+        $saleConsultants = $lookups['saleConsultants'] ?? [];
+
+        // ────────────────────────────────────────────────
+        // Mapping – action button tumhara original
+        // ────────────────────────────────────────────────
+        $gridData = $paginatedBookings->map(function ($t, $index) use (
+            $paginatedBookings,
+            $segments,
+            $saleConsultants
+        ) {
+            $row = $this->mapBookingForGrid($t);
+
+            $row->serial_no = ($paginatedBookings->currentPage() - 1) * $paginatedBookings->perPage() + $index + 1;
+
+            // Not Interested specific calculated fields
+            $price_gap = ($t->used_vehicle_exp_price ?? 0) - ($t->used_vehicle_off_price ?? 0);
+            $row->price_gap = number_format($price_gap);
+
+            $row->used_vehicle_exp_price = '₹ ' . number_format($t->used_vehicle_exp_price ?? 0);
+            $row->used_vehicle_off_price = '₹ ' . number_format($t->used_vehicle_off_price ?? 0);
+            $row->new_vehicle_exc_bonus  = '₹ ' . number_format($t->new_vehicle_exc_bonus ?? 0);
+
+            // Location logic (same as Exchange)
+            $location = $t->location_id && $t->location_id > 0
+                ? (X_Location::find($t->location_id)->name ?? 'N/A')
+                : ($t->location_other ?? 'N/A');
+
+            $row->location = $location;
+
+            $row->brand_make_1 = CommonHelper::enumValueById($t->brand_make_1 ?? null);
+
+            // Action button (tumhara original)
+            $row->action = '
+                <div class="text-center">
+                    <a href="' . route('exchange-edit', $t->id) . '#exch"
+                    class="btn-info btn-sm"
+                    title="Edit">
+                        <i class="la la-edit la-lg"></i>
+                    </a>
+                </div>';
+
+            return $row;
+        })->values();
+
+        // ────────────────────────────────────────────────
+        // Columns – sirf reusable wala call
+        // ────────────────────────────────────────────────
+        $columns = $this->getAgGridColumns();
+
+        // Action column add agar missing hai (duplicate avoid)
+        $hasAction = collect($columns)->contains('field', 'action');
+        if (!$hasAction) {
+            $columns[] = [
+                'field'         => 'action',
+                'headerName'    => 'Actions',
+                'width'         => 150,
+                'pinned'        => 'right',
+                'sortable'      => false,
+                'filter'        => false,
+                'cellRenderer'  => 'htmlRenderer',
+                'cellClass'     => 'text-center p-0',
+                'autoHeight'    => true,
+            ];
+        }
+
+        // Optional: price columns ko right-align karna (Not Interested specific)
+        foreach ($columns as &$col) {
+            if (in_array($col['field'], ['used_vehicle_exp_price', 'used_vehicle_off_price', 'new_vehicle_exc_bonus', 'price_gap'])) {
+                $col['type'] = 'rightAligned';
+                $col['cellClass'] = 'text-right';
+            }
+        }
+        unset($col);
+
+        $gridConfig = [
+            'columns' => $columns,
+            'data'    => $gridData,
+        ];
+
+        $this->data['gridConfig'] = $gridConfig;
+
+        if ($gridData->isEmpty()) {
+            session()->flash('info', 'No not-interested bookings found.');
+        }
+
+        return view('booking.exchange-not-interested', $this->data);
+    }
+
+    // public function intInFinance(Request $request)
+    // {
+    //     $this->crud->hasAccessOrFail('list');
+
+    //     // Query logic taken from your FinanceController's list() method
+    //     $query = DB::table('xcelr8_booking_master as bookings')
+    //         ->select(
+    //             'bookings.id as booking_no',
+    //             'bookings.created_at',
+    //             'bookings.booking_date',
+    //             'bookings.b_type',
+    //             'bookings.branch_id',
+    //             'bookings.location_id',
+    //             'bookings.location_other',
+    //             'bookings.segment_id',
+    //             'bookings.model',
+    //             'bookings.variant',
+    //             'bookings.color',
+    //             'bookings.consultant as fsc',
+    //             'bookings.fin_mode',
+    //             'bookings.financier',
+    //             'bookings.loan_status',
+    //             'xf.status as finance_status'
+    //         )
+    //         ->leftJoin('xcelr8_finance as xf', 'bookings.id', '=', 'xf.bid')
+    //         // Exclude bookings with status = 2
+    //         ->where('bookings.status', '!=', '2')
+    //         // Finance condition
+    //         ->where(function ($q) {
+    //             $q->whereNull('xf.fin_mode')
+    //                 ->orWhere('xf.fin_mode', 'In-house');
+    //         })
+    //         ->orderBy('bookings.id', 'DESC');
+
+    //     // Optional status filter (same as order-verification dropdown)
+    //     if ($request->filled('status_filter') && $request->status_filter !== 'all') {
+    //         if ($request->status_filter === 'pending') {
+    //             $query->where('xf.status', 1);
+    //         } elseif ($request->status_filter === 'complete') {
+    //             $query->where('xf.status', 2);
+    //         }
+    //     } else {
+    //         // Default: Pending
+    //         $query->where('xf.status', 1);
+    //     }
+
+    //     $bookings = $query->get();
+
+    //     // Lookups (same as your original)
+    //     $segments = XpricingHelper::getSegments();
+    //     $saleConsultants = collect(XpricingHelper::selectfsc())->keyBy('id');
+    //     $financiers = XlFinancier::select('id', 'name')->get()->keyBy('id');
+    //     $branches = X_Branch::select('id', 'name')->get()->keyBy('id');
+    //     $locations = X_Location::select('id', 'name')->get()->keyBy('id');
+
+    //     $gridData = [];
+    //     foreach ($bookings as $t) {
+    //         $gridData[] = [
+    //             'booking_no'     => $t->booking_no,
+    //             'created_at'     => \Carbon\Carbon::parse($t->created_at)->format('d-M-Y'),
+    //             'booking_date'   => \Carbon\Carbon::parse($t->booking_date)->format('d-M-Y'),
+    //             'b_type'         => $t->b_type ?? 'N/A',
+    //             'branch'         => $branches->get($t->branch_id)->name ?? 'N/A',
+    //             'location'       => $t->location_id > 0
+    //                 ? ($locations->get($t->location_id)->name ?? 'N/A')
+    //                 : ($t->location_other ?? 'N/A'),
+    //             'segment'        => isset($segments[$t->segment_id])
+    //                 ? (is_array($segments[$t->segment_id])
+    //                     ? ($segments[$t->segment_id]['name'] ?? 'N/A')
+    //                     : $segments[$t->segment_id])
+    //                 : 'N/A',
+    //             'model'          => $t->model ?? 'N/A',
+    //             'variant'        => $t->variant ?? 'N/A',
+    //             'color'          => $t->color ?? 'N/A',
+    //             'fsc'            => $saleConsultants->get($t->fsc)->name ?? 'N/A',
+    //             'fin_mode'       => $t->fin_mode ?? 'N/A',
+    //             'financier'      => $financiers->get($t->financier)->name ?? 'N/A',
+    //             'loan_status'    => $t->loan_status ?? 'N/A',
+    //             'finance_status' => $t->finance_status == 1 ? 'Pending' : ($t->finance_status == 2 ? 'Complete' : 'N/A'),
+    //             'action'         => '
+    //              <div class="text-center">
+    //                              <a href="' . route('finance-edit', $t->booking_no) . '"
+    //                                 class="btn btn-info btn-sm"
+    //                                 title="Edit Finance">
+    //                                  <i class="fas fa-edit"></i> Edit
+    //                              </a>
+    //                          </div>
+    //             '
+    //         ];
+    //     }
+
+
+    //     $gridConfig = [
+    //         'columns' => $this->getAgGridColumnsForIntInFinance(),
+    //         'data'    => $gridData
+    //     ];
+
+    //     return view('booking.int-in-finance', compact('gridConfig'));
+    // }
+
+    // /**
+    //  * Columns for Int in Finance page (matches your FinanceController list)
+    //  */
+    // private function getAgGridColumnsForIntInFinance()
+    // {
+    //     return [
+    //         ['headerName' => 'Booking No',     'field' => 'booking_no',     'width' => 120, 'pinned' => 'left'],
+    //         ['headerName' => 'Created At',     'field' => 'created_at',     'width' => 140],
+    //         ['headerName' => 'Booking Date',   'field' => 'booking_date',   'width' => 140],
+    //         ['headerName' => 'B Type',         'field' => 'b_type',         'width' => 130],
+    //         ['headerName' => 'Branch',         'field' => 'branch',         'width' => 140],
+    //         ['headerName' => 'Location',       'field' => 'location',       'width' => 150],
+    //         ['headerName' => 'Segment',        'field' => 'segment',        'width' => 120],
+    //         ['headerName' => 'Model',          'field' => 'model',          'width' => 130],
+    //         ['headerName' => 'Variant',        'field' => 'variant',        'width' => 170],
+    //         ['headerName' => 'Color',          'field' => 'color',          'width' => 110],
+    //         ['headerName' => 'FSC',            'field' => 'fsc',            'width' => 150],
+    //         ['headerName' => 'Finance Mode',   'field' => 'fin_mode',       'width' => 140],
+    //         ['headerName' => 'Financier',      'field' => 'financier',      'width' => 160],
+    //         ['headerName' => 'Loan Status',    'field' => 'loan_status',    'width' => 130],
+    //         ['headerName' => 'Finance Status', 'field' => 'finance_status', 'width' => 140],
+    //         ['headerName' => 'Actions',        'field' => 'action',         'width' => 150, 'pinned' => 'right', 'sortable' => false, 'filter' => false],
+    //     ];
+    // }
+
+    public function intInFinance(Request $request)
+    {
+        $this->crud->hasAccessOrFail('list');
+
+        $this->data['crud'] = $this->crud;
+        $this->data['title'] = 'Int in Finance';
+
+        // ────────────────────────────────────────────────
+        // Base query (tumhara existing reusable method)
+        // ────────────────────────────────────────────────
+        $query = $this->getBaseQuery();
+
+        // Left join finance table
+        $query->leftJoin('xcelr8_finance as xf', 'bookings.id', '=', 'xf.bid');
+
+        // Common conditions
+        $query->where('bookings.status', '!=', 2)
+            ->where(function ($q) {
+                $q->whereNull('xf.fin_mode')
+                    ->orWhere('xf.fin_mode', 'In-house');
+            })
+            ->orderBy('bookings.id', 'DESC');
+
+        // Status filter (tumhara original logic)
+        $status_filter = $request->input('status_filter', 'pending');
+        if ($status_filter === 'pending') {
+            $query->where('xf.status', 1);
+        } elseif ($status_filter === 'complete') {
+            $query->where('xf.status', 2);
+        } else {
+            // Default: Pending
+            $query->where('xf.status', 1);
+        }
+
+        // Pagination
+        $paginatedBookings = $query->paginate(50);
+
+        // ────────────────────────────────────────────────
+        // Preloads (same as before)
+        // ────────────────────────────────────────────────
+        $lookups = $this->getCommonLookups();
+        extract($lookups);
+
+        $saleConsultants = $lookups['saleConsultants'] ?? [];
+        $financiers = $lookups['financiers'] ?? [];
+
+        // ────────────────────────────────────────────────
+        // Mapping – action button tumhara original
+        // ────────────────────────────────────────────────
+        $gridData = $paginatedBookings->map(function ($t, $index) use (
+            $paginatedBookings,
+            $segments,
+            $saleConsultants,
+            $financiers
+        ) {
+            $row = $this->mapBookingForGrid($t);
+
+            $row->serial_no = ($paginatedBookings->currentPage() - 1) * $paginatedBookings->perPage() + $index + 1;
+
+            // Finance-specific fields
+            $row->fsc = optional($saleConsultants->firstWhere('id', $t->consultant))->name ?? 'N/A';
+            $row->finance_status = $t->finance_status == 1 ? 'Pending' : ($t->finance_status == 2 ? 'Complete' : 'N/A');
+
+            // Location logic
+            $location = $t->location_id && $t->location_id > 0
+                ? (X_Location::find($t->location_id)->name ?? 'N/A')
+                : ($t->location_other ?? 'N/A');
+
+            $row->location = $location;
+
+            // Action button
+            $row->action = '
+                <div class="text-center">
+                    <a href="' . route('finance-edit', $t->id) . '"
+                    class="btn-info btn-sm"
+                    title="Edit Finance">
+                        <i class="la la-edit la-lg"></i>
+                    </a>
+                </div>';
+
+            return $row;
+        })->values();
+
+        // ────────────────────────────────────────────────
+        // Columns – sirf reusable wala call
+        // ────────────────────────────────────────────────
+        $columns = $this->getAgGridColumns();
+
+        // Action column add agar missing hai (duplicate avoid)
+        $hasAction = collect($columns)->contains('field', 'action');
+        if (!$hasAction) {
+            $columns[] = [
+                'field'         => 'action',
+                'headerName'    => 'Actions',
+                'width'         => 150,
+                'pinned'        => 'right',
+                'sortable'      => false,
+                'filter'        => false,
+                'cellRenderer'  => 'htmlRenderer',
+                'cellClass'     => 'text-center p-0',
+                'autoHeight'    => true,
+            ];
+        }
+
+        $gridConfig = [
+            'columns' => $columns,
+            'data'    => $gridData,
+        ];
+
+        $this->data['gridConfig'] = $gridConfig;
+
+        if ($gridData->isEmpty()) {
+            session()->flash('info', 'No finance interested bookings found.');
+        }
+
+        return view('booking.int-in-finance', $this->data);
+    }
+
+    public function finnotInterested(Request $request)
+    {
+        $this->crud->hasAccessOrFail('list');
+
+        $this->data['crud'] = $this->crud;
+        $this->data['title'] = 'Not Interested';
+
+        // ────────────────────────────────────────────────
+        // Query – getBaseQuery() se start karo
+        // ────────────────────────────────────────────────
+        $query = $this->getBaseQuery();
+
+        // Not Interested in Finance filter (tumhara original logic)
+        $query->whereIn('bookings.fin_mode', ['Customer Self', 'Cash', 'Yet To Decide']);
+
+        $query->orderBy('bookings.id', 'DESC');
+
+        $paginatedBookings = $query->paginate(50);
+
+        // ────────────────────────────────────────────────
+        // Preloads
+        // ────────────────────────────────────────────────
+        $lookups = $this->getCommonLookups();
+        extract($lookups);
+
+        $saleConsultants = $lookups['saleConsultants'] ?? [];
+
+        // ────────────────────────────────────────────────
+        // Mapping – action button tumhara original
+        // ────────────────────────────────────────────────
+        $gridData = $paginatedBookings->map(function ($t, $index) use (
+            $paginatedBookings,
+            $segments,
+            $saleConsultants
+        ) {
+            $row = $this->mapBookingForGrid($t);
+
+            $row->serial_no = ($paginatedBookings->currentPage() - 1) * $paginatedBookings->perPage() + $index + 1;
+
+            // Not Interested specific calculated fields
+            $price_gap = ($t->used_vehicle_exp_price ?? 0) - ($t->used_vehicle_off_price ?? 0);
+            $row->price_gap = number_format($price_gap);
+
+            $row->used_vehicle_exp_price = '₹ ' . number_format($t->used_vehicle_exp_price ?? 0);
+            $row->used_vehicle_off_price = '₹ ' . number_format($t->used_vehicle_off_price ?? 0);
+            $row->new_vehicle_exc_bonus  = '₹ ' . number_format($t->new_vehicle_exc_bonus ?? 0);
+
+            // Location logic (same as Exchange)
+            $location = $t->location_id && $t->location_id > 0
+                ? (X_Location::find($t->location_id)->name ?? 'N/A')
+                : ($t->location_other ?? 'N/A');
+
+            $row->location = $location;
+
+            $row->brand_make_1 = CommonHelper::enumValueById($t->brand_make_1 ?? null);
+
+            // Action button (tumhara original)
+            $row->action = '
+            <div class="text-center">
+                <a href="' . route('finance-edit', $t->id) . '"
+                   class="btn-info btn-sm"
+                   title="Not Interested In Finance">
+                    <i class="la la-edit la-lg"></i>
+                </a>
+            </div>';
+
+            return $row;
+        })->values();
+
+        // ────────────────────────────────────────────────
+        // Columns – sirf reusable wala call
+        // ────────────────────────────────────────────────
+        $columns = $this->getAgGridColumns();
+
+        // Action column add agar missing hai (duplicate avoid)
+        $hasAction = collect($columns)->contains('field', 'action');
+        if (!$hasAction) {
+            $columns[] = [
+                'field'         => 'action',
+                'headerName'    => 'Actions',
+                'width'         => 150,
+                'pinned'        => 'right',
+                'sortable'      => false,
+                'filter'        => false,
+                'cellRenderer'  => 'htmlRenderer',
+                'cellClass'     => 'text-center p-0',
+                'autoHeight'    => true,
+            ];
+        }
+
+        // Optional: price columns ko right-align karna (Not Interested specific)
+        foreach ($columns as &$col) {
+            if (in_array($col['field'], ['used_vehicle_exp_price', 'used_vehicle_off_price', 'new_vehicle_exc_bonus', 'price_gap'])) {
+                $col['type'] = 'rightAligned';
+                $col['cellClass'] = 'text-right';
+            }
+        }
+        unset($col);
+
+        $gridConfig = [
+            'columns' => $columns,
+            'data'    => $gridData,
+        ];
+
+        $this->data['gridConfig'] = $gridConfig;
+
+        if ($gridData->isEmpty()) {
+            session()->flash('info', 'No not-interested finance bookings found.');
+        }
+
+        return view('booking.finance-not-interested', $this->data);
+    }
+
+    public function finRetail(Request $request)
+    {
+        $this->crud->hasAccessOrFail('list');
+
+        $this->data['crud'] = $this->crud;
+        $this->data['title'] = 'Finance Retail';
+
+        // ────────────────────────────────────────────────
+        // Query – getBaseQuery() se start karo
+        // ────────────────────────────────────────────────
+        $query = $this->getBaseQuery();
+
+        // Retail filter (tumhara original logic)
+        $query->where('bookings.status', 2);
+        $query->where('bookings.retail', 0);  // Retail = 0
+
+        $query->orderBy('bookings.id', 'DESC');
+
+        $paginatedBookings = $query->paginate(50);
+
+        // ────────────────────────────────────────────────
+        // Preloads
+        // ────────────────────────────────────────────────
+        $lookups = $this->getCommonLookups();
+        extract($lookups);
+
+        $saleConsultants = $lookups['saleConsultants'] ?? [];
+        $financiers = $lookups['financiers'] ?? [];
+
+        // ────────────────────────────────────────────────
+        // Mapping – action button tumhara original
+        // ────────────────────────────────────────────────
+        $gridData = $paginatedBookings->map(function ($t, $index) use (
+            $paginatedBookings,
+            $segments,
+            $saleConsultants,
+            $financiers
+        ) {
+            $row = $this->mapBookingForGrid($t);
+
+            $row->serial_no = ($paginatedBookings->currentPage() - 1) * $paginatedBookings->perPage() + $index + 1;
+
+            // Finance-specific fields
+            $row->fsc = optional($saleConsultants->firstWhere('id', $t->consultant))->name ?? 'N/A';
+            // $row->financier = optional($financiers->firstWhere('id', $t->financier))->name ?? 'N/A';
+
+            // Location logic
+            $location = $t->location_id && $t->location_id > 0
+                ? (X_Location::find($t->location_id)->name ?? 'N/A')
+                : ($t->location_other ?? 'N/A');
+
+            $row->location = $location;
+
+            // Action button (tumhara original)
+            $row->action = '
+            <div class="text-center">
+                <a href="' . route('finance.retailedit', $t->id) . '"
+                   class="btn-info btn-sm"
+                   title="Edit Finance">
+                    <i class="la la-edit la-lg"></i>
+                </a>
+            </div>';
+
+            return $row;
+        })->values();
+
+        // ────────────────────────────────────────────────
+        // Columns – sirf reusable wala call
+        // ────────────────────────────────────────────────
+        $columns = $this->getAgGridColumns();
+
+        // Action column add agar missing hai (duplicate avoid)
+        $hasAction = collect($columns)->contains('field', 'action');
+        if (!$hasAction) {
+            $columns[] = [
+                'field'         => 'action',
+                'headerName'    => 'Actions',
+                'width'         => 150,
+                'pinned'        => 'right',
+                'sortable'      => false,
+                'filter'        => false,
+                'cellRenderer'  => 'htmlRenderer',
+                'cellClass'     => 'text-center p-0',
+                'autoHeight'    => true,
+            ];
+        }
+
+        $gridConfig = [
+            'columns' => $columns,
+            'data'    => $gridData,
+        ];
+
+        $this->data['gridConfig'] = $gridConfig;
+
+        if ($gridData->isEmpty()) {
+            session()->flash('info', 'No retail finance bookings found.');
+        }
+
+        return view('booking.finance-retail', $this->data);
+    }
+
+    /**
+     * Columns for Finance Retail page (matches your original DataTables columns)
+     */
+    // private function getAgGridColumnsForFinanceRetail()
+    // {
+    //     return [
+    //         ['headerName' => 'Booking No',     'field' => 'booking_no',     'width' => 120, 'pinned' => 'left'],
+    //         ['headerName' => 'Created At',     'field' => 'created_at',     'width' => 140],
+    //         ['headerName' => 'Booking Date',   'field' => 'booking_date',   'width' => 140],
+    //         ['headerName' => 'B Type',         'field' => 'b_type',         'width' => 130],
+    //         ['headerName' => 'Branch',         'field' => 'branch',         'width' => 140],
+    //         ['headerName' => 'Location',       'field' => 'location',       'width' => 150],
+    //         ['headerName' => 'Segment',        'field' => 'segment',        'width' => 120],
+    //         ['headerName' => 'Model',          'field' => 'model',          'width' => 130],
+    //         ['headerName' => 'Variant',        'field' => 'variant',        'width' => 170],
+    //         ['headerName' => 'Color',          'field' => 'color',          'width' => 110],
+    //         ['headerName' => 'FSC',            'field' => 'fsc',            'width' => 150],
+    //         ['headerName' => 'Finance Mode',   'field' => 'fin_mode',       'width' => 140],
+    //         ['headerName' => 'Financier',      'field' => 'financier',      'width' => 160],
+    //         ['headerName' => 'Loan Status',    'field' => 'loan_status',    'width' => 130],
+    //         ['headerName' => 'Actions',        'field' => 'action',         'width' => 150, 'pinned' => 'right', 'sortable' => false, 'filter' => false],
+    //     ];
+    // }
+
+    // public function finRetailed(Request $request)
+    // {
+    //     $this->crud->hasAccessOrFail('list');
+
+    //     $query = DB::table('xcelr8_booking_master as bookings')
+    //         ->select(
+    //             'bookings.id as booking_no',
+    //             'bookings.created_at',
+    //             'bookings.booking_date',
+    //             'bookings.b_type',
+    //             'bookings.branch_id',
+    //             'bookings.location_id',
+    //             'bookings.location_other',
+    //             'bookings.segment_id',
+    //             'bookings.model',
+    //             'bookings.variant',
+    //             'bookings.color',
+    //             'bookings.consultant as fsc',
+    //             'bookings.fin_mode',
+    //             'bookings.financier',
+    //             'bookings.loan_status'
+    //         )
+    //         ->where('bookings.status', 2)
+    //         ->where('bookings.retail', 1)  // Retail = 1
+    //         ->orderBy('bookings.id', 'DESC');
+
+    //     $bookings = $query->get();
+
+    //     $segments = XpricingHelper::getSegments();
+    //     $saleConsultants = collect(XpricingHelper::selectfsc())->keyBy('id');
+    //     $financiers = XlFinancier::select('id', 'name')->get()->keyBy('id');
+    //     $branches = X_Branch::select('id', 'name')->get()->keyBy('id');
+    //     $locations = X_Location::select('id', 'name')->get()->keyBy('id');
+
+    //     $gridData = [];
+    //     foreach ($bookings as $t) {
+    //         $gridData[] = [
+    //             'booking_no'     => $t->booking_no,
+    //             'created_at'     => \Carbon\Carbon::parse($t->created_at)->format('d-M-Y'),
+    //             'booking_date'   => \Carbon\Carbon::parse($t->booking_date)->format('d-M-Y'),
+    //             'b_type'         => $t->b_type ?? 'N/A',
+    //             'branch'         => $branches->get($t->branch_id)->name ?? 'N/A',
+    //             'location'       => $t->location_id > 0
+    //                 ? ($locations->get($t->location_id)->name ?? 'N/A')
+    //                 : ($t->location_other ?? 'N/A'),
+    //             'segment'        => $segments[$t->segment_id]['name'] ?? 'N/A',
+    //             'model'          => $t->model ?? 'N/A',
+    //             'variant'        => $t->variant ?? 'N/A',
+    //             'color'          => $t->color ?? 'N/A',
+    //             'fsc'            => $saleConsultants->get($t->fsc)->name ?? 'N/A',
+    //             'fin_mode'       => $t->fin_mode ?? 'N/A',
+    //             'financier'      => $financiers->get($t->financier)->name ?? 'N/A',
+    //             'loan_status'    => $t->loan_status ?? 'N/A',
+    //             'action'         => '<div class="text-center">
+    //                                 <a href="' . route('finance.view', $t->booking_no) . '"
+    //                                    class="btn btn-info btn-sm"
+    //                                    title="View Finance">
+    //                                     <i class="fas fa-eye"></i> View
+    //                                 </a>
+    //                               </div>'
+    //         ];
+    //     }
+
+    //     $gridConfig = [
+    //         'columns' => $this->getAgGridColumnsForFinanceRetailed(),
+    //         'data'    => $gridData
+    //     ];
+
+    //     return view('booking.finance-retailed', compact('gridConfig'));
+    // }
+
+    // /**
+    //  * Columns for Finance Retailed page (same as Retail)
+    //  */
+    // private function getAgGridColumnsForFinanceRetailed()
+    // {
+    //     return [
+    //         ['headerName' => 'Booking No',     'field' => 'booking_no',     'width' => 120, 'pinned' => 'left'],
+    //         ['headerName' => 'Created At',     'field' => 'created_at',     'width' => 140],
+    //         ['headerName' => 'Booking Date',   'field' => 'booking_date',   'width' => 140],
+    //         ['headerName' => 'B Type',         'field' => 'b_type',         'width' => 130],
+    //         ['headerName' => 'Branch',         'field' => 'branch',         'width' => 140],
+    //         ['headerName' => 'Location',       'field' => 'location',       'width' => 150],
+    //         ['headerName' => 'Segment',        'field' => 'segment',        'width' => 120],
+    //         ['headerName' => 'Model',          'field' => 'model',          'width' => 130],
+    //         ['headerName' => 'Variant',        'field' => 'variant',        'width' => 170],
+    //         ['headerName' => 'Color',          'field' => 'color',          'width' => 110],
+    //         ['headerName' => 'FSC',            'field' => 'fsc',            'width' => 150],
+    //         ['headerName' => 'Finance Mode',   'field' => 'fin_mode',       'width' => 140],
+    //         ['headerName' => 'Financier',      'field' => 'financier',      'width' => 160],
+    //         ['headerName' => 'Loan Status',    'field' => 'loan_status',    'width' => 130],
+    //         ['headerName' => 'Actions',        'field' => 'action',         'width' => 150, 'pinned' => 'right', 'sortable' => false, 'filter' => false],
+    //     ];
+    // }
+    public function finRetailed(Request $request)
+    {
+        $this->crud->hasAccessOrFail('list');
+
+        $this->data['crud'] = $this->crud;
+        $this->data['title'] = 'Finance Retail';
+
+        // ────────────────────────────────────────────────
+        // Query – getBaseQuery() se start karo
+        // ────────────────────────────────────────────────
+        $query = $this->getBaseQuery();
+
+        // Retail filter
+        $query->where('bookings.status', 2);
+        $query->where('bookings.retail', 1);
+
+        $query->orderBy('bookings.id', 'DESC');
+
+        $paginatedBookings = $query->paginate(50);
+
+        // ────────────────────────────────────────────────
+        // Preloads
+        // ────────────────────────────────────────────────
+        $lookups = $this->getCommonLookups();
+        extract($lookups);
+
+        $saleConsultants = $lookups['saleConsultants'] ?? [];
+        $financiers = $lookups['financiers'] ?? [];
+
+        // ────────────────────────────────────────────────
+        // Mapping – action button tumhara original
+        // ────────────────────────────────────────────────
+        $gridData = $paginatedBookings->map(function ($t, $index) use (
+            $paginatedBookings,
+            $segments,
+            $saleConsultants,
+            $financiers
+        ) {
+            $row = $this->mapBookingForGrid($t);
+
+            $row->serial_no = ($paginatedBookings->currentPage() - 1) * $paginatedBookings->perPage() + $index + 1;
+
+            // Finance-specific fields
+            $row->fsc = optional($saleConsultants->firstWhere('id', $t->consultant))->name ?? 'N/A';
+            $row->financier = optional($financiers->firstWhere('id', $t->financier))->name ?? 'N/A';
+
+            // Location logic
+            $location = $t->location_id && $t->location_id > 0
+                ? (X_Location::find($t->location_id)->name ?? 'N/A')
+                : ($t->location_other ?? 'N/A');
+
+            $row->location = $location;
+
+            // Action button (tumhara original)
+            $row->action = '
+            <div class="text-center">
+                <a href="' . route('finance.view', $t->id) . '"
+                   class="btn btn-info btn-sm"
+                   title="View Finance">
+                    <i class="fas fa-eye"></i> View
+                </a>
+            </div>';
+
+            return $row;
+        })->values();
+
+        // ────────────────────────────────────────────────
+        // Columns – sirf reusable wala call
+        // ────────────────────────────────────────────────
+        $columns = $this->getAgGridColumns();
+
+        // Action column add agar missing hai (duplicate avoid)
+        $hasAction = collect($columns)->contains('field', 'action');
+        if (!$hasAction) {
+            $columns[] = [
+                'field'         => 'action',
+                'headerName'    => 'Actions',
+                'width'         => 150,
+                'pinned'        => 'right',
+                'sortable'      => false,
+                'filter'        => false,
+                'cellRenderer'  => 'htmlRenderer',
+                'cellClass'     => 'text-center p-0',
+                'autoHeight'    => true,
+            ];
+        }
+
+        $gridConfig = [
+            'columns' => $columns,
+            'data'    => $gridData,
+        ];
+
+        $this->data['gridConfig'] = $gridConfig;
+
+        if ($gridData->isEmpty()) {
+            session()->flash('info', 'No retail finance bookings found.');
+        }
+
+        return view('booking.finance-retailed', $this->data);
+    }
+
+    // public function finPayout(Request $request)
+    // {
+    //     $this->crud->hasAccessOrFail('list');
+
+    //     // Query logic taken from your payoutList()
+    //     $query = DB::table('xcelr8_booking_master as bookings')
+    //         ->select(
+    //             'bookings.id as booking_no',
+    //             'bookings.created_at',
+    //             'bookings.booking_date',
+    //             'bookings.b_type',
+    //             'bookings.branch_id',
+    //             'bookings.location_id',
+    //             'bookings.location_other',
+    //             'bookings.segment_id',
+    //             'bookings.model',
+    //             'bookings.variant',
+    //             'bookings.color',
+    //             'bookings.consultant as fsc',
+    //             'bookings.fin_mode',
+    //             'bookings.financier',
+    //             'bookings.loan_status',
+    //             'bookings.retail',
+    //             'bookings.payout',
+    //             'bookings.status'
+    //         )
+    //         ->where('bookings.payout', 1)
+    //         ->where('bookings.retail', 1)
+    //         ->where('bookings.status', 2)
+    //         ->orderBy('bookings.id', 'DESC');
+
+    //     $bookings = $query->get();
+
+    //     // Preload lookups
+    //     $segments = XpricingHelper::getSegments();
+    //     $saleConsultants = collect(XpricingHelper::selectfsc())->keyBy('id');
+    //     $financiers = XlFinancier::select('id', 'name')->get()->keyBy('id');
+    //     $branches = X_Branch::select('id', 'name')->get()->keyBy('id');
+    //     $locations = X_Location::select('id', 'name')->get()->keyBy('id');
+
+    //     $gridData = [];
+    //     foreach ($bookings as $t) {
+    //         $gridData[] = [
+    //             'booking_no'     => $t->booking_no,
+    //             'created_at'     => \Carbon\Carbon::parse($t->created_at)->format('d-M-Y'),
+    //             'booking_date'   => \Carbon\Carbon::parse($t->booking_date)->format('d-M-Y'),
+    //             'b_type'         => $t->b_type ?? 'N/A',
+    //             'branch'         => $branches->get($t->branch_id)->name ?? 'N/A',
+    //             'location'       => $t->location_id > 0
+    //                 ? ($locations->get($t->location_id)->name ?? 'N/A')
+    //                 : ($t->location_other ?? 'N/A'),
+    //             'segment'        => $segments[$t->segment_id]['name'] ?? 'N/A',
+    //             'model'          => $t->model ?? 'N/A',
+    //             'variant'        => $t->variant ?? 'N/A',
+    //             'color'          => $t->color ?? 'N/A',
+    //             'fsc'            => $saleConsultants->get($t->fsc)->name ?? 'N/A',
+    //             'fin_mode'       => $t->fin_mode ?? 'N/A',
+    //             'financier'      => $financiers->get($t->financier)->name ?? 'N/A',
+    //             'loan_status'    => $t->loan_status ?? 'N/A',
+    //             'action'         => '<div class="text-center">
+    //                                 <a href="' . route('finance.payoutedit', $t->booking_no) . '"
+    //                                    class="btn btn-info btn-sm"
+    //                                    title="Edit Finance">
+    //                                     <i class="fas fa-edit"></i> Edit
+    //                                 </a>
+    //                               </div>'
+    //         ];
+    //     }
+
+    //     $gridConfig = [
+    //         'columns' => $this->getAgGridColumnsForFinancePayout(),
+    //         'data'    => $gridData,
+    //         'type'    => 'pending'  // Send type to blade for dynamic title
+    //     ];
+
+    //     return view('booking.finance-payout', compact('gridConfig'));
+    // }
+
+    // public function financePayoutCompleted(Request $request)
+    // {
+    //     $this->crud->hasAccessOrFail('list');
+
+    //     // Query logic taken from your payoutcompletedList()
+    //     $query = DB::table('xcelr8_booking_master as bookings')
+    //         ->select(
+    //             'bookings.id as booking_no',
+    //             'bookings.created_at',
+    //             'bookings.booking_date',
+    //             'bookings.b_type',
+    //             'bookings.branch_id',
+    //             'bookings.location_id',
+    //             'bookings.location_other',
+    //             'bookings.segment_id',
+    //             'bookings.model',
+    //             'bookings.variant',
+    //             'bookings.color',
+    //             'bookings.consultant as fsc',
+    //             'bookings.fin_mode',
+    //             'bookings.financier',
+    //             'bookings.loan_status',
+    //             'bookings.retail',
+    //             'bookings.payout',
+    //             'bookings.status'
+    //         )
+    //         ->where('bookings.payout', 2)
+    //         ->where('bookings.retail', 1)
+    //         ->where('bookings.status', 2)
+    //         ->orderBy('bookings.id', 'DESC');
+
+    //     $filter = $request->query('status_filter', 'all'); // Default: all
+    //     if ($filter === 'short') {
+    //         $query->whereRaw('fin.difference < -100');
+    //     } elseif ($filter === 'excess') {
+    //         $query->whereRaw('fin.difference > 100');
+    //     } elseif ($filter === 'reconciled') {
+    //         $query->whereRaw('fin.difference BETWEEN -100 AND 100');
+    //     }
+
+    //     $bookings = $query->get();
+
+    //     $segments = XpricingHelper::getSegments();
+    //     $saleConsultants = collect(XpricingHelper::selectfsc())->keyBy('id');
+    //     $financiers = XlFinancier::select('id', 'name')->get()->keyBy('id');
+    //     $branches = X_Branch::select('id', 'name')->get()->keyBy('id');
+    //     $locations = X_Location::select('id', 'name')->get()->keyBy('id');
+
+    //     $gridData = [];
+    //     foreach ($bookings as $t) {
+    //         $gridData[] = [
+    //             'booking_no'     => $t->booking_no,
+    //             'created_at'     => \Carbon\Carbon::parse($t->created_at)->format('d-M-Y'),
+    //             'booking_date'   => \Carbon\Carbon::parse($t->booking_date)->format('d-M-Y'),
+    //             'b_type'         => $t->b_type ?? 'N/A',
+    //             'branch'         => $branches->get($t->branch_id)->name ?? 'N/A',
+    //             'location'       => $t->location_id > 0
+    //                 ? ($locations->get($t->location_id)->name ?? 'N/A')
+    //                 : ($t->location_other ?? 'N/A'),
+    //             'segment'        => $segments[$t->segment_id]['name'] ?? 'N/A',
+    //             'model'          => $t->model ?? 'N/A',
+    //             'variant'        => $t->variant ?? 'N/A',
+    //             'color'          => $t->color ?? 'N/A',
+    //             'fsc'            => $saleConsultants->get($t->fsc)->name ?? 'N/A',
+    //             'fin_mode'       => $t->fin_mode ?? 'N/A',
+    //             'financier'      => $financiers->get($t->financier)->name ?? 'N/A',
+    //             'loan_status'    => $t->loan_status ?? 'N/A',
+    //             'action'         => '<div class="text-center">
+    //                                 <a href="' . route('finance.view', $t->booking_no) . '"
+    //                                    class="btn btn-info btn-sm"
+    //                                    title="View Finance">
+    //                                     <i class="fas fa-eye"></i> View
+    //                                 </a>
+    //                               </div>'
+    //         ];
+    //     }
+
+    //     $gridConfig = [
+    //         'columns' => $this->getAgGridColumnsForFinancePayout(),
+    //         'data'    => $gridData,
+    //         'type'    => 'completed'  // Send type to blade for dynamic title
+    //     ];
+
+    //     return view('booking.finance-payout', compact('gridConfig'));
+    // }
+
+    // /**
+    //  * Columns for Finance Payout pages (same for pending and completed)
+    //  */
+    // private function getAgGridColumnsForFinancePayout()
+    // {
+    //     return [
+    //         ['headerName' => 'Booking No',     'field' => 'booking_no',     'width' => 120, 'pinned' => 'left'],
+    //         ['headerName' => 'Created At',     'field' => 'created_at',     'width' => 140],
+    //         ['headerName' => 'Booking Date',   'field' => 'booking_date',   'width' => 140],
+    //         ['headerName' => 'B Type',         'field' => 'b_type',         'width' => 130],
+    //         ['headerName' => 'Branch',         'field' => 'branch',         'width' => 140],
+    //         ['headerName' => 'Location',       'field' => 'location',       'width' => 150],
+    //         ['headerName' => 'Segment',        'field' => 'segment',        'width' => 120],
+    //         ['headerName' => 'Model',          'field' => 'model',          'width' => 130],
+    //         ['headerName' => 'Variant',        'field' => 'variant',        'width' => 170],
+    //         ['headerName' => 'Color',          'field' => 'color',          'width' => 110],
+    //         ['headerName' => 'FSC',            'field' => 'fsc',            'width' => 150],
+    //         ['headerName' => 'Finance Mode',   'field' => 'fin_mode',       'width' => 140],
+    //         ['headerName' => 'Financier',      'field' => 'financier',      'width' => 160],
+    //         ['headerName' => 'Loan Status',    'field' => 'loan_status',    'width' => 130],
+    //         ['headerName' => 'Actions',        'field' => 'action',         'width' => 150, 'pinned' => 'right', 'sortable' => false, 'filter' => false],
+    //     ];
+    // }
+    // 1. Pending Payout
+    public function finPayout(Request $request)
+    {
+        $this->crud->hasAccessOrFail('list');
+
+        $this->data['crud'] = $this->crud;
+        $this->data['title'] = 'Finance Payout - Pending';
+
+        $query = $this->getBaseQuery();
+
+        $query->where('bookings.payout', 1);
+        $query->where('bookings.retail', 1);
+        $query->where('bookings.status', 2);
+
+        $query->orderBy('bookings.id', 'DESC');
+
+        $paginatedBookings = $query->paginate(50);
+
+        $lookups = $this->getCommonLookups();
+        extract($lookups);
+
+        $saleConsultants = $lookups['saleConsultants'] ?? [];
+        $financiers = $lookups['financiers'] ?? [];
+
+        $gridData = $paginatedBookings->map(function ($t, $index) use (
+            $paginatedBookings,
+            $saleConsultants,
+            $financiers
+        ) {
+            $row = $this->mapBookingForGrid($t);
+
+            $row->serial_no = ($paginatedBookings->currentPage() - 1) * $paginatedBookings->perPage() + $index + 1;
+
+            $row->fsc = optional($saleConsultants->firstWhere('id', $t->consultant))->name ?? 'N/A';
+            $row->financier = optional($financiers->firstWhere('id', $t->financier))->name ?? 'N/A';
+
+            $location = $t->location_id && $t->location_id > 0
+                ? (X_Location::find($t->location_id)->name ?? 'N/A')
+                : ($t->location_other ?? 'N/A');
+
+            $row->location = $location;
+
+            // Action for Pending: Edit
+            $row->action = '
+            <div class="text-center">
+                <a href="' . route('finance.payoutedit', $t->id) . '"
+                   class="btn-warning btn-sm"
+                   title="Edit Payout">
+                    <i class="la la-edit la-lg"></i>
+                </a>
+            </div>';
+
+            return $row;
+        })->values();
+
+        $columns = $this->getAgGridColumns();
+
+        $hasAction = collect($columns)->contains('field', 'action');
+        if (!$hasAction) {
+            $columns[] = [
+                'field'         => 'action',
+                'headerName'    => 'Actions',
+                'width'         => 140,
+                'pinned'        => 'right',
+                'sortable'      => false,
+                'filter'        => false,
+                'cellRenderer'  => 'htmlRenderer',
+                'cellClass'     => 'text-center p-0',
+                'autoHeight'    => true,
+            ];
+        }
+
+        $gridConfig = [
+            'columns' => $columns,
+            'data'    => $gridData,
+            'type'    => 'pending'
+        ];
+
+        $this->data['gridConfig'] = $gridConfig;
+
+        if ($gridData->isEmpty()) {
+            session()->flash('info', 'No pending payout bookings found.');
+        }
+
+        return view('booking.finance-payout', $this->data);
+    }
+
+    // 2. Completed Payout
+    public function financePayoutCompleted(Request $request)
+    {
+        $this->crud->hasAccessOrFail('list');
+
+        $this->data['crud'] = $this->crud;
+        $this->data['title'] = 'Finance Payout - Completed';
+
+        $query = $this->getBaseQuery();
+
+        $query->where('bookings.payout', 2);
+        $query->where('bookings.retail', 1);
+        $query->where('bookings.status', 2);
+
+        // Filter logic (short, excess, reconciled)
+        $filter = $request->query('status_filter', 'all');
+        if ($filter === 'short') {
+            $query->whereRaw('fin.difference < -100');
+        } elseif ($filter === 'excess') {
+            $query->whereRaw('fin.difference > 100');
+        } elseif ($filter === 'reconciled') {
+            $query->whereRaw('fin.difference BETWEEN -100 AND 100');
+        }
+
+        $query->orderBy('bookings.id', 'DESC');
+
+        $paginatedBookings = $query->paginate(50);
+
+        $lookups = $this->getCommonLookups();
+        extract($lookups);
+
+        $saleConsultants = $lookups['saleConsultants'] ?? [];
+        $financiers = $lookups['financiers'] ?? [];
+
+        $gridData = $paginatedBookings->map(function ($t, $index) use (
+            $paginatedBookings,
+            $saleConsultants,
+            $financiers
+        ) {
+            $row = $this->mapBookingForGrid($t);
+
+            $row->serial_no = ($paginatedBookings->currentPage() - 1) * $paginatedBookings->perPage() + $index + 1;
+
+            $row->fsc = optional($saleConsultants->firstWhere('id', $t->consultant))->name ?? 'N/A';
+            $row->financier = optional($financiers->firstWhere('id', $t->financier))->name ?? 'N/A';
+
+            $location = $t->location_id && $t->location_id > 0
+                ? (X_Location::find($t->location_id)->name ?? 'N/A')
+                : ($t->location_other ?? 'N/A');
+
+            $row->location = $location;
+
+            // Action for Completed: View only
+            $row->action = '
+            <div class="text-center">
+                <a href="' . route('finance.view', $t->id) . '"
+                   class="btn btn-info btn-sm"
+                   title="View Finance">
+                    <i class="fas fa-eye"></i> View
+                </a>
+            </div>';
+
+            return $row;
+        })->values();
+
+        $columns = $this->getAgGridColumns();
+
+        $hasAction = collect($columns)->contains('field', 'action');
+        if (!$hasAction) {
+            $columns[] = [
+                'field'         => 'action',
+                'headerName'    => 'Actions',
+                'width'         => 140,
+                'pinned'        => 'right',
+                'sortable'      => false,
+                'filter'        => false,
+                'cellRenderer'  => 'htmlRenderer',
+                'cellClass'     => 'text-center p-0',
+                'autoHeight'    => true,
+            ];
+        }
+
+        $gridConfig = [
+            'columns' => $columns,
+            'data'    => $gridData,
+            'type'    => 'completed'
+        ];
+
+        $this->data['gridConfig'] = $gridConfig;
+
+        if ($gridData->isEmpty()) {
+            session()->flash('info', 'No completed payout bookings found.');
+        }
+
+        return view('booking.finance-payout', $this->data);
+    }
+
+
+
+
+
+
+
+    public function fetchPendBkData()
+    {
+        $now = Carbon::now();
+        $mtdStart = $now->copy()->startOfMonth();
+        $ytdStart = $now->copy()->startOfYear();
+
+        // Cache the query for 1 hour
+        $data = Cache::remember('cbr_data_' . $now->format('YmdH'), 3600, function () use ($mtdStart, $ytdStart, $now) {
+            // Bulk fetch bookings
+            $bookings = DB::table('xcelr8_booking_master as bm')
+                ->join('xcelr8_vehicle_master as vm', 'bm.vh_id', '=', 'vm.id')
+                ->join('bmpl_enum_master as em', 'vm.segment_id', '=', 'em.id')
+                ->whereIn('bm.status', [1, 4, 6, 8])
+                ->select(
+                    'bm.id',
+                    'bm.status',
+                    'bm.b_type',
+                    'bm.fin_mode',
+                    'bm.buyer_type',
+                    'bm.pending',
+                    'bm.order',
+                    'bm.dms_so',
+                    'bm.booking_amount',
+                    'bm.created_at',
+                    DB::raw('CONCAT(em.value, "|", COALESCE(vm.oem_model, ""), "|", COALESCE(vm.oem_variant, ""), "|", COALESCE(vm.color, "")) as group_key'),
+                    'em.value as seg',
+                    'vm.oem_model as model',
+                    'vm.oem_variant as variant',
+                    'vm.color as clr',
+                    'vm.code'
+                )
+                ->get()
+                ->groupBy('group_key');
+
+            // Bulk fetch booking amounts
+            $bookingAmounts = DB::table('xcelr8_booking_amount')
+                ->where('status', 1)
+                ->select('bid', DB::raw('SUM(amount) as total_amount'))
+                ->groupBy('bid')
+                ->pluck('total_amount', 'bid');
+
+
+
+
+            // Bulk fetch exchange and scrappage pending statuses
+            $exchanges = DB::table('xcelr8_exchange')
+                ->whereIn('verification_status', [0, null])
+                ->select('bid', 'purchase_type')
+                ->get()
+                ->groupBy('bid')
+                ->map(function ($group) {
+                    return [
+                        'exchange_pending' => $group->where('purchase_type', 'Exchange')->count() > 0 ? 1 : 0,
+                        'scrappage_pending' => $group->where('purchase_type', 'Scrappage')->count() > 0 ? 1 : 0,
+                    ];
+                });
+
+            // Bulk fetch finance pending statuses
+            $finances = DB::table('xcelr8_finance')
+                ->whereIn('verification_status', [0, null])
+                ->pluck('bid')
+                ->mapWithKeys(fn($bid) => [$bid => 1]);
+
+            $data = collect();
+            $index = 1;
+
+            foreach ($bookings as $groupKey => $groupBookings) {
+                [$seg, $model, $variant, $clr] = explode('|', $groupKey);
+
+                $liveGroup = $groupBookings->whereIn('status', [1, 6, 8])->where('b_type', '!=', 'dummy');
+
+                $total_bookings = $liveGroup->count();
+                if ($total_bookings === 0) continue;
+
+                $bkn_bookings = $liveGroup->where('b_type', 'Individual')->count();
+                $chr_bookings = $liveGroup->where('b_type', 'Dealer')->count();
+
+
+
+                $on_hold = $liveGroup->where('status', 6)->count();
+
+                $verify = $liveGroup->where('order', 1)->count();
+
+                $orders = $liveGroup->where('order', 2)->whereNull('dms_so')->count();
+
+                $payments = $liveGroup->filter(function ($booking) use ($bookingAmounts) {
+                    $total_amount = $bookingAmounts->get($booking->id, 0);
+                    return $total_amount < $booking->booking_amount;
+                })->count();
+
+                $data_pending = $liveGroup->where('pending', '>', 0)->count();
+
+                $refunds = $groupBookings->where('status', 4)->count();
+
+
+
+                $data->push([
+                    'sno' => $index++,
+                    'seg' => $seg,
+                    'model' => $model,
+                    'variant' => $variant,
+                    'clr' => $clr,
+                    'total_bookings' => $total_bookings,
+                    'bkn_bookings' => $bkn_bookings,
+                    'chr_bookings' => $chr_bookings,
+                    'verify' => $verify,
+                    'orders' => $orders,
+                    'payments' => $payments,
+                    'data' => $data_pending,
+                    'refund' => $refunds,
+                ]);
+            }
+
+            return $data;
+        });
+
+
+
+        $title = 'Pending Data Report';
+        $filename = 'PndngDataRprt_' . $now->format('Y-m-d-H-i-s') . '.xlsx';
+        $stkbr = $tbr = null;
+        $header = [
+            ['title' => 'S.No.', 'field' => 'sno', 'hozAlign' => 'center', 'formatter' => 'plaintext'],
+            [
+                'title' => 'Vehicle Info',
+                'columns' => [
+                    ['title' => 'Segment', 'field' => 'seg', 'headerFilter' => 'select'],
+                    ['title' => 'Model', 'field' => 'model', 'headerFilter' => 'select'],
+                    ['title' => 'Variant', 'field' => 'variant', 'headerFilter' => 'select'],
+                    ['title' => 'Color', 'field' => 'clr', 'headerFilter' => 'select'],
+                ]
+            ],
+
+            [
+                'title' => 'Bookings',
+                'columns' => [
+                    ['title' => 'Total', 'field' => 'total_bookings', 'bottomCalc' => 'sum'],
+                    ['title' => 'BKN', 'field' => 'bkn_bookings', 'bottomCalc' => 'sum'],
+                    ['title' => 'CHR', 'field' => 'chr_bookings', 'bottomCalc' => 'sum'],
+                ]
+            ],
+
+            [
+                'title' => 'Pending Actions',
+                'columns' => [
+                    ['title' => 'Verify', 'field' => 'verify', 'bottomCalc' => 'sum'],
+                    ['title' => 'Orders', 'field' => 'orders', 'bottomCalc' => 'sum'],
+                    ['title' => 'Payments', 'field' => 'payments', 'bottomCalc' => 'sum'],
+                    ['title' => 'Data', 'field' => 'data', 'bottomCalc' => 'sum'],
+                    ['title' => 'Refund', 'field' => 'refund', 'bottomCalc' => 'sum'],
+                ]
+            ],
+
+        ];
+
+        return [$header, $data, $tbr, $stkbr, $filename, $title];
+    }
+
+
+    public function pendingPayment(Request $request)
+    {
+        $this->crud->hasAccessOrFail('list');
+
+        $this->data['crud'] = $this->crud;
+        $this->data['title'] = 'Pending Payment';
+
+        $bookingAmountTable = (new Bookingamount)->getTable();
+
+        $query = $this->getBaseQuery();
+
+        $query->whereIn('bookings.status', [1, 8]);
+        $query->where('bookings.b_type', 'Active');
+        $query->whereIn('bookings.col_type', [2, 3]);
+
+        $query->where(function ($q) use ($bookingAmountTable) {
+            $q->whereRaw("bookings.booking_amount > COALESCE((
+                SELECT SUM(amount)
+                FROM {$bookingAmountTable}
+                WHERE {$bookingAmountTable}.bid = bookings.id
+                AND {$bookingAmountTable}.deleted_at IS NULL
+            ), 0)")
+                ->orWhereNull('bookings.receipt_no')
+                ->orWhere('bookings.receipt_no', '');
+        });
+
+        $query->orderBy('bookings.id', 'desc');
+
+        $paginatedBookings = $query->paginate(50);
+
+        $gridData = $paginatedBookings->map(function ($t, $index) use ($paginatedBookings) {
+            $row = $this->mapBookingForGrid($t);
+
+            $row->serial_no = ($paginatedBookings->currentPage() - 1) * $paginatedBookings->perPage() + $index + 1;
+
+            $paid = Bookingamount::where('bid', $t->id)->sum('amount') ?? 0;
+            $balance = $t->booking_amount - $paid;
+
+            $row->booking_amount = number_format($t->booking_amount ?? 0);
+            $row->paid_amount = number_format($paid);
+            $row->balance = number_format($balance);
+            $row->receipt_no = $t->receipt_no ?? '<span class="text-danger">Missing</span>';
+
+            $row->action = '<a href="' . route('booking.pending-edit', $t->id) . '#pending"
+                            class="btn-xs btn-warning" title="Add/Edit Payment">
+                                <i class="la la-edit la-lg"></i>
+                        </a>';
+
+            return $row;
+        })->values();
+
+        $columns = $this->getAgGridColumns();
+
+        $hasAction = collect($columns)->contains('field', 'action');
+        if (!$hasAction) {
+            $columns[] = [
+                'field'         => 'action',
+                'headerName'    => 'Action',
+                'width'         => 140,
+                'pinned'        => 'right',
+                'sortable'      => false,
+                'filter'        => false,
+                'cellRenderer'  => 'htmlRenderer',
+                'cellClass'     => 'text-center p-0',
+                'autoHeight'    => true,
+            ];
+        }
+
+        $gridConfig = [
+            'columns' => $columns,
+            'data'    => $gridData,
+        ];
+
+        $this->data['gridConfig'] = $gridConfig;
+
+        if ($gridData->isEmpty()) {
+            session()->flash('info', 'No pending payment bookings found.');
+        }
+
+        return view('booking.pending-payment', $this->data);
+    }
+
+    public function pendingInsurance(Request $request)
+    {
+        $this->crud->hasAccessOrFail('list');
+
+        $this->data['crud'] = $this->crud;
+        $this->data['title'] = 'Pending Insurance';
+
+        // ────────────────────────────────────────────────
+        // Query – full model (no manual select)
+        // ────────────────────────────────────────────────
+        $query = $this->getBaseQuery();
+
+        $query->where('status', 2); // Invoiced
+
+        // Already insured bookings exclude karo
+        $insuredBookingIds = DB::table('xcelr8_booking_insurance')
+            ->pluck('bid')
+            ->toArray();
+
+        $query->whereNotIn('bookings.id', $insuredBookingIds);
+
+        // Time-based filter (tumhara original logic)
+        $status_filter = $request->input('status_filter', 'all');
+        $now = Carbon::now();
+
+        if ($status_filter === 'this_month') {
+            $query->whereMonth('booking_date', $now->month)
+                ->whereYear('booking_date', $now->year);
+        } elseif ($status_filter === 'last_month') {
+            $query->whereMonth('booking_date', $now->subMonth()->month)
+                ->whereYear('booking_date', $now->subMonth()->year);
+        } elseif ($status_filter === 'this_year') {
+            $query->whereYear('booking_date', $now->year);
+        }
+
+        $paginatedBookings = $query->orderBy('booking_date', 'DESC')->paginate(50);
+
+        // ────────────────────────────────────────────────
+        // Preloads (N+1 avoid)
+        // ────────────────────────────────────────────────
+        $lookups = $this->getCommonLookups();
+        extract($lookups);
+
+        $saleConsultants = $lookups['saleConsultants'] ?? [];
+        $financiers = $lookups['financiers'] ?? [];
+
+        // ────────────────────────────────────────────────
+        // Mapping – action button tumhara original
+        // ────────────────────────────────────────────────
+        $gridData = $paginatedBookings->map(function ($t, $index) use (
+            $paginatedBookings,
+            $segments,
+            $saleConsultants,
+            $financiers
+        ) {
+            $row = $this->mapBookingForGrid($t);
+
+            $row->serial_no = ($paginatedBookings->currentPage() - 1) * $paginatedBookings->perPage() + $index + 1;
+
+            $row->action = '
+            <div class="text-center">
+                <a href="' . route('insurance.edit', $t->id) . '"
+                   class="btn btn-warning btn-sm"
+                   title="Edit Insurance Details">
+                    <i class="la la-edit"></i> Edit
+                </a>
+            </div>';
+
+            return $row;
+        })->values();
+
+        // ────────────────────────────────────────────────
+        // Columns – reusable call
+        // ────────────────────────────────────────────────
+        $columns = $this->getAgGridColumns();
+
+        // Action column add agar missing hai (duplicate avoid)
+        $hasAction = collect($columns)->contains('field', 'action');
+        if (!$hasAction) {
+            $columns[] = [
+                'field'         => 'action',
+                'headerName'    => 'Action',
+                'width'         => 120,
+                'pinned'        => 'right',
+                'sortable'      => false,
+                'filter'        => false,
+                'cellRenderer'  => 'htmlRenderer',
+                'cellClass'     => 'text-center p-0',
+                'autoHeight'    => true,
+            ];
+        }
+
+        $gridConfig = [
+            'columns' => $columns,
+            'data'    => $gridData,
+        ];
+
+        $this->data['gridConfig'] = $gridConfig;
+
+        if ($gridData->isEmpty()) {
+            session()->flash('info', 'No pending insurance bookings found for the selected period.');
+        }
+
+        return view('booking.pending-insurance', $this->data);
+    }
+
+
+
+    public function pendingRto(Request $request)
+    {
+        $this->crud->hasAccessOrFail('list');
+
+        $this->data['crud'] = $this->crud;
+        $this->data['title'] = 'Pending RTO';
+
+        // ────────────────────────────────────────────────
+        // Query – full model (no manual select)
+        // ────────────────────────────────────────────────
+        $query = $this->getBaseQuery();
+
+        $query->where('status', 2); // Invoiced
+
+        // Already RTO processed bookings exclude karo
+        $rtoDoneIds = DB::table('xcelr8_booking_rto')
+            ->where('status', 2)
+            ->pluck('bid')
+            ->toArray();
+
+        $query->whereNotIn('bookings.id', $rtoDoneIds);
+
+        // Time-based filter (tumhara original logic)
+        $status_filter = $request->input('status_filter', 'all');
+        $now = Carbon::now();
+
+        if ($status_filter === 'this_month') {
+            $query->whereMonth('booking_date', $now->month)
+                ->whereYear('booking_date', $now->year);
+        } elseif ($status_filter === 'last_month') {
+            $query->whereMonth('booking_date', $now->subMonth()->month)
+                ->whereYear('booking_date', $now->subMonth()->year);
+        } elseif ($status_filter === 'this_year') {
+            $query->whereYear('booking_date', $now->year);
+        }
+
+        $paginatedBookings = $query->orderBy('booking_date', 'DESC')->paginate(50);
+
+        // ────────────────────────────────────────────────
+        // Preloads
+        // ────────────────────────────────────────────────
+        $lookups = $this->getCommonLookups();
+        extract($lookups);
+
+        $saleConsultants = $lookups['saleConsultants'] ?? [];
+        $financiers = $lookups['financiers'] ?? [];
+
+        // ────────────────────────────────────────────────
+        // Mapping – action button tumhara original
+        // ────────────────────────────────────────────────
+        $gridData = $paginatedBookings->map(function ($t, $index) use (
+            $paginatedBookings,
+            $segments,
+            $saleConsultants,
+            $financiers
+        ) {
+            $row = $this->mapBookingForGrid($t);
+
+            $row->serial_no = ($paginatedBookings->currentPage() - 1) * $paginatedBookings->perPage() + $index + 1;
+
+            $row->action = '
+            <div class="text-center">
+                <a href="' . route('booking.rto.edit', $t->id) . '"
+                   class="btn btn-warning btn-sm"
+                   title="Edit RTO Details">
+                    <i class="la la-edit"></i> Edit
+                </a>
+            </div>';
+
+            return $row;
+        })->values();
+
+        // ────────────────────────────────────────────────
+        // Columns – reusable call
+        // ────────────────────────────────────────────────
+        $columns = $this->getAgGridColumns();
+
+        // Action column add agar missing hai (duplicate avoid)
+        $hasAction = collect($columns)->contains('field', 'action');
+        if (!$hasAction) {
+            $columns[] = [
+                'field'         => 'action',
+                'headerName'    => 'Action',
+                'width'         => 120,
+                'pinned'        => 'right',
+                'sortable'      => false,
+                'filter'        => false,
+                'cellRenderer'  => 'htmlRenderer',
+                'cellClass'     => 'text-center p-0',
+                'autoHeight'    => true,
+            ];
+        }
+
+        $gridConfig = [
+            'columns' => $columns,
+            'data'    => $gridData,
+        ];
+
+        $this->data['gridConfig'] = $gridConfig;
+
+        if ($gridData->isEmpty()) {
+            session()->flash('info', 'No pending RTO bookings found for the selected period.');
+        }
+
+        return view('booking.pending-rto', $this->data);
+    }
+
+    public function pendingDeliveries(Request $request)
+    {
+        $this->crud->hasAccessOrFail('list');
+
+        $this->data['crud'] = $this->crud;
+        $this->data['title'] = 'Pending Deliveries';
+
+        // ────────────────────────────────────────────────
+        // Query – full model (no manual select)
+        // ────────────────────────────────────────────────
+        $query = $this->getBaseQuery();
+
+        $query->where('status', 2); // Invoiced
+
+        // Already delivered bookings exclude karo
+        $deliveredIds = DB::table('xcelr8_booking_delivered')
+            ->where('status', 1)
+            ->pluck('bid')
+            ->toArray();
+
+        $query->whereNotIn('bookings.id', $deliveredIds);
+
+        $paginatedBookings = $query->orderBy('booking_date', 'DESC')->paginate(50);
+
+        // ────────────────────────────────────────────────
+        // Preloads (agar zaroori ho to)
+        // ────────────────────────────────────────────────
+        $lookups = $this->getCommonLookups();
+        extract($lookups);
+
+        $saleConsultants = $lookups['saleConsultants'] ?? [];
+        $financiers = $lookups['financiers'] ?? [];
+
+        // ────────────────────────────────────────────────
+        // Mapping – action button tumhara original
+        // ────────────────────────────────────────────────
+        $gridData = $paginatedBookings->map(function ($t, $index) use (
+            $paginatedBookings,
+            $segments,
+            $saleConsultants,
+            $financiers
+        ) {
+            $row = $this->mapBookingForGrid($t);
+
+            $row->serial_no = ($paginatedBookings->currentPage() - 1) * $paginatedBookings->perPage() + $index + 1;
+
+            $row->action = '
+            <div class="text-center">
+                <a href="' . backpack_url("booking/{$t->id}/delivery-edit") . '#delivery"
+                   class="btn btn-success btn-sm" title="Mark as Delivered">
+                    <i class="la la-truck"></i> Deliver
+                </a>
+            </div>';
+
+            return $row;
+        })->values();
+
+        // ────────────────────────────────────────────────
+        // Columns – reusable call
+        // ────────────────────────────────────────────────
+        $columns = $this->getAgGridColumns();
+
+        // Action column add agar missing hai (duplicate avoid)
+        $hasAction = collect($columns)->contains('field', 'action');
+        if (!$hasAction) {
+            $columns[] = [
+                'field'         => 'action',
+                'headerName'    => 'Action',
+                'width'         => 120,
+                'pinned'        => 'right',
+                'sortable'      => false,
+                'filter'        => false,
+                'cellRenderer'  => 'htmlRenderer',
+                'cellClass'     => 'text-center p-0',
+                'autoHeight'    => true,
+            ];
+        }
+
+        $gridConfig = [
+            'columns' => $columns,
+            'data'    => $gridData,
+        ];
+
+        $this->data['gridConfig'] = $gridConfig;
+
+        if ($gridData->isEmpty()) {
+            session()->flash('info', 'No pending deliveries found.');
+        }
+
+        return view('booking.pending-deliveries', $this->data);
+    }
+
+    public function pendingRegistration(Request $request)
+    {
+        $this->crud->hasAccessOrFail('list');
+
+        $this->data['crud'] = $this->crud;
+        $this->data['title'] = 'Pending Registration';
+
+        $query = $this->getBaseQuery()
+            ->join('xcelr8_booking_rto', function ($join) {
+                $join->on('xcelr8_booking_rto.bid', '=', 'bookings.id')
+                    ->where('xcelr8_booking_rto.status', 1)
+                    ->whereNull('xcelr8_booking_rto.vh_rgn_no');
+            });
+
+        if ($request->has('customer_type') && $request->customer_type !== 'all') {
+            $filterType = $request->customer_type === 'actual' ? 'active' : $request->customer_type;
+            $query->where('bookings.b_type', $filterType);
+        }
+
+        $query->orderBy('bookings.id', 'DESC');
+
+        $paginatedBookings = $query->paginate(50);
+
+        $lookups = $this->getCommonLookups();
+        extract($lookups);
+
+        $gridData = $paginatedBookings->map(function ($t, $index) use ($paginatedBookings) {
+            $row = $this->mapBookingForGrid($t);
+
+            $row->serial_no = ($paginatedBookings->currentPage() - 1) * $paginatedBookings->perPage() + $index + 1;
+
+            $row->action = '
+            <div class="text-center">
+                <a href="' . route('booking.rto.edit', $t->id) . '"
+                   class="btn btn-warning btn-sm" title="Edit RTO Details">
+                    <i class="la la-edit"></i> Edit
+                </a>
+            </div>';
+
+            return $row;
+        })->values();
+
+        $columns = $this->getAgGridColumns();
+
+        $hasAction = collect($columns)->contains('field', 'action');
+        if (!$hasAction) {
+            $columns[] = [
+                'field'         => 'action',
+                'headerName'    => 'Action',
+                'width'         => 120,
+                'pinned'        => 'right',
+                'sortable'      => false,
+                'filter'        => false,
+                'cellRenderer'  => 'htmlRenderer',
+                'cellClass'     => 'text-center p-0',
+                'autoHeight'    => true,
+            ];
+        }
+
+        $gridConfig = [
+            'columns' => $columns,
+            'data'    => $gridData,
+        ];
+
+        $this->data['gridConfig'] = $gridConfig;
+
+        if ($gridData->isEmpty()) {
+            session()->flash('info', 'No pending registration bookings found.');
+        }
+
+        return view('booking.pending-registration', $this->data);
+    }
+
+    public function pendingDO(Request $request)
+    {
+        $this->crud->hasAccessOrFail('list');
+
+        $this->data['crud'] = $this->crud;
+        $this->data['title'] = 'Pending DO';
+
+        // ────────────────────────────────────────────────
+        // Query – full model (no manual select)
+        // ────────────────────────────────────────────────
+        $query = $this->getBaseQuery();
+
+        $query->where('status', 2); // Invoiced
+        $query->whereNotNull('del_type'); // Delivery type set hai
+        $query->whereNull('del_date'); // Delivery date abhi nahi (pending DO)
+
+        $paginatedBookings = $query->orderBy('booking_date', 'DESC')->paginate(50);
+
+        // ────────────────────────────────────────────────
+        // Preloads (agar zaroori ho to)
+        // ────────────────────────────────────────────────
+        $lookups = $this->getCommonLookups();
+        extract($lookups);
+
+        $saleConsultants = $lookups['saleConsultants'] ?? [];
+        $financiers = $lookups['financiers'] ?? [];
+
+        // ────────────────────────────────────────────────
+        // Mapping – action buttons tumhara original logic ke saath
+        // ────────────────────────────────────────────────
+        $gridData = $paginatedBookings->map(function ($t, $index) use (
+            $paginatedBookings,
+            $segments,
+            $saleConsultants,
+            $financiers
+        ) {
+            $row = $this->mapBookingForGrid($t);
+
+            $row->serial_no = ($paginatedBookings->currentPage() - 1) * $paginatedBookings->perPage() + $index + 1;
+
+            // $row->action = '<div class="table-actions text-center">
+            //     <a href="' . backpack_url('booking/' . $t->id . '/edit') . '#delivery" title="Mark DO" class="text-success">
+            //         <i class="ik ik-truck f-16"></i>
+            //     </a>
+            //     <a href="' . backpack_url('booking/' . $t->id) . '" title="View" class="text-blue ml-2">
+            //         <i class="ik ik-eye f-16"></i>
+            //     </a>
+            // </div>';
+            $row->action = '<div class="table-actions text-center d-flex justify-content-center gap-3">
+                <a href="' . backpack_url('booking/' . $t->id . '/edit') . '#delivery"
+                title="Mark DO" class="text-success fs-5">
+                    <i class="la la-truck"></i>
+                </a>
+                <a href="' . backpack_url('booking/' . $t->id) . '"
+                title="View" class="text-primary fs-5">
+                    <i class="la la-eye"></i>
+                </a>
+                </div>';
+
+            return $row;
+        })->values();
+
+        // ────────────────────────────────────────────────
+        // Columns – reusable call
+        // ────────────────────────────────────────────────
+        $columns = $this->getAgGridColumns();
+
+        // Action column add agar missing hai (duplicate avoid)
+        $hasAction = collect($columns)->contains('field', 'action');
+        if (!$hasAction) {
+            $columns[] = [
+                'field'         => 'action',
+                'headerName'    => 'Action',
+                'width'         => 140,
+                'minWidth'      => 120,
+                'pinned'        => 'right',
+                'sortable'      => false,
+                'filter'        => false,
+                'cellClass'     => 'text-center p-0',
+                'autoHeight'    => true,
+                'cellRenderer'  => 'actionHtmlRenderer',
+            ];
+        }
+
+        $gridConfig = [
+            'columns' => $columns,
+            'data'    => $gridData,
+        ];
+
+        $this->data['gridConfig'] = $gridConfig;
+
+        if ($gridData->isEmpty()) {
+            session()->flash('info', 'No pending DO bookings found.');
+        }
+
+        return view('booking.pending-do', $this->data);
+    }
+
+    public function pendingInvoices(Request $request)
+    {
+        $this->crud->hasAccessOrFail('list');
+
+        $this->data['crud'] = $this->crud;
+        $this->data['title'] = 'Pending Invoices';
+
+        // ────────────────────────────────────────────────
+        // Query – full model (no manual select)
+        // ────────────────────────────────────────────────
+        $query = $this->getBaseQuery()
+            ->whereIn('dealer_status', [1]);
+
+        if ($request->has('customer_type') && $request->customer_type !== 'all') {
+            $filterType = $request->customer_type === 'actual' ? 'active' : $request->customer_type;
+            $query->where('bookings.b_type', $filterType);
+        }
+
+        $paginatedBookings = $query->orderBy('bookings.id', 'DESC')->paginate(50);
+
+        // ────────────────────────────────────────────────
+        // Preloads (agar zaroori ho to)
+        // ────────────────────────────────────────────────
+        $lookups = $this->getCommonLookups();
+        extract($lookups);
+
+        $saleConsultants = $lookups['saleConsultants'] ?? [];
+        $financiers = $lookups['financiers'] ?? [];
+
+        // ────────────────────────────────────────────────
+        // Mapping – action button same as tumhara original
+        // ────────────────────────────────────────────────
+        $gridData = $paginatedBookings->map(function ($t, $index) use (
+            $paginatedBookings,
+            $segments,
+            $saleConsultants,
+            $financiers
+        ) {
+            $row = $this->mapBookingForGrid($t);
+
+            $row->serial_no = ($paginatedBookings->currentPage() - 1) * $paginatedBookings->perPage() + $index + 1;
+
+            // Invoice fields – pending ke liye default values
+            $row->inv_date = '---';
+            $row->dealer_inv_date = '---';
+            $row->inv_no = '<span class="text-danger">Pending</span>';
+
+            // Action button – tumhara original
+            $row->action = '
+            <div class="text-center">
+                <a href="' . backpack_url("booking/{$t->id}/dealer-invoice") . '"
+                   class="btn btn-warning btn-sm"
+                   title="Edit Dealer Invoice">
+                    <i class="ik ik-edit-2 f-16 text-green"></i> Invoice
+                </a>
+            </div>';
+
+            return $row;
+        })->values();
+
+        // ────────────────────────────────────────────────
+        // Columns – reusable call
+        // ────────────────────────────────────────────────
+        $columns = $this->getAgGridColumns();
+
+        // Action column add agar missing hai (duplicate avoid)
+        $hasAction = collect($columns)->contains('field', 'action');
+        if (!$hasAction) {
+            $columns[] = [
+                'field'         => 'action',
+                'headerName'    => 'Action',
+                'width'         => 120,
+                'pinned'        => 'right',
+                'sortable'      => false,
+                'filter'        => false,
+                'cellRenderer'  => 'htmlRenderer',
+                'cellClass'     => 'text-center p-0',
+                'autoHeight'    => true,
+            ];
+        }
+
+        $gridConfig = [
+            'columns' => $columns,
+            'data'    => $gridData,
+        ];
+
+        $this->data['gridConfig'] = $gridConfig;
+
+        if ($gridData->isEmpty()) {
+            session()->flash('info', 'No pending invoices found.');
+        }
+
+        return view('booking.pending-invoices', $this->data);
+    }
+
+    public function pendingEdit($id)
+    {
+        $this->crud->hasAccessOrFail('update');
+
+        $booking = Booking::findOrFail($id);
+
+        // Total paid amount
+        $totalPaid = \App\Models\Bookingamount::where('bid', $booking->id)
+            ->sum('amount') ?? 0;
+
+        // Fetch all receipt logs for this booking (this was missing)
+        $receiptLogs = \App\Models\Bookingamount::where('bid', $booking->id)
+            ->orderBy('date', 'desc') // or 'created_at'
+            ->get();
+
+        // Prepare data array
+        $data = [
+            'total_amount'    => $totalPaid,
+            'collector_name'  => User::find($booking->col_by)?->name ?? 'N/A',
+            // Add other data if needed (branch, location, etc.)
+            'branch'          => $booking->branch?->name ?? 'N/A',
+            'location'        => $booking->location?->name ?? 'N/A',
+        ];
+
+        return view('booking.pendedit', compact('booking', 'data', 'receiptLogs'));
+    }
+
+    public function pendingUpdate(Request $request, $id)
+    {
+        Log::info('=== PENDING UPDATE STARTED ===', [
+            'booking_id' => $id,
+            'user_id'    => backpack_auth()->id(),
+            'ip'         => $request->ip(),
+            'pending_flag' => $request->has('pending_flag'),
+            'user_agent' => $request->userAgent(),
+        ]);
+
+
+
+        $booking = Booking::findOrFail($id);
+
+        // dd($request->all());
+        // UPPERCASE ALL IMPORTANT FIELDS
+        $request->merge([
+            'pan_no'                => strtoupper($request->input('pan_no', '')),
+            'adhar_no'              => strtoupper($request->input('adhar_no', '')),
+            'online_bk_ref_no'      => strtoupper($request->input('online_bk_ref_no', '')),
+            'dms_no'                => strtoupper($request->input('dms_no', '')),
+            'dms_otf'               => strtoupper($request->input('dms_otf', '')),
+            'dms_so'                => strtoupper($request->input('dms_so', '')),
+            'chassis'               => strtoupper($request->input('chassis', '')),
+            'invoice_number'        => strtoupper($request->input('invoice_number', '')),
+            'dealer_invoice_number' => strtoupper($request->input('dealer_invoice_number', '')),
+        ]);
+
+        Log::info('Form data after uppercase', $request->except(['_token']));
+
+        // =============== VALIDATION ===============
+        $validator = Validator::make($request->all(), [
+            'pan_no'                => ['required', 'regex:/^[A-Z]{5}\d{4}[A-Z]$/'],
+            'adhar_no'              => ['required', 'regex:/^\d{4}-\d{4}-\d{4}$/'],
+            'dms_no'                => ['required', 'regex:/^B-\d{8}$/'],
+            'dms_otf'               => ['required', 'regex:/^OTF\d{2}[A-Z]\d{6}$/'],
+            'hidden_otf_date'       => ['required'],
+            'online_bk_ref_no'      => ['required_if:b_mode,Online', 'nullable'],
+            'chassis'               => [$request->has('pending_flag') ? 'required' : 'nullable', 'regex:/^S\d[A-Z]\d{5}$/'],
+            'invoice_number'        => ['nullable', 'regex:/^INV\d{2}[A-Z]\d{6}$/'],
+            'invoice_date'          => ['nullable'],
+            'dealer_invoice_number' => ['nullable', 'regex:/^[A-Z]{3}\d{2}[A-Z]\d{6}$/'],
+            'dealer_invoice_date'   => ['nullable'],
+        ], [
+            'pan_no.regex'              => 'PAN must be like ABCDE1234F',
+            'adhar_no.regex'            => 'Aadhar must be 1234-5678-9012',
+            'dms_no.regex'              => 'DMS No must be B-12345678',
+            'dms_otf.regex'             => 'OTF must be OTF00A123456',
+            'chassis.regex'             => 'Chassis must be S1A12345',
+            'dealer_invoice_number.regex' => 'Dealer Invoice must be like ABC12K555555 or INV12K555555',
+            'invoice_number.regex'      => 'Invoice must be INV00A123456',
+        ]);
+
+
+        // =============== INVOICE HANDLING ===============
+        if ($request->has('pending_flag')) {
+            $oldStatus = $booking->status;
+
+            // OEM invoice – sirf hidden se lein (Y-m-d format)
+            $booking->inv_no   = $request->input('invoice_number');
+            $booking->inv_date = $request->filled('hidden_invoice_date')
+                ? $request->hidden_invoice_date
+                : null;
+
+            // Dealer invoice – sirf tab update jab user ne bhara ho
+            if ($request->filled('dealer_invoice_number') && $request->filled('hidden_dealer_invoice_date')) {
+                $booking->dealer_inv_no   = $request->dealer_invoice_number;
+                $booking->dealer_inv_date = $request->hidden_dealer_invoice_date;
+
+                // Yeh line add kar di — jo tumne bola
+                $booking->dealer_status = 1;
+                Log::info('Dealer status set to 1', [
+                    'dealer_inv_no'   => $booking->dealer_inv_no,
+                    'dealer_inv_date' => $booking->dealer_inv_date,
+                ]);
+            } else {
+                // Dealer khali hai → dealer fields touch nahi karenge
+                // (purana value rehne do ya null kar do — abhi null nahi kar rahe)
+            }
+
+            $booking->status = 2; // Invoiced
+
+            // Log karo save se pehle
+            Log::info('Invoice fields before save', [
+                'inv_no'           => $booking->inv_no,
+                'inv_date'         => $booking->inv_date,
+                'dealer_inv_no'    => $booking->dealer_inv_no,
+                'dealer_inv_date'  => $booking->dealer_inv_date,
+                'dealer_status'    => $booking->dealer_status ?? 'unchanged',
+            ]);
+
+            // Optional: debug ke liye full object log
+            // Log::debug('Full booking object before save', $booking->toArray());
+        }
+
+        if ($validator->fails()) {
+            Log::warning('Validation FAILED', [
+                'booking_id' => $id,
+                'errors'     => $validator->errors()->toArray()
+            ]);
+
+            return redirect()->back()->withErrors($validator)->withInput();
+        }
+
+        Log::info('Validation PASSED');
+
+
+        $changes = [];
+
+        $this->logChange($booking, 'online_bk_ref_no', $request->online_bk_ref_no, $changes);
+        $this->logChange($booking, 'pan_no', $request->pan_no, $changes);
+        $this->logChange($booking, 'adhar_no', $request->adhar_no, $changes);
+        $this->logChange($booking, 'dms_no', $request->dms_no, $changes);
+        $this->logChange($booking, 'dms_otf', $request->dms_otf, $changes);
+        $this->logChange($booking, 'otf_date', $request->hidden_otf_date, $changes);
+        $this->logChange($booking, 'chasis_no', $request->chassis, $changes);
+
+        // DMS SO Handling
+        if ($request->has('not_required')) {
+            if ($booking->dms_so != 0) {
+                $changes[] = "DMS SO marked as Not Required";
+                Log::info('DMS SO marked not required');
+            }
+            $booking->dms_so = 0;
+        } else {
+            $this->logChange($booking, 'dms_so', $request->dms_so, $changes);
+        }
+
+
+
+        // =============== SAVE ===============
+        try {
+            $booking->save();
+            Log::info('Booking saved successfully', ['booking_id' => $id, 'changes_count' => count($changes)]);
+        } catch (\Exception $e) {
+            Log::error('FAILED to save booking', [
+                'booking_id' => $id,
+                'error'      => $e->getMessage(),
+                'trace'      => $e->getTraceAsString()
+            ]);
+            return redirect()->back()->withErrors(['save' => 'Database error. Check logs.'])->withInput();
+        }
+
+        // =============== FINAL LOG & REDIRECT ===============
+        if (!empty($changes)) {
+            Log::info('Pending data updated', ['changes' => $changes]);
+        }
+
+        $msg = $request->has('pending_flag')
+            ? 'Booking successfully marked as INVOICED! Chassis: ' . $request->chassis
+            : 'Pending data updated successfully!';
+
+        Log::info('=== PENDING UPDATE SUCCESS ===', [
+            'booking_id' => $id,
+            'final_status' => $booking->status,
+            'message' => $msg
+        ]);
+
+        return redirect()->route('booking.index')->with('success', $msg);
+    }
+
+    private function logChange($model, $field, $newValue, &$changes)
+    {
+        if ($model->$field != $newValue) {
+            $old = $model->$field ?? '(empty)';
+            $new = $newValue ?? '(empty)';
+            $changes[] = ucfirst(str_replace('_', ' ', $field)) . " changed from '{$old}' → '{$new}'";
+            $model->$field = $newValue;
+            Log::info("Field updated: {$field}", ['old' => $old, 'new' => $new]);
+        }
+    }
+    /**
+     * Helper to update only if different + track change
+     */
+    private function updateIfDifferent($model, $field, $newValue, &$changes)
+    {
+        $current = $model->$field;
+        $new     = $newValue ?? null;
+
+        if ($current != $new) {
+            $model->$field = $new;
+            if (!empty($new)) {
+                $changes[] = ucfirst(str_replace('_', ' ', $field)) . " updated to " . $new;
+            }
+        }
+    }
+
+    public function requestRefund(Request $request, $id)
+    {
+
+        $booking = Booking::find($id);
+        if (!$booking) {
+            \Log::warning('Booking not found', ['id' => $id]);
+            return redirect()->back()->with('error', 'Booking not found.');
+        }
+
+        \Log::info('Booking found', ['id' => $booking->id, 'current_status' => $booking->status]);
+
+        // Validation
+        $validator = Validator::make($request->all(), [
+            'deduction'         => 'required|numeric|min:0|lte:booking_amount',
+            'remaining_amount'  => 'required|numeric|min:0',
+            'bank_name'         => 'required|string|max:255',
+            'branch_name'       => 'required|string|max:255',
+            'account_type'      => 'required|in:savings,current',
+            'account_number'    => 'required|string|max:20',
+            'holder_name'       => 'required|string|max:255',
+            'ifsc_code'         => 'required|string',
+            'deduction_reason'  => 'required|string|max:500',
+            'acc_proof'         => 'required|file|mimes:jpeg,png,jpg,pdf|max:2048',
+            'aadhar'            => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:2048',
+            'pan'               => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:2048',
+        ], [
+            'deduction.lte'          => 'Deduction cannot exceed booking amount.',
+            'ifsc_code.regex'        => 'Invalid IFSC format (example: SBIN0001234)',
+            'acc_proof.required'     => 'Account proof is mandatory.',
+            'acc_proof.max'          => 'File size max 2MB.',
+        ]);
+
+        if ($validator->fails()) {
+            \Log::warning('Validation failed', $validator->errors()->toArray());
+            return redirect()->back()
+                ->withErrors($validator)
+                ->withInput();
+        }
+
+        \Log::info('Validation passed');
+
+        // Remaining amount check
+        $calculated = (float) $request->booking_amount - (float) $request->deduction;
+        if (abs($calculated - (float) $request->remaining_amount) > 0.01) {
+            \Log::warning('Remaining amount mismatch', [
+                'calculated' => $calculated,
+                'submitted'  => $request->remaining_amount,
+            ]);
+            return redirect()->back()
+                ->with('error', 'Remaining amount does not match calculation.')
+                ->withInput();
+        }
+
+        try {
+            $refund = Xl_Refunds::create([
+                'entity_type'    => 'booking',
+                'entity_id'      => $booking->id,
+                'bank_name'      => strtoupper($request->bank_name),
+                'branch_name'    => strtoupper($request->branch_name),
+                'account_type'   => $request->account_type,
+                'account_number' => $request->account_number,
+                'holder_name'    => $request->holder_name,
+                'ifsc_code'      => strtoupper($request->ifsc_code),
+                'req_date'       => now()->format('Y-m-d'),
+                'req_by'         => backpack_auth()->id(),
+                'amount'         => $request->remaining_amount,
+                'details'        => $request->deduction_reason,
+            ]);
+
+            \Log::info('Refund record created', ['refund_id' => $refund->id]);
+
+            // Media attachments
+            foreach (['acc_proof' => 'account_proof', 'aadhar' => 'aadhar', 'pan' => 'pan'] as $field => $type) {
+                if ($request->hasFile($field) && $request->file($field)->isValid()) {
+                    $refund->addMediaFromRequest($field)
+                        ->withCustomProperties(['document_type' => $type])
+                        ->toMediaCollection('refund-documents');
+                    \Log::info("Media added: {$field}", ['type' => $type]);
+                }
+            }
+
+            $booking->update([
+                'status'              => 4,
+                'refund_request_date' => now(),
+            ]);
+
+            \Log::info('Booking updated to refund requested', [
+                'booking_id' => $booking->id,
+                'new_status' => $booking->status,
+            ]);
+
+            return redirect()->route('booking.index')
+                ->with('success', 'Refund request submitted successfully for Booking #' . $booking->id);
+        } catch (\Exception $e) {
+            \Log::error('Refund process failed', [
+                'message' => $e->getMessage(),
+                'trace'   => $e->getTraceAsString(),
+                'input'   => $request->except(['_token', 'acc_proof', 'aadhar', 'pan']),
+            ]);
+            dd($request->all());
+            return redirect()->back()
+                ->with('error', 'Something went wrong while processing refund. Please try again.')
+                ->withInput();
+        }
+    }
+
+    // public function statusave(Request $request, $id)
+    // {
+    //     // print_r($request->all());
+    //     // die();
+    //     $booking = Booking::findOrFail($id);
+
+    //     $oldStatus = $booking->status;
+    //     $newStatus = $request->input('status');
+
+    //     if (!in_array($newStatus, [1, 8])) {
+    //         return redirect()->back()->with('error', 'Invalid status.');
+    //     }
+
+    //     $statusNames = [
+    //         1 => 'Live',
+    //         2 => 'Invoiced',
+    //         3 => 'Cancelled',
+    //         4 => 'Refund Queued',
+    //         5 => 'Refunded',
+    //         6 => 'On Hold',
+    //         7 => 'Refund Rejected',
+    //         8 => 'Pending',
+    //     ];
+
+    //     $oldName = $statusNames[$oldStatus] ?? 'Unknown';
+    //     $newName = $statusNames[$newStatus] ?? 'Unknown';
+
+    //     // Create the status change remark
+    //     $statusRemark = ($oldStatus != $newStatus)
+    //         ? "Booking status changed from {$oldName} to {$newName}"
+    //         : null;
+
+    //     // Optional admin remark from form (fallback if no field)
+    //     $adminRemark = $request->input('remark', 'Restored from cancelled');
+
+    //     // Only call add_followup if there's something meaningful
+    //     if ($statusRemark || $adminRemark) {
+    //         $commid = ChatHelper::get_commid(3, $booking->id, "Booking Created");
+
+    //         ChatHelper::add_followup(
+    //             $commid,
+    //             $statusRemark ?: $adminRemark,          // content = main status change
+    //             $statusRemark ? $adminRemark : null,    // remark = optional note
+    //             null,                                   // file
+    //             1                                       // status
+    //         );
+    //     }
+
+    //     $booking->update([
+    //         'status' => $newStatus,
+    //         'refund_request_date' => null,
+    //     ]);
+
+    //     return redirect()->route('booking.index')
+    //         ->with('success', 'Booking successfully restored!');
+    // }
+    public function statusave(Request $request, $id)
+    {
+        // 1. Start of function - request data log karo (debug ke liye)
+        \Log::debug('statusave called', [
+            'booking_id' => $id,
+            'request_all' => $request->all(),
+            'ip' => $request->ip(),
+        ]);
+
+        try {
+            $booking = Booking::findOrFail($id);
+            \Log::info('Booking found', ['id' => $id, 'current_status' => $booking->status]);
+
+            $oldStatus = $booking->status;
+            $newStatus = $request->input('status');
+
+            \Log::info('Status change requested', [
+                'old' => $oldStatus,
+                'new' => $newStatus,
+                'remark' => $request->input('remark'),
+            ]);
+
+
+
+            $statusNames = [
+                1 => 'Live',
+                2 => 'Invoiced',
+                3 => 'Cancelled',
+                4 => 'Refund Queued',
+                5 => 'Refunded',
+                6 => 'On Hold',
+                7 => 'Refund Rejected',
+                8 => 'Pending',
+            ];
+
+            $oldName = $statusNames[$oldStatus] ?? 'Unknown';
+            $newName = $statusNames[$newStatus] ?? 'Unknown';
+
+            $statusRemark = ($oldStatus != $newStatus)
+                ? "Booking status changed from {$oldName} to {$newName}"
+                : null;
+
+            $adminRemark = $request->input('remark', 'Restored from cancelled');
+
+            \Log::info('Preparing followup log', [
+                'status_remark' => $statusRemark,
+                'admin_remark' => $adminRemark,
+            ]);
+
+            if ($statusRemark || $adminRemark) {
+                $commid = ChatHelper::get_commid(3, $booking->id, "Booking Created");
+                \Log::debug('Comm ID fetched', ['commid' => $commid]);
+
+                ChatHelper::add_followup(
+                    $commid,
+                    $statusRemark ?: $adminRemark,
+                    $statusRemark ? $adminRemark : null,
+                    null,
+                    1
+                );
+                \Log::info('Followup added successfully');
+            }
+
+            $booking->update([
+                'status' => $newStatus,
+                'refund_request_date' => null,
+            ]);
+            \Log::info('Booking updated successfully', ['new_status' => $newStatus]);
+
+            return redirect()->route('booking.index')
+                ->with('success', 'Booking successfully restored!');
+        } catch (\Exception $e) {
+            \Log::error('Error in statusave', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+                'booking_id' => $id,
+            ]);
+
+            return redirect()->back()->with('error', 'Something went wrong: ' . $e->getMessage());
+        }
+    }
+    public function receiptEdit($bookingId, $receiptId)
+    {
+        // Optional: check if receipt belongs to this booking
+        $receipt = \App\Models\BookingAmount::findOrFail($receiptId); // assuming xcelr8_booking_amount model alias is BookingAmount
+
+        if ($receipt->bid != $bookingId) {
+            abort(403, 'Receipt does not belong to this booking');
+        }
+
+        // Pass data to the view
+        $data = [
+            'entry'     => $receipt,
+            'booking'   => $this->crud->getEntry($bookingId),
+            'booking_id' => $bookingId,
+            'receipt_id' => $receiptId,
+            // add more if needed: titles, form fields, etc.
+        ];
+
+        // You can return a custom view or Backpack form
+        // return view('booking.receipt-edit', $data);
+
+        // Alternative: if you want to use Backpack CRUD form style
+        // $this->crud->setModel(\App\Models\BookingAmount::class);
+        // $this->crud->setRoute("admin/booking/{$bookingId}/receipt");
+        // return $this->crud->edit($receiptId);
+    }
+    /**
+     * Display Dealer Invoice Form
+     */
+    public function dealerInvoice($id)
+    {
+        $this->crud->hasAccessOrFail('list'); // or create appropriate permission
+
+        $booking = Booking::findOrFail($id);
+
+        // Check if booking is eligible for dealer invoice
+        if ($booking->dealer_status != 1) {
+            return redirect()->back()->with('error', 'This booking is not pending for dealer invoice.');
+        }
+
+        $this->data['crud'] = $this->crud;
+        $this->data['title'] = 'Dealer Invoice Details - Booking #' . $booking->id;
+        $this->data['booking'] = $booking;
+        $this->data['saveAction'] = backpack_url("booking/{$id}/dealer-invoice");
+
+        // Get common lookups if needed
+        $this->data['lookups'] = $this->getCommonLookups();
+
+        return view('booking.dealer-edit', $this->data);
+    }
+
+    /**
+     * Update Dealer Invoice Details
+     */
+    public function dealerInvoiceUpdate(Request $request, $id)
+    {
+        $booking = Booking::findOrFail($id);
+
+        // Authorization check
+        $this->crud->hasAccessOrFail('update'); // or create appropriate permission
+
+        // Check if booking is eligible
+        if ($booking->dealer_status != 1) {
+            return redirect()->back()->with('error', 'This booking is not pending for dealer invoice.')->withInput();
+        }
+
+        // Validation
+        $validator = Validator::make($request->all(), [
+            'dms_invoice_number' => 'required|string|regex:/^INV\d{2}[A-Z]\d{6}$/',
+            'dms_invoice_date' => 'required|date|before_or_equal:today',
+            'hidden_dealer_invoice_number' => 'nullable|string',
+            'hidden_dealer_inv_date' => 'nullable|date',
+        ], [
+            'dms_invoice_number.required' => 'DMS Invoice Number is required.',
+            'dms_invoice_number.regex' => 'DMS Invoice Number must be in format INV00A123456.',
+            'dms_invoice_date.required' => 'DMS Invoice Date is required.',
+            'dms_invoice_date.before_or_equal' => 'DMS Invoice Date cannot be in the future.',
+        ]);
+
+        if ($validator->fails()) {
+            Log::warning('Dealer Invoice Validation Failed', [
+                'booking_id' => $id,
+                'errors' => $validator->errors()->toArray()
+            ]);
+
+            return redirect()->back()
+                ->withErrors($validator)
+                ->withInput();
+        }
+
+        try {
+            // Update booking with DMS invoice details
+            $booking->inv_no = $request->input('dms_invoice_number');
+            $booking->inv_date = $request->input('dms_invoice_date');
+            $booking->dealer_status = 2; // Mark as invoiced
+
+            // Keep existing dealer invoice details if they exist
+            if ($request->filled('hidden_dealer_invoice_number')) {
+                $booking->dealer_inv_no = $request->input('hidden_dealer_invoice_number');
+            }
+            if ($request->filled('hidden_dealer_inv_date')) {
+                $booking->dealer_inv_date = $request->input('hidden_dealer_inv_date');
+            }
+
+            // Log before save
+            Log::info('Dealer Invoice Update - Before Save', [
+                'booking_id' => $id,
+                'inv_no' => $booking->inv_no,
+                'inv_date' => $booking->inv_date,
+                'dealer_status' => $booking->dealer_status,
+                'dealer_inv_no' => $booking->dealer_inv_no,
+                'dealer_inv_date' => $booking->dealer_inv_date,
+            ]);
+
+            $booking->save();
+
+            // Add ChatHelper follow-up
+            try {
+                $commid = ChatHelper::get_commid(3, $booking->id, "Booking Created");
+                ChatHelper::add_followup(
+                    $commid,
+                    "DMS Invoice details updated successfully. Invoice No: " . $booking->inv_no,
+                    backpack_user()->name . " has updated DMS invoice details",
+                    null,
+                    1
+                );
+                Log::info('ChatHelper follow-up added for dealer invoice', ['booking_id' => $id]);
+            } catch (\Exception $e) {
+                Log::error('ChatHelper failed for dealer invoice', [
+                    'booking_id' => $id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+
+            Log::info('Dealer Invoice Updated Successfully', [
+                'booking_id' => $id,
+                'inv_no' => $booking->inv_no,
+                'status' => 'success'
+            ]);
+
+            return redirect()->route('booking.pending-invoices')
+                ->with('success', 'Dealer invoice details updated successfully for Booking #' . $booking->id);
+        } catch (\Exception $e) {
+            Log::error('Dealer Invoice Update Failed', [
+                'booking_id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'input' => $request->except(['_token'])
+            ]);
+
+            return redirect()->back()
+                ->with('error', 'Failed to update dealer invoice details. Please try again.')
+                ->withInput();
+        }
+    }
+    public function insEdit($id)
+    {
+        $booking = Booking::findOrFail($id);
+
+        // Existing insurance record (if any)
+        $insurance = XlInsurer::where('bid', $id)->first();  // adjust table/model name if needed
+
+        $data = [];
+
+        $data['segments']      = XpricingHelper::getSegments() ?? [];
+        $data['models']        = XpricingHelper::getModelsX() ?? [];
+        $data['variants']      = XpricingHelper::getVehiclesX() ?? [];
+        $data['colors']        = XpricingHelper::getColorX() ?? [];
+        $data['branch']        = optional(X_Branch::find($booking->branch_id))->name ?? 'N/A';
+        $data['location']      = $booking->location_id
+            ? optional(X_Location::find($booking->location_id))->name
+            : ($booking->location_other ?? 'N/A');
+        $data['insurances']    = XlInsurance::select('id', 'name', 'short_name')->get()->toArray();
+        $data['allusers']      = XpricingHelper::selectUsers() ?? [];
+        $data['fbranch']       = $data['branch']; // duplicate if needed
+        $data['flocation']     = $data['location'];
+
+        // Chassis related
+        $stock = Stock::find($booking->chasis_no);
+        if ($stock) {
+            $data['bchasis'] = $stock->chasis_no;
+            $data['chassis'] = Stock::where('model_code', $stock->model_code)
+                ->select('chasis_no', 'id')
+                ->get()
+                ->toArray();
+        } else {
+            $data['bchasis'] = 'Not Available';
+            $data['chassis'] = [];
+        }
+
+        // DSA / Collector
+        $dsaRecords = Xl_Dsa_Master::all();
+        $data['dsa_details'] = $dsaRecords->map(fn($dsa) => [
+            'id'       => $dsa->id,
+            'name'     => $dsa->name,
+            'mobile'   => $dsa->mobile,
+            'email'    => $dsa->email,
+            'location' => $dsa->dlocation,
+        ])->toArray();
+
+        $collector = User::find($booking->col_by);
+        $data['collector_name'] = $collector
+            ? $collector->name . ' - (' . ($collector->emp_code ?? 'N/A') . ')'
+            : 'N/A';
+
+        $drec = Xl_Dsa_Master::find($booking->dsa_id);
+        $dsaname = $drec ? $drec->name . ' - ' . $drec->mobile : 'N/A';
+
+        $data['saleconsultants'] = XpricingHelper::selectfsc() ?? [];
+
+        $data['make1'] = Commonhelper::enumValueById($booking->exist_oem1) ?? 'N/A';
+        $data['make2'] = Commonhelper::enumValueById($booking->exist_oem2) ?? 'N/A';
+
+        $data['insurers'] = $data['insurances']; // alias if needed
+
+        $uid = backpack_auth()->id();
+
+        return view('booking.insurance-edit', compact(
+            'booking',
+            'insurance',
+            'data',
+            'dsaname',
+            'uid'
+        ));
+    }
+
+    public function insUpdate(Request $request, $id)
+    {
+        // Step 1: Request received
+        Log::info('insUpdate called', [
+            'booking_id' => $request->booking_id ?? 'missing',
+            'user_id'    => backpack_auth()->id() ?? 'guest',
+            'ip'         => $request->ip(),
+            'all_input'  => $request->except(['policy_copy']), // file को log मत करो
+        ]);
+
+        try {
+            // Step 2: Validation
+            $validated = $request->validate([
+                'booking_id'          => 'required',
+                'insurance_category'  => 'required|integer|in:1,2,3',
+                'insurance_company'   => 'required|integer',
+                'policy_no'           => 'required|string|min:10|max:20|regex:/^[A-Z0-9]+$/i',
+                'hidden_policy_date'  => 'required|date_format:Y-m-d',
+                'policy_type'         => 'required|integer|in:1,2,3,4',
+                'policy_copy'         => 'nullable|file|mimes:pdf|max:5120',
+            ]);
+
+            Log::info('Validation passed successfully', [
+                'booking_id' => $request->booking_id,
+                'policy_no'  => $request->policy_no,
+            ]);
+
+            // Step 3: Prepare data
+            $data = [
+                'bid'         => $request->booking_id,
+                'source'      => $request->insurance_category,
+                'insurer'     => $request->insurance_company,
+                'pol_no'      => strtoupper($request->policy_no),
+                'pol_date'    => $request->hidden_policy_date,
+                'pol_type'    => $request->policy_type,
+                'status'      => 1,
+                'updated_by'  => backpack_auth()->id() ?? 1,
+            ];
+
+            $allFieldsFilled = $request->filled([
+                'booking_id',
+                'insurance_category',
+                'insurance_company',
+                'policy_no',
+                'hidden_policy_date',
+                'policy_type',
+            ]) && $request->hasFile('policy_copy');
+
+            if ($allFieldsFilled) {
+                $data['status'] = 2;
+                Log::info('All required fields filled + file uploaded → status set to 2');
+            } else {
+                Log::info('Status remains 1 - missing some required field or file'); // optional: missing keys log कर सकते हो
+
+            }
+
+            // Step 4: Update or Create record
+            Log::info('Attempting to update/create insurance record', ['bid' => $request->booking_id]);
+
+            $insurance = XlInsurer::updateOrCreate(
+                ['bid' => $request->booking_id],
+                $data
+            );
+
+            Log::info('Insurance record saved/updated', [
+                'insurance_id' => $insurance->id,
+                'bid'          => $insurance->bid,
+                'status'       => $insurance->status,
+            ]);
+
+            // Step 5: File upload handling
+            if ($request->hasFile('policy_copy') && $request->file('policy_copy')->isValid()) {
+                Log::info('Policy copy file detected', [
+                    'original_name' => $request->file('policy_copy')->getClientOriginalName(),
+                    'size'          => $request->file('policy_copy')->getSize() . ' bytes',
+                ]);
+
+                $insurance->clearMediaCollection('policy_copy');
+                Log::info('Cleared old policy_copy media collection');
+
+                $insurance->addMediaFromRequest('policy_copy')
+                    ->usingFileName("policy_{$request->booking_id}_" . time() . ".pdf")
+                    ->toMediaCollection('policy_copy');
+
+                Log::info('New policy copy file uploaded successfully');
+            } else {
+                Log::info('No valid policy_copy file uploaded or file invalid');
+            }
+
+            // Success
+            Log::info('insUpdate completed successfully', ['booking_id' => $request->booking_id]);
+
+            return redirect()->route('booking.pending-insurance')
+                ->with('success', 'Insurance details saved successfully for Booking #' . $request->booking_id);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::warning('Validation failed in insUpdate', [
+                'booking_id' => $request->booking_id ?? 'unknown',
+                'errors'     => $e->errors(),
+            ]);
+
+            return redirect()->back()
+                ->withErrors($e->validator)
+                ->withInput();
+        } catch (\Exception $e) {
+            Log::error('Critical error in insUpdate', [
+                'booking_id' => $request->booking_id ?? 'unknown',
+                'message'    => $e->getMessage(),
+                'file'       => $e->getFile(),
+                'line'       => $e->getLine(),
+                'trace'      => $e->getTraceAsString(),
+            ]);
+
+            return redirect()->back()
+                ->with('error', 'Failed to save insurance data. Please check logs or try again.')
+                ->withInput();
+        }
+    }
+
+
+
+
+    public function rtoEdit($id)
+    {
+        $booking = Booking::findOrFail($id);
+
+        // RTO record (if exists)
+        $rto = XlRto::where('bid', $id)->first();
+
+        $data = [];
+
+        // तुम्हारे पुराने कोड से copy-paste (सिर्फ जरूरी fields रखे हैं)
+        $data['segments']     = XpricingHelper::getSegments() ?? [];
+        $data['models']       = XpricingHelper::getModelsX() ?? [];
+        $data['variants']     = XpricingHelper::getVehiclesX() ?? [];
+        $data['colors']       = XpricingHelper::getColorX() ?? [];
+        $data['branch']       = optional(X_Branch::find($booking->branch_id))->name ?? 'N/A';
+        $data['location']     = $booking->location_id
+            ? optional(X_Location::find($booking->location_id))->name
+            : ($booking->location_other ?? 'N/A');
+        $data['rto_rules']    = XlRtoRules::select('sale_type', 'permit', 'body_type', 'reg_no_type', 'trc_number', 'trc_pay', 'trc_copy', 'app_no', 'tax_pay', 'veh_reg', 'tax_copy')
+            ->get()
+            ->toArray();
+        $data['allusers']     = XpricingHelper::selectUsers() ?? [];
+        $data['fbranch']      = $data['branch'];
+        $data['flocation']    = $data['location'];
+
+        // Chassis logic
+        $cr = Stock::find($booking->chasis_no);
+        if ($cr) {
+            $data['bchasis'] = $cr->chasis_no;
+            $data['chassis'] = Stock::where('model_code', $cr->model_code)
+                ->select('chasis_no', 'id')
+                ->get()
+                ->toArray();
+        } else {
+            $data['bchasis'] = 'Not Available';
+            $data['chassis'] = [];
+        }
+
+        // DSA details
+        $dsaRecords = Xl_Dsa_Master::all();
+        $data['dsa_details'] = $dsaRecords->map(fn($dsa) => [
+            'id'       => $dsa->id,
+            'name'     => $dsa->name,
+            'mobile'   => $dsa->mobile,
+            'email'    => $dsa->email,
+            'location' => $dsa->dlocation,
+        ])->toArray();
+
+        $collector = User::find($booking->col_by);
+        $data['collector_name'] = $collector
+            ? $collector->name . ' - (' . ($collector->emp_code ?? 'N/A') . ')'
+            : 'N/A';
+
+        $drec = Xl_Dsa_Master::find($booking->dsa_id);
+        $dsaname = $drec ? $drec->name . '-' . $drec->mobile : 'N/A';
+
+        $data['saleconsultants'] = XpricingHelper::selectfsc() ?? [];
+
+        $data['make1'] = Commonhelper::enumValueById($booking->exist_oem1) ?? 'N/A';
+        $data['make2'] = Commonhelper::enumValueById($booking->exist_oem2) ?? 'N/A';
+
+        $uid = backpack_auth()->id();
+
+        return view('booking.rto-edit', compact('booking', 'rto', 'data', 'dsaname', 'uid'));
+    }
+
+    public function rtoUpdate(Request $request, $id)
+    {
+        // Validation
+        $validated = $request->validate([
+            'trade_used'           => 'required|in:1,2,3,4,5,6',
+            'sale_type'            => 'required|in:1,2',
+            'permit'               => 'required|in:1,2,3,4,5,6,7,8,9,10,11',
+            'body_type'            => 'required|in:1,2',
+            'registration_type'    => 'required|in:1,2,3',
+            'reg_no_type'          => 'required|in:1,2,3',
+            'trc_number'           => 'nullable|string|max:15|regex:/^[A-Z0-9]{10,15}$/',
+            'bank_ref_no'          => 'nullable|string|max:20|regex:/^[A-Z0-9]{10,20}$/',
+            'trc_copy'             => 'nullable|file|mimes:pdf|max:5120',
+            'application_no'       => 'nullable|string|max:15|regex:/^[A-Z0-9]{10,15}$/',
+            'tax_payment_ref_no'   => 'nullable|string|max:20|regex:/^[A-Z0-9]{10,20}$/',
+            'vehicle_reg_no'       => 'nullable|string',
+            'tax_receipt_copy'     => 'nullable|file|mimes:pdf|max:5120',
+        ]);
+
+        try {
+            // Fetch all rto_rules once
+            $rto_rules = XlRtoRules::select(
+                'sale_type',
+                'permit',
+                'body_type',
+                'reg_no_type',
+                'trc_number',
+                'trc_pay',
+                'trc_copy',
+                'app_no',
+                'tax_pay',
+                'veh_reg',
+                'tax_copy'
+            )->get()->toArray();
+
+            // Text mapping for form values → rule matching
+            $saleTypeMap = [
+                '1' => 'Within State',
+                '2' => 'Outside State',
+            ];
+
+            $permitMap = [
+                '1'  => 'Private - U/C (4 Wheeler)',
+                '2'  => 'Private - BH (4 Wheeler)',
+                '3'  => 'Private - EV (4 Wheeler)',
+                '4'  => 'Goods - G (4 Wheeler)',
+                '5'  => 'Goods - G 3 Ton+ (4 Wheeler)',
+                '6'  => 'Goods - G (3 Wheeler)',
+                '7'  => 'Goods - G EV (3 Wheeler)',
+                '8'  => 'Taxi - T (4 Wheeler)',
+                '9'  => 'Passenger - P (3 Wheeler)',
+                '10' => 'Passenger - P EV (3 Wheeler)',
+                '11' => 'Ambulance (Misc.)',
+            ];
+
+            $bodyTypeMap = [
+                '1' => 'Complete',
+                '2' => 'CBC',
+            ];
+
+            $regNoTypeMap = [
+                '1' => 'Regular',
+                '2' => 'BH',
+                '3' => 'Special',
+            ];
+
+            // Get text values from numeric inputs
+            $saleText       = $saleTypeMap[$request->sale_type]       ?? '';
+            $permitText     = $permitMap[$request->permit]           ?? '';
+            $bodyText       = $bodyTypeMap[$request->body_type]      ?? '';
+            $regNoTypeText  = $regNoTypeMap[$request->reg_no_type]   ?? '';
+
+            // Find matching rule
+            $matchingRule = null;
+            foreach ($rto_rules as $rule) {
+                if (
+                    $rule['sale_type']    === $saleText &&
+                    $rule['permit']       === $permitText &&
+                    $rule['body_type']    === $bodyText &&
+                    $rule['reg_no_type']  === $regNoTypeText
+                ) {
+                    $matchingRule = $rule;
+                    break;
+                }
+            }
+
+            // Required fields check based on rule
+            $allRequiredFilled = true;
+
+            if ($matchingRule) {
+                $fieldMap = [
+                    'trc_number'         => 'trc_number',
+                    'bank_ref_no'        => 'trc_pay',
+                    'trc_copy'           => 'trc_copy',
+                    'application_no'     => 'app_no',
+                    'tax_payment_ref_no' => 'tax_pay',
+                    'vehicle_reg_no'     => 'veh_reg',
+                    'tax_receipt_copy'   => 'tax_copy',
+                ];
+
+                foreach ($fieldMap as $formField => $ruleKey) {
+                    if ($matchingRule[$ruleKey] === 'Yes') {
+                        if (in_array($formField, ['trc_copy', 'tax_receipt_copy'])) {
+                            // File required
+                            if (!$request->hasFile($formField) || !$request->file($formField)->isValid()) {
+                                $allRequiredFilled = false;
+                                break;
+                            }
+                        } else {
+                            // Text field required
+                            if (!$request->filled($formField)) {
+                                $allRequiredFilled = false;
+                                break;
+                            }
+                        }
+                    }
+                }
+            } else {
+                // No matching rule → incomplete
+                $allRequiredFilled = false;
+            }
+
+            // Prepare data for DB
+            $data = [
+                'bid'                      => $id,
+                'trade_used'               => $request->trade_used,
+                'sale_type'                => $request->sale_type,
+                'permit'                   => $request->permit,
+                'body_type'                => $request->body_type,
+                'rgn_type'                 => $request->registration_type,
+                'rgn_no_type'              => $request->reg_no_type,
+                'trc_no'                   => $request->trc_number,
+                'trc_payment_no'           => $request->bank_ref_no,
+                'app_no'                   => $request->application_no,
+                'tax_payment_bank_ref_no'  => $request->tax_payment_ref_no,
+                'vh_rgn_no'                => $request->vehicle_reg_no,
+                'status'                   => $allRequiredFilled ? 2 : 1,
+                'updated_by'               => backpack_auth()->id() ?? 1,
+            ];
+
+            // Update or Create
+            $rto = XlRto::updateOrCreate(
+                ['bid' => $id],
+                $data
+            );
+
+            // Handle file uploads
+            if ($request->hasFile('trc_copy') && $request->file('trc_copy')->isValid()) {
+                $rto->clearMediaCollection('trc_copy');
+                $rto->addMediaFromRequest('trc_copy')
+                    ->toMediaCollection('trc_copy');
+            }
+
+            if ($request->hasFile('tax_receipt_copy') && $request->file('tax_receipt_copy')->isValid()) {
+                $rto->clearMediaCollection('tax_receipt_copy');
+                $rto->addMediaFromRequest('tax_receipt_copy')
+                    ->toMediaCollection('tax_receipt_copy');
+            }
+
+            // Success
+            return redirect()
+                ->route('booking.pending-rto')  // या जो भी pending list route है
+                ->with('success', 'RTO data saved successfully for Booking #' . $id);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // Validation fail → back with errors
+            return redirect()->back()
+                ->withErrors($e->validator)
+                ->withInput();
+        } catch (\Exception $e) {
+            \Log::error('RTO Update Failed', [
+                'booking_id' => $id,
+                'error'      => $e->getMessage(),
+                'trace'      => $e->getTraceAsString()
+            ]);
+
+            return redirect()->back()
+                ->with('error', 'Failed to save RTO data. Please try again or contact support.')
+                ->withInput();
+        }
+    }
+
+    public function PendDeliveryEdit($id)
+    {
+        $booking = Booking::findOrFail($id);
+
+        // Prepare data similar to other views
+        $segments = EnumMaster::where('val_type', 'segment')->get()->mapWithKeys(function ($item) {
+            return [$item->id => ['name' => $item->value]];
+        });
+
+        // Assuming sales consultants are users; removed invalid 'role' filter
+        $saleconsultants = User::get()
+            ->map(function ($user) {
+                return [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'emp_code' => $user->emp_code ?? 'N/A',
+                ];
+            })
+            ->toArray();
+
+        $branch = X_Branch::find($booking->branch_id)->name ?? 'N/A';
+        $location = X_Location::find($booking->location_id)->name ?? $booking->location_other ?? 'N/A';
+        $financier = XlFinancier::find($booking->financier)->name ?? 'N/A'; // Assuming financier is ID
+        $bchasis = $booking->chasis_no ?? 'N/A'; // Note: Typo in variable name, consistent with blade
+
+        $data = [
+            'segments' => $segments,
+            'saleconsultants' => $saleconsultants,
+            'branch' => $branch,
+            'location' => $location,
+            'financier' => $financier,
+            'bchasis' => $bchasis,
+        ];
+
+        return view('booking.pending-delivery', compact('booking', 'data'));
+    }
+    public function PendDeliveryUpdate(Request $request, $id)
+    {
+        // Validation (exact same as your original)
+        $validated = $request->validate([
+            'remarks'                         => 'required|string|max:1000',
+            'delivery_ceremony_with_customer' => 'required|image|mimes:jpeg,png,jpg|max:5120',
+            'bonnet'                          => 'required|image|mimes:jpeg,png,jpg|max:5120',
+            'windshield_glass'                => 'required|image|mimes:jpeg,png,jpg|max:5120',
+            'vehicle_driver_side'             => 'required|image|mimes:jpeg,png,jpg|max:5120',
+            'vehicle_co_driver_side'          => 'required|image|mimes:jpeg,png,jpg|max:5120',
+            'vehicle_rear_side'               => 'required|image|mimes:jpeg,png,jpg|max:5120',
+            'tire_front_driver_side'          => 'required|image|mimes:jpeg,png,jpg|max:5120',
+            'tire_front_co_driver_side'       => 'required|image|mimes:jpeg,png,jpg|max:5120',
+            'tire_rear_driver_side'           => 'required|image|mimes:jpeg,png,jpg|max:5120',
+            'tire_rear_co_driver_side'        => 'required|image|mimes:jpeg,png,jpg|max:5120',
+            'stepney'                         => 'required|image|mimes:jpeg,png,jpg|max:5120',
+            'foot_rest_driver_side'           => 'required|image|mimes:jpeg,png,jpg|max:5120',
+            'foot_rest_co_driver_side'        => 'required|image|mimes:jpeg,png,jpg|max:5120',
+            'tool_kit'                        => 'required|image|mimes:jpeg,png,jpg|max:5120',
+            'vehicle_chassis_no_photo'        => 'required|image|mimes:jpeg,png,jpg|max:5120',
+            'chassis_no_screenshot_invoice'   => 'required|image|mimes:jpeg,png,jpg|max:5120',
+            'chassis_no_screenshot_insurance' => 'nullable|image|mimes:jpeg,png,jpg|max:5120',
+            'chassis_no_verified'             => 'nullable|boolean',
+        ]);
+
+        try {
+            // Find or create delivery record
+            $delivery = XlDelivery::updateOrCreate(
+                ['bid' => $id],
+                [
+                    'remarks'     => $request->remarks,
+                    'verification' => $request->input('chassis_no_verified', 0),
+                    'status'      => 1, // delivered/complete
+                    'created_by'  => backpack_auth()->id() ?? 1,
+                    'updated_by'  => backpack_auth()->id() ?? 1,
+                ]
+            );
+
+            // All photo collections
+            $collections = [
+                'delivery_ceremony_with_customer',
+                'bonnet',
+                'windshield_glass',
+                'vehicle_driver_side',
+                'vehicle_co_driver_side',
+                'vehicle_rear_side',
+                'tire_front_driver_side',
+                'tire_front_co_driver_side',
+                'tire_rear_driver_side',
+                'tire_rear_co_driver_side',
+                'stepney',
+                'foot_rest_driver_side',
+                'foot_rest_co_driver_side',
+                'tool_kit',
+                'vehicle_chassis_no_photo',
+                'chassis_no_screenshot_invoice',
+                'chassis_no_screenshot_insurance'
+            ];
+
+            // Handle each file upload
+            foreach ($collections as $collection) {
+                if ($request->hasFile($collection) && $request->file($collection)->isValid()) {
+                    // Clear old media if any
+                    $delivery->clearMediaCollection($collection);
+
+                    // Add new photo
+                    $delivery->addMediaFromRequest($collection)
+                        ->toMediaCollection($collection, 'public');
+                }
+            }
+
+            // Success redirect to pending deliveries list
+            return redirect()
+                ->route('booking.pending-deliveries')
+                ->with('success', 'Delivery marked successfully with all photos uploaded! Booking #' . $id);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // Validation fail → back with errors + input
+            return redirect()->back()
+                ->withErrors($e->validator)
+                ->withInput();
+        } catch (\Exception $e) {
+            \Log::error('Delivery Update Failed', [
+                'booking_id' => $id,
+                'error'      => $e->getMessage(),
+                'trace'      => $e->getTraceAsString()
+            ]);
+
+            return redirect()->back()
+                ->with('error', 'Failed to save delivery data. Please check the logs or try again.')
+                ->withInput();
+        }
+    }
+
+    public function exchangeEdit($id)
+    {
+        $booking = Booking::findOrFail($id);
+        $exchange = XExchange::where('bid', $id)->first(); // Fetch XExchange entry if it exists
+        $data = array();
+        $comm = ChatHelper::get_communication(3, $id);
+
+        // FIXED: Use Backpack's auth helper
+        $uid = backpack_user()->id ?? null;  // Safe fallback if no user (though middleware should prevent this)
+
+        $data['branch'] = X_Branch::find($booking->branch_id)->name ?? 'N/A';
+        $data['location'] = ($booking->location_id > 0) ? X_Location::find($booking->location_id)->name : $booking->location_other;
+        $acc = explode(',', $booking->accessories);
+        foreach ($acc as $a) {
+            $accessory = Xessories::find($a);
+            $tmp = array();
+            if ($accessory) {
+                $temp[] = $accessory->item;
+            }
+            if (!empty($temp))
+                $data['accessories'] = implode(",", $temp);
+            else
+                $data['accessories'] = "N/A";
+        }
+        $chassis = Stock::find($booking->chasis_no);
+        $data['bchasis'] = $chassis ? $chassis->chasis_no : 'N/A';
+        $data['segments'] = XpricingHelper::getSegments();
+        $data['remark'] = 0;
+        $data['saleconsultants'] = XpricingHelper::selectfsc();
+        $drec = Xl_DSA_Master::find($booking->dsa_id);
+        $dsaname = $drec ? $drec->name . '-' . $drec->mobile : "N/A";
+        $user = backpack_user();  // Use Backpack helper here too for consistency
+        $collector = User::find($booking->col_by);
+        if ($collector) {
+            $data['collector_name'] = $collector->name . ' - ' . $collector->emp_code;
+        } else {
+            $data['collector_name'] = 'N/A';
+        }
+        $depts = explode(",", $user->department);
+        foreach ($depts as $dept) {
+            if (commonhelper::enumValueById($dept) == "SALES")
+                $data['remark'] = 1;
+            if (commonhelper::enumValueById($dept) == "ACCOUNTS")
+                $data['remark'] = 2;
+        }
+        $data['make1'] = Commonhelper::enumValueById($booking->exist_oem1) ?? 'N/A';
+        $data['make2'] = Commonhelper::enumValueById($booking->exist_oem2) ?? 'N/A';
+        $enumMasterRecords = EnumMaster::where('master_id', 94)->select('id', 'value')->get();
+        $data['enum_master'] = $enumMasterRecords;
+        $enumMasterIds = explode(',', $booking->exist_oem);
+        $data['oem_ids'] = $enumMasterIds;
+        // Pass both booking and exchange data to the view
+        return view('booking.exch-edit', compact('booking', 'exchange', 'comm', 'data', 'dsaname', 'uid'));
+    }
+    public function exchangeUpdate(Request $request, $id)
+    {
+        $booking = Booking::findOrFail($id);
+        // Validation rules
+        $validator = Validator::make($request->all(), [
+            'buyer_type' => 'required|string|in:First time Buyer,Additional Buy,Exchange Buy,Scrappage',
+            'enum_master1' => 'nullable|integer',
+            'vehicle_details' => 'nullable|string|max:255',
+            'enum_master2' => 'nullable|integer',
+            'vehicle_details2' => 'nullable|string|max:255',
+            'registration_no' => 'nullable|string|max:255',
+            'manufacturing_year' => 'nullable|integer',
+            'odometer_reading' => 'nullable|string|max:255',
+            'expected_price' => 'nullable|numeric',
+            'offered_price' => 'nullable|numeric',
+            'exchange_bonus' => 'nullable|numeric',
+            'update' => 'required|integer|in:1,2,3', // Verification Status
+            'case_status' => 'required|integer|in:1,2,3', // Case Status
+            'remark' => 'required|string',
+        ]);
+        if ($validator->fails()) {
+            return redirect()->back()->withInput()->with('error', $validator->messages()->first());
+        }
+        $rem = []; // Array to store remarks about changes
+        // Define status mappings for remarks
+        $verificationStatusMap = [
+            1 => 'Unverified',
+            2 => 'Verified (Data Match)',
+            3 => 'Verified (Data Mismatch)',
+        ];
+        $caseStatusMap = [
+            1 => 'In-Process',
+            2 => 'Exchange Done',
+            3 => 'Case Lost',
+        ];
+        // Update Booking fields and log changes
+        if ($booking->buyer_type != $request->buyer_type) {
+            $tvl = empty($booking->buyer_type) ? 'null' : $booking->buyer_type;
+            $rem[] = "Buyer Type Changed from " . $tvl . " to " . $request->buyer_type;
+            $booking->buyer_type = $request->input('buyer_type');
+        }
+        if ($booking->exist_oem1 != $request->enum_master1) {
+            $tvl = empty($booking->exist_oem1) ? 'null' : $booking->exist_oem1;
+            $rem[] = "Brand (Make 1) Changed from " . $tvl . " to " . $request->enum_master1;
+            $booking->exist_oem1 = $request->input('enum_master1');
+        }
+        if ($booking->vh1_detail != $request->vehicle_details) {
+            $tvl = empty($booking->vh1_detail) ? 'null' : $booking->vh1_detail;
+            $rem[] = "Model & Variant 1 Changed from " . $tvl . " to " . $request->vehicle_details;
+            $booking->vh1_detail = $request->input('vehicle_details');
+        }
+        if ($booking->exist_oem2 != $request->enum_master2) {
+            $tvl = empty($booking->exist_oem2) ? 'null' : $booking->exist_oem2;
+            $rem[] = "Brand (Make 2) Changed from " . $tvl . " to " . $request->enum_master2;
+            $booking->exist_oem2 = $request->input('enum_master2');
+        }
+        if ($booking->vh2_detail != $request->vehicle_details2) {
+            $tvl = empty($booking->vh2_detail) ? 'null' : $booking->vh2_detail;
+            $rem[] = "Model & Variant 2 Changed from " . $tvl . " to " . $request->vehicle_details2;
+            $booking->vh2_detail = $request->input('vehicle_details2');
+        }
+        if ($booking->registration_no != $request->registration_no) {
+            $tvl = empty($booking->registration_no) ? 'null' : $booking->registration_no;
+            $rem[] = "Vehicle Registration No Changed from " . $tvl . " to " . $request->registration_no;
+            $booking->registration_no = $request->input('registration_no');
+        }
+        if ($booking->make_year != $request->manufacturing_year) {
+            $tvl = empty($booking->make_year) ? 'null' : $booking->make_year;
+            $rem[] = "Manufacturing Year Changed from " . $tvl . " to " . $request->manufacturing_year;
+            $booking->make_year = $request->input('manufacturing_year');
+        }
+        if ($booking->odo_reading != $request->odometer_reading) {
+            $tvl = empty($booking->odo_reading) ? 'null' : $booking->odo_reading;
+            $rem[] = "Odometer Reading Changed from " . $tvl . " to " . $request->odometer_reading;
+            $booking->odo_reading = $request->input('odometer_reading');
+        }
+        if ($booking->expected_price != $request->expected_price) {
+            $tvl = empty($booking->expected_price) ? 'null' : $booking->expected_price;
+            $rem[] = "Expected Price Changed from " . $tvl . " to " . $request->expected_price;
+            $booking->expected_price = $request->input('expected_price');
+        }
+        if ($booking->offered_price != $request->offered_price) {
+            $tvl = empty($booking->offered_price) ? 'null' : $booking->offered_price;
+            $rem[] = "Offered Price Changed from " . $tvl . " to " . $request->offered_price;
+            $booking->offered_price = $request->input('offered_price');
+        }
+        if ($booking->exchange_bonus != $request->exchange_bonus) {
+            $tvl = empty($booking->exchange_bonus) ? 'null' : $booking->exchange_bonus;
+            $rem[] = "Exchange Bonus Changed from " . $tvl . " to " . $request->exchange_bonus;
+            $booking->exchange_bonus = $request->input('exchange_bonus');
+        }
+        // Handle remarks
+        if ($request->has('remark')) {
+            $booking->pending_remark = $request->input('remark');
+            $rem[] = "Remarks updated: " . $request->input('remark');
+        }
+        // Save changes to Booking
+        $booking->save();
+        // Handle XExchange table
+        $verificationStatus = $request->input('update');
+        $caseStatus = $request->input('case_status');
+        $purchaseType = $request->input('buyer_type'); // Get buyer_type for purchase_type column
+        // Check if an XExchange entry exists for this booking
+        $exchangeEntry = XExchange::where('bid', $booking->id)->first();
+        if (!$exchangeEntry) {
+            // First submission: Create a new entry with default values if not provided
+            $defaultVerificationStatus = $verificationStatus ?? 1; // Default to 1 (Unverified)
+            $defaultCaseStatus = $caseStatus ?? 1; // Default to 1 (In-Process)
+            $defaultPurchaseType = $purchaseType; // Use buyer_type from form
+            XExchange::create([
+                'bid' => $booking->id,
+                'verification_status' => $defaultVerificationStatus,
+                'case_status' => $defaultCaseStatus,
+                'purchase_type' => $defaultPurchaseType,
+            ]);
+            // Add remark for new entry creation (without purchase_type)
+            $rem[] = "New exchange entry created with Verification Status: " . $verificationStatusMap[$defaultVerificationStatus] .
+                " and Case Status: " . $caseStatusMap[$defaultCaseStatus];
+        } else {
+            // Subsequent submission: Update the existing entry and log verification/case status changes
+            $changes = [];
+            if ($exchangeEntry->verification_status != $verificationStatus) {
+                $oldVerification = $verificationStatusMap[$exchangeEntry->verification_status] ?? 'null';
+                $newVerification = $verificationStatusMap[$verificationStatus];
+                $changes[] = "Verification Status changed from " . $oldVerification . " to " . $newVerification;
+            }
+            if ($exchangeEntry->case_status != $caseStatus) {
+                $oldCase = $caseStatusMap[$exchangeEntry->case_status] ?? 'null';
+                $newCase = $caseStatusMap[$caseStatus];
+                $changes[] = "Case Status changed from " . $oldCase . " to " . $newCase;
+            }
+            if (!empty($changes)) {
+                $rem = array_merge($rem, $changes);
+            }
+            // Update the entry (including purchase_type, but don't log it separately)
+            $exchangeEntry->update([
+                'verification_status' => $verificationStatus,
+                'case_status' => $caseStatus,
+                'purchase_type' => $purchaseType,
+            ]);
+        }
+        // Log changes if any
+        if (!empty($rem)) {
+            $commid = ChatHelper::get_commid(3, $booking->id, "Booking Created");
+            ChatHelper::add_followup($commid, "Purchase Type Edited", implode(" , ", $rem), null, 1);
+        }
+        return redirect()->route('booking.exchange')->with('success', 'Exchange purchase details updated successfully!');
+    }
+
+
+    public function finEdit($id)
+    {
+        $booking = Booking::findOrFail($id);
+
+        // Get communication / remarks history
+        $comm = ChatHelper::get_communication(3, $id);
+
+        // Backpack authenticated user
+        $user = backpack_user();
+        $uid  = $user?->id ?? null;
+
+        // Prepare shared $data array
+        $data = [];
+
+        $data['branch']   = X_Branch::find($booking->branch_id)?->name ?? 'N/A';
+        $data['location'] = $booking->location_id > 0
+            ? (X_Location::find($booking->location_id)?->name ?? 'N/A')
+            : ($booking->location_other ?? 'N/A');
+
+        // Accessories
+        $acc = explode(',', $booking->accessories ?? '');
+        $accessoryNames = [];
+        foreach ($acc as $a) {
+            if ($a = trim($a)) {
+                $accessory = Xessories::find($a);
+                if ($accessory) {
+                    $accessoryNames[] = $accessory->item;
+                }
+            }
+        }
+        $data['accessories'] = $accessoryNames ? implode(', ', $accessoryNames) : 'N/A';
+
+        // Chassis
+        $chassis = Stock::find($booking->chasis_no);
+        $data['bchasis'] = $chassis?->chasis_no ?? 'N/A';
+
+        // Helpers / lookups
+        $data['segments']       = XpricingHelper::getSegments();
+        $data['saleconsultants'] = XpricingHelper::selectfsc();
+        $data['financiers']     = XlFinancier::select('id', 'name', 'short_name')->get()->toArray();
+        $data['enum_master']    = EnumMaster::where('master_id', 94)->select('id', 'value')->get();
+
+        // DSA name
+        $drec = Xl_DSA_Master::find($booking->dsa_id);
+        $dsaname = $drec ? $drec->name . ' - ' . $drec->mobile : 'N/A';
+
+        // Collector name
+        $collector = User::find($booking->col_by);
+        $data['collector_name'] = $collector
+            ? $collector->name . ' - ' . $collector->emp_code
+            : 'N/A';
+
+        // Remark permission (SALES / ACCOUNTS)
+        $data['remark'] = 0;
+        $depts = explode(',', $user->department ?? '');
+        foreach ($depts as $deptId) {
+            $deptName = commonhelper::enumValueById(trim($deptId));
+            if ($deptName === 'SALES')   $data['remark'] = 1;
+            if ($deptName === 'ACCOUNTS') $data['remark'] = 2;
+        }
+
+        // Make / OEM names
+        $data['make1'] = Commonhelper::enumValueById($booking->exist_oem1) ?? 'N/A';
+        $data['make2'] = Commonhelper::enumValueById($booking->exist_oem2) ?? 'N/A';
+
+        // OEM IDs array
+        $data['oem_ids'] = explode(',', $booking->exist_oem ?? '');
+
+        // Fetch finance record (can be null)
+        $finance = XFinance::where('bid', $id)->first();
+
+        return view('booking.finance-edit', compact(
+            'booking',
+            'finance',
+            'comm',
+            'data',
+            'dsaname',
+            'uid',
+            'user'
+        ));
+    }
+
+    public function finUpdate(Request $request, $id)
+    {
+        // print_r($request->all());
+        // die();
+
+        $finance = XFinance::where('bid', $id)->firstOrFail();
+        $booking = Booking::findOrFail($id);
+
+        // === MINIMAL VALIDATION ===
+        $rules = [
+            'fin_mode' => 'required',
+            'loan_status' => 'nullable',
+            'case_status' => 'nullable',
+            'instrument_type' => 'nullable',
+            'instrument_ref_no' => 'nullable',
+            'loan_amount' => 'nullable',
+            'margin_money' => 'nullable',
+            'file_charge' => 'nullable',
+            'remark' => 'required',
+            'verification_status' => 'required',
+            'case_lost_reason' => 'nullable',
+            'instrument_proof' => 'nullable|file',
+            'retail' => 'nullable|in:1',
+            'bid' => 'required|integer'
+        ];
+
+        $validator = Validator::make($request->all(), $rules);
+        if ($validator->fails()) {
+            return redirect()->back()
+                ->withInput()
+                ->withErrors($validator)
+                ->with('error', $validator->messages()->first());
+        }
+
+        // === STORE OLD VALUES FOR LOGGING ===
+        $old = $finance->toArray();
+        $changes = [];
+        $labels = [
+            'fin_mode' => 'Finance Mode',
+            'loan_status' => 'Loan Status',
+            'case_status' => 'Case Status',
+            'instrument_type' => 'Instrument Type',
+            'instrument_ref_no' => 'Reference No.',
+            'loan_amount' => 'Loan Amount',
+            'margin' => 'Margin Money',
+            'file_charge' => 'File Charge',
+            'case_lost_reason' => 'Case Lost Reason',
+            'verification_status' => 'Verification Status',
+            'remark' => 'Remark',
+        ];
+
+        $instrumentTypes = [
+            1 => 'Financier Payment',
+            2 => 'Delivery Order',
+            3 => 'Sanction Letter',
+            4 => 'Mail Communication',
+            5 => 'Whatsapp Communication'
+        ];
+
+        $caseLostReasons = [
+            1 => 'Cash Purchase',
+            2 => 'Customer Self Finance',
+        ];
+
+        $verifyLabels = [
+            1 => 'Not Selected',
+            2 => 'Verified (Match)',
+            3 => 'Verified (Mismatch)',
+            4 => 'Plan Cancelled',
+        ];
+
+        $format = function ($val, $field) use ($instrumentTypes, $caseLostReasons, $verifyLabels) {
+            if (is_null($val)) return 'N/A';
+            if ($field === 'instrument_type') return $instrumentTypes[$val] ?? $val;
+            if ($field === 'case_lost_reason') return $caseLostReasons[$val] ?? 'Unknown';
+            if ($field === 'verification_status') return $verifyLabels[$val] ?? $val;
+            if (in_array($field, ['loan_amount', 'margin', 'file_charge'])) {
+                return 'Rs. ' . number_format($val);
+            }
+            return $val;
+        };
+
+        $fields = [
+            'fin_mode',
+            'loan_status',
+            'case_status',
+            'instrument_type',
+            'instrument_ref_no',
+            'loan_amount',
+            'margin',
+            'file_charge',
+            'case_lost_reason',
+            'verification_status'
+        ];
+
+        foreach ($fields as $field) {
+            $oldVal = $old[$field] ?? null;
+            $inputKey = $field === 'margin' ? 'margin_money' : $field;
+            $newVal = $request->input($inputKey);
+            $oldVal = $oldVal === '' ? null : $oldVal;
+            $newVal = $newVal === '' ? null : $newVal;
+
+            if ($oldVal != $newVal) {
+                $label = $labels[$field] ?? ucfirst(str_replace('_', ' ', $field));
+                $changes[] = "$label: '{$format($oldVal,$field)}' to '{$format($newVal,$field)}'";
+            }
+        }
+
+        // === HANDLE FILE UPLOAD & DELETION ===
+        if ($request->hasFile('instrument_proof')) {
+            $file = $request->file('instrument_proof');
+            $filename = 'instrument_proof_' . $id . '_' . time() . '.' . $file->extension();
+            $tempDir = public_path('uploads/temp');
+            if (!File::exists($tempDir)) File::makeDirectory($tempDir, 0755, true);
+            $tempFile = $tempDir . '/' . $filename;
+            $file->move($tempDir, $filename);
+
+            $finance->clearMediaCollection('instrument_proof');
+            $finance->addMedia($tempFile)->toMediaCollection('instrument_proof');
+
+            $changes[] = "Instrument Proof: New file uploaded";
+        }
+
+        if ($request->has('delete_instrument_proof') && $request->delete_instrument_proof == 1) {
+            $finance->clearMediaCollection('instrument_proof');
+            $changes[] = "Instrument Proof: File removed";
+        }
+
+        // === UPDATE FINANCE MODEL ===
+        $finance->fin_mode = $request->fin_mode;
+        $finance->loan_status = $request->loan_status;
+        $finance->case_status = $request->case_status;
+        $finance->financier = $request->financier;
+
+        // Agar Cash ya Customer Self hai → sab finance fields null kar do
+        if (in_array($request->fin_mode, ['Cash', 'Customer Self'])) {
+            $finance->instrument_type = null;
+            $finance->instrument_ref_no = null;
+            $finance->loan_amount = null;
+            $finance->margin = null;
+            $finance->file_charge = null;
+            $finance->case_lost_reason = $request->fin_mode === 'Cash' ? 1 : 2;
+            $finance->clearMediaCollection('instrument_proof');
+        } else {
+            // Sirf In-house mein hi values set karo
+            $finance->instrument_type = $request->instrument_type;
+            $finance->instrument_ref_no = $request->instrument_ref_no;
+            $finance->loan_amount = $request->loan_amount;
+            $finance->margin = $request->margin_money;
+            $finance->file_charge = $request->file_charge;
+        }
+
+        $finance->updated_by = backpack_auth()->id();
+        $finance->status = ($request->fin_mode === 'In-house' && $request->case_status == 2) ? 2 : 1;
+        $finance->save();
+
+        // === RETAIL LOGIC ===
+        if ($request->retail == 1) {
+            $booking->retail = 1;
+            $booking->save();
+            $changes[] = "Booking Retailed";
+        }
+
+        // === PAYOUT LOGIC ===
+        if ($request->payout == 1) {
+            $booking->payout = 1;
+            $booking->save();
+        }
+
+        // === FINAL LOG – REMARK AS MAIN MESSAGE ===
+        $remark = trim($request->remark);
+        if (!empty($changes) || !empty($remark)) {
+            $commid = ChatHelper::get_commid(3, $id, "Booking Created");
+
+            if (!empty($remark)) {
+                $mainMessage = $remark;
+                if (!empty($changes)) {
+                    $mainMessage .= "\n\nChanges: " . implode(' | ', $changes);
+                }
+            } else {
+                $mainMessage = "Finance Updated: " . implode(' | ', $changes);
+            }
+            // dd(
+            //     'backpack_auth()->id()',
+            //     backpack_auth()->id(),
+            //     'backpack_user()',
+            //     backpack_user(),
+            //     'Auth::check()',
+            //     Auth::check(),
+            //     'backpack_auth()->check()',
+            //     backpack_auth()->check()
+            // );
+            ChatHelper::add_followup(
+                $commid,
+                $mainMessage,
+                "Updated by " . backpack_user()->name,
+                null,
+                1
+            );
+        }
+
+        // === FINAL REDIRECT LOGIC ===
+        $successMessage = 'Finance details updated successfully!';
+
+        // 1. Agar payout page se aaya tha
+        if ($request->query('from') === 'payout' || $request->input('from') === 'payout') {
+            return redirect()
+                ->route('finance.payoutedit', $id)
+                ->with('success', $successMessage);
+        }
+
+        // 2. Retail flag
+        if ($request->filled('retail') && $request->retail == 1) {
+            return redirect()
+                ->route('finance.retail')
+                ->with('success', $successMessage);
+        }
+
+        // 3. Default
+        return redirect()
+            ->route('booking.finance')
+            ->with('success', $successMessage);
+    }
+
+    public function RetailEdit($id)
+    {
+        $booking = Booking::findOrFail($id);
+
+        // Get communication / remarks history
+        $comm = ChatHelper::get_communication(3, $id);
+
+        // Backpack authenticated user
+        $user = backpack_user();
+        $uid  = $user?->id ?? null;
+
+        // Prepare shared $data array
+        $data = [];
+
+        $data['branch']   = X_Branch::find($booking->branch_id)?->name ?? 'N/A';
+        $data['location'] = $booking->location_id > 0
+            ? (X_Location::find($booking->location_id)?->name ?? 'N/A')
+            : ($booking->location_other ?? 'N/A');
+
+        // Accessories
+        $acc = explode(',', $booking->accessories ?? '');
+        $accessoryNames = [];
+        foreach ($acc as $a) {
+            if ($a = trim($a)) {
+                $accessory = Xessories::find($a);
+                if ($accessory) {
+                    $accessoryNames[] = $accessory->item;
+                }
+            }
+        }
+        $data['accessories'] = $accessoryNames ? implode(', ', $accessoryNames) : 'N/A';
+
+        // Chassis
+        $chassis = Stock::find($booking->chasis_no);
+        $data['bchasis'] = $chassis?->chasis_no ?? 'N/A';
+
+        // Helpers / lookups
+        $data['segments']       = XpricingHelper::getSegments();
+        $data['saleconsultants'] = XpricingHelper::selectfsc();
+        $data['financiers']     = XlFinancier::select('id', 'name', 'short_name')->get()->toArray();
+        $data['enum_master']    = EnumMaster::where('master_id', 94)->select('id', 'value')->get();
+
+        // DSA name
+        $drec = Xl_DSA_Master::find($booking->dsa_id);
+        $dsaname = $drec ? $drec->name . ' - ' . $drec->mobile : 'N/A';
+
+        // Collector name
+        $collector = User::find($booking->col_by);
+        $data['collector_name'] = $collector
+            ? $collector->name . ' - ' . $collector->emp_code
+            : 'N/A';
+
+        // Remark permission (SALES / ACCOUNTS)
+        $data['remark'] = 0;
+        $depts = explode(',', $user->department ?? '');
+        foreach ($depts as $deptId) {
+            $deptName = commonhelper::enumValueById(trim($deptId));
+            if ($deptName === 'SALES')   $data['remark'] = 1;
+            if ($deptName === 'ACCOUNTS') $data['remark'] = 2;
+        }
+
+        // Make / OEM names
+        $data['make1'] = Commonhelper::enumValueById($booking->exist_oem1) ?? 'N/A';
+        $data['make2'] = Commonhelper::enumValueById($booking->exist_oem2) ?? 'N/A';
+
+        // OEM IDs array
+        $data['oem_ids'] = explode(',', $booking->exist_oem ?? '');
+
+        // Fetch finance record (can be null)
+        $finance = XFinance::where('bid', $id)->first();
+
+        return view('booking.retail-edit', compact(
+            'booking',
+            'finance',
+            'comm',
+            'data',
+            'dsaname',
+            'uid',
+            'user'
+        ));
+    }
+    public function PayoutEdit($id)
+    {
+        $booking = Booking::findOrFail($id);
+
+        // Get communication / remarks history
+        $comm = ChatHelper::get_communication(3, $id);
+
+        // Backpack authenticated user
+        $user = backpack_user();
+        $uid  = $user?->id ?? null;
+
+        // Prepare shared $data array
+        $data = [];
+
+        $data['branch']   = X_Branch::find($booking->branch_id)?->name ?? 'N/A';
+        $data['location'] = $booking->location_id > 0
+            ? (X_Location::find($booking->location_id)?->name ?? 'N/A')
+            : ($booking->location_other ?? 'N/A');
+
+        // Accessories
+        $acc = explode(',', $booking->accessories ?? '');
+        $accessoryNames = [];
+        foreach ($acc as $a) {
+            if ($a = trim($a)) {
+                $accessory = Xessories::find($a);
+                if ($accessory) {
+                    $accessoryNames[] = $accessory->item;
+                }
+            }
+        }
+        $data['accessories'] = $accessoryNames ? implode(', ', $accessoryNames) : 'N/A';
+
+        // Chassis
+        $chassis = Stock::find($booking->chasis_no);
+        $data['bchasis'] = $chassis?->chasis_no ?? 'N/A';
+
+        // Helpers / lookups
+        $data['segments']       = XpricingHelper::getSegments();
+        $data['saleconsultants'] = XpricingHelper::selectfsc();
+        $data['financiers']     = XlFinancier::select('id', 'name', 'short_name')->get()->toArray();
+        $data['enum_master']    = EnumMaster::where('master_id', 94)->select('id', 'value')->get();
+
+        // DSA name
+        $drec = Xl_DSA_Master::find($booking->dsa_id);
+        $dsaname = $drec ? $drec->name . ' - ' . $drec->mobile : 'N/A';
+
+        // Collector name
+        $collector = User::find($booking->col_by);
+        $data['collector_name'] = $collector
+            ? $collector->name . ' - ' . $collector->emp_code
+            : 'N/A';
+
+        // Remark permission (SALES / ACCOUNTS)
+        $data['remark'] = 0;
+        $depts = explode(',', $user->department ?? '');
+        foreach ($depts as $deptId) {
+            $deptName = commonhelper::enumValueById(trim($deptId));
+            if ($deptName === 'SALES')   $data['remark'] = 1;
+            if ($deptName === 'ACCOUNTS') $data['remark'] = 2;
+        }
+
+        // Make / OEM names
+        $data['make1'] = Commonhelper::enumValueById($booking->exist_oem1) ?? 'N/A';
+        $data['make2'] = Commonhelper::enumValueById($booking->exist_oem2) ?? 'N/A';
+
+        // OEM IDs array
+        $data['oem_ids'] = explode(',', $booking->exist_oem ?? '');
+
+        // Fetch finance record (can be null)
+        $finance = XFinance::where('bid', $id)->first();
+
+        return view('booking.payout-edit', compact(
+            'booking',
+            'finance',
+            'comm',
+            'data',
+            'dsaname',
+            'uid',
+            'user'
+        ));
+    }
+    public function PayoutUpdate(Request $request, $id)
+    {
+        // print_r($request->all());
+        // die();
+
+        // Fetch records
+        $finance = XFinance::where('bid', $id)->firstOrFail();
+        $booking = Booking::findOrFail($id);
+
+        $old = $finance->toArray();
+        $changes = [];
+
+        // === VALIDATION (Only Payout Fields) ===
+        $rules = [];
+        $payout_category = $request->payout_category;
+
+        if ($payout_category == 1) {
+            // PAYOUT ACTIVE → Full validation
+            $rules = [
+                'loan_amount'           => 'required|numeric|min:0',                    // FROM FORM
+                'do_number'             => 'nullable|string|max:50',
+                'expected_payout_pct'   => 'required|numeric|min:0',
+                'gst_included'          => 'required|in:0,0.5,1',
+                'inv1_no'               => 'required|string|max:50',
+                'inv1_name'             => 'required|string|max:100',
+                'inv1_prov_gst'         => 'required|numeric|min:0',
+                'inv2_no'               => 'nullable|string|max:50',
+                'inv2_name'             => 'nullable|string|max:100',
+                'inv2_prov_gst'         => 'nullable|numeric|min:0',
+                'consideration_no_gst'  => 'required|numeric|min:0',
+                'difference_no_gst'     => 'required|numeric',
+                'payout_remarks'        => 'required|string',
+            ];
+        } else {
+            // NO PAYOUT / CASH
+            $rules = [
+                'payout_category' => 'required|in:2,4',
+                'payout_remarks'  => 'required|string',
+            ];
+            if ($payout_category == 2) {
+                $rules['no_payout_reason'] = 'required|in:1,2,3,4,5,6';
+            }
+        }
+
+        $validator = Validator::make($request->all(), $rules);
+        if ($validator->fails()) {
+            return redirect()->back()
+                ->withInput()
+                ->withErrors($validator)
+                ->with('error', $validator->messages()->first());
+        }
+
+        // === CLEAR PAYOUT FIELDS IF NOT PAYOUT (1) ===
+        $payoutFields = [
+            'do_number',
+            'loan_amount_payout',
+            'expected_payout_pct',
+            'gst_included',
+            'inv1_no',
+            'inv1_name',
+            'inv1_prov_gst',
+            'inv2_no',
+            'inv2_name',
+            'inv2_prov_gst',
+            'consideration_no_gst',
+            'difference_no_gst'
+        ];
+
+        if ($payout_category != 1) {
+            foreach ($payoutFields as $field) {
+                $finance->$field = null;
+            }
+            if ($payout_category == 4) {
+                $finance->no_payout_reason = null;
+            }
+        }
+
+        // === SAVE PAYOUT FIELDS ===
+        $finance->payout_category = $payout_category;
+
+        if ($payout_category == 1) {
+            $finance->loan_amount    = $request->loan_amount;        // FROM FORM
+            $finance->instrument_ref_no             = $request->do_number;
+            $finance->expected_payout_pct   = $request->expected_payout_pct;
+            $finance->gst_included          = $request->gst_included;
+            $finance->inv1_no               = $request->inv1_no;
+            $finance->inv1_name             = $request->inv1_name;
+            $finance->inv1_prov_gst         = $request->inv1_prov_gst;
+            $finance->inv2_no               = $request->inv2_no;
+            $finance->inv2_name             = $request->inv2_name;
+            $finance->inv2_prov_gst         = $request->inv2_prov_gst;
+            $finance->consideration_no_gst  = $request->consideration_no_gst;
+            $finance->difference     = $request->difference_no_gst;
+
+            $booking->payout = 2;
+            $booking->save();
+        } else {
+            $finance->no_payout_reason = $request->no_payout_reason;
+        }
+
+
+        $finance->updated_by     = backpack_auth()->id();
+
+        // === STATUS UPDATE ===
+        if (in_array($finance->fin_mode, ['In-house', 'Customer_self']) && $finance->case_status == 2) {
+            $finance->status = ($payout_category == 1) ? 3 : 2;
+        }
+
+        $finance->save();
+
+        // === LOG CHANGES ===
+        $fieldsToLog = [
+            'payout_category',
+            'no_payout_reason',
+            'loan_amount_payout',           // ADDED
+            'do_number',
+            'expected_payout_pct',
+            'gst_included',
+            'inv1_no',
+            'inv1_name',
+            'inv1_prov_gst',
+            'inv2_no',
+            'inv2_name',
+            'inv2_prov_gst',
+            'consideration_no_gst',
+            'difference_no_gst',
+            'payout_remarks'
+        ];
+
+        $labels = [
+            'payout_category'       => 'Payout Category',
+            'no_payout_reason'      => 'No Payout Reason',
+            'loan_amount_payout'    => 'Loan Amount (Payout)',          // ADDED
+            'do_number'             => 'DO Number',
+            'expected_payout_pct'   => 'Expected Payout %',
+            'gst_included'          => 'GST Included',
+            'inv1_no'               => '1st Invoice No.',
+            'inv1_name'             => '1st Invoice Name',
+            'inv1_prov_gst'         => '1st Provisioning (GST)',
+            'inv2_no'               => '2nd Invoice No.',
+            'inv2_name'             => '2nd Invoice Name',
+            'inv2_prov_gst'         => '2nd Provisioning (GST)',
+            'consideration_no_gst'  => 'Consideration (w/o GST)',
+            'difference_no_gst'     => 'Difference (w/o GST)',
+            'payout_remarks'        => 'Payout Remarks',
+        ];
+
+        $payoutCats = [1 => 'Payout', 2 => 'No Payout', 4 => 'Cash'];
+        $noPayoutReasons = [
+            1 => 'Low Interest Rate',
+            2 => 'Low Tenure Funding',
+            3 => 'Nil Payout Model',
+            4 => 'Out Of Territory',
+            5 => 'Financier Sourcing',
+            6 => 'Other'
+        ];
+        $gstOpts = [0 => '0%', 0.5 => '50%', 1 => '100%'];
+
+        // === CLEAN FORMATTER (PHP 8+) ===
+        $formatValue = function ($value, $field) use ($payoutCats, $noPayoutReasons, $gstOpts) {
+            if (is_null($value)) return 'N/A';
+
+            return match ($field) {
+                'payout_category' => $payoutCats[$value] ?? $value,
+                'no_payout_reason' => $noPayoutReasons[$value] ?? $value,
+                'gst_included' => $gstOpts[$value] ?? $value,
+                'expected_payout_pct' => number_format($value, 4) . '%',
+                'loan_amount_payout',
+                'inv1_prov_gst',
+                'inv2_prov_gst',
+                'consideration_no_gst',
+                'difference_no_gst' => '₹' . number_format($value, 2),
+                default => $value,
+            };
+        };
+
+        // === LOG LOOP ===
+        foreach ($fieldsToLog as $field) {
+            $oldVal = $old[$field] ?? null;
+            $newVal = $finance->$field;
+
+            if ($oldVal != $newVal) {
+                $label = $labels[$field] ?? ucfirst(str_replace('_', ' ', $field));
+                $changes[] = "$label: '{$formatValue($oldVal,$field)}' to '{$formatValue($newVal,$field)}'";
+            }
+        }
+
+        // === JOURNEY LOG ===
+        $logMessage = $request->payout_remarks ?: "Payout updated";
+        if (!empty($changes)) {
+            $logMessage .= "\n\nChanges:\n" . implode("\n", $changes);
+        }
+
+        $commid = ChatHelper::get_commid(3, $id, "Booking Created");
+        ChatHelper::add_followup(
+            $commid,
+            "Payout Updated\n" . $logMessage,
+            "Updated by " . backpack_auth()->id(),
+            null,
+            1
+        );
+
+        return redirect()
+            ->route('finance.payout')
+            ->with('success', 'Payout details saved successfully!');
+    }
+    // public function refundRequested(Request $request)
+    // {
+    //     $this->crud->hasAccessOrFail('list');
+
+    //     // Direct query – adjust conditions as per your actual logic
+    //     $query = Booking::query()
+    //         ->select([
+    //             'id',
+    //             'name',
+    //             'mobile',
+    //             'booking_amount',
+    //             'booking_date',
+    //             'refund_request_date',
+    //             'status',           // if you have a display status field
+    //             // add more fields you need
+    //         ])
+    //         ->where('status', 4)   // Refund Requested
+    //         ->orderBy('id', 'DESC');
+
+    //     // Optional: status filter from dropdown (if you want to keep it)
+    //     if ($request->filled('status_filter') && $request->status_filter !== 'all') {
+    //         $query->where('status', $request->status_filter);
+    //     }
+
+    //     $bookings = $query->get();
+
+    //     $gridData = [];
+    //     foreach ($bookings as $t) {
+    //         $gridData[] = [
+    //             'booking_no'         => $t->id,
+    //             'customer'           => $t->name ?? 'N/A',
+    //             'mobile'             => $t->mobile ?? 'N/A',
+    //             'amount'             => '₹ ' . number_format($t->booking_amount ?? 0),
+    //             'booking_date'       => $t->booking_date
+    //                 ? Carbon::parse($t->booking_date)->format('d-M-Y')
+    //                 : 'N/A',
+    //             'requested_date'     => $t->refund_request_date
+    //                 ? Carbon::parse($t->refund_request_date)->format('d-M-Y')
+    //                 : 'N/A',
+    //             'status'             => 'Requested', // you can make this dynamic later
+    //             'action'             => '
+    //             <div class="text-center">
+    //                 <a href="' . backpack_url("booking/{$t->id}/refund-view") . '"
+    //                    class="btn btn-sm btn-link text-info" title="View">
+    //                     <i class="la la-eye"></i>
+    //                 </a>
+    //             </div>'
+    //         ];
+    //     }
+
+    //     // Ag-grid config
+    //     $gridConfig = [
+    //         'columns' => $this->getAgGridColumnsForRefund(),
+    //         'data'    => $gridData
+    //     ];
+
+    //     return view('booking.pending-refund', compact('gridConfig'));
+    // }
+
+    // private function getAgGridColumnsForRefund()
+    // {
+    //     return $this->getRefundRequestedColumns();
+    // }
+    // private function getRefundRequestedColumns()
+    // {
+    //     return [
+    //         ['headerName' => 'S. No.', 'field' => 'serial_no', 'width' => 90, 'pinned' => 'left', 'cellClass' => 'text-center'],
+    //         ['headerName' => 'XB No.', 'field' => 'booking_no', 'width' => 110, 'pinned' => 'left'],
+    //         ['headerName' => 'Booking Date', 'field' => 'booking_date', 'width' => 130],
+    //         ['headerName' => 'Cancellation Date', 'field' => 'cancel_date', 'width' => 150],
+    //         ['headerName' => 'Refund Request Date', 'field' => 'refund_request_date', 'width' => 160, 'sort' => 'desc'],
+    //         ['headerName' => 'Branch', 'field' => 'branch', 'width' => 140],
+    //         ['headerName' => 'Location', 'field' => 'location', 'width' => 150],
+    //         ['headerName' => 'Segment', 'field' => 'segment', 'width' => 120],
+    //         ['headerName' => 'Model', 'field' => 'model', 'width' => 130],
+    //         ['headerName' => 'Variant', 'field' => 'variant', 'width' => 170],
+    //         ['headerName' => 'Color', 'field' => 'color', 'width' => 110],
+    //         ['headerName' => 'Seating', 'field' => 'seating', 'width' => 100],
+    //         ['headerName' => 'Customer Name', 'field' => 'customer', 'width' => 190],
+    //         ['headerName' => 'Mobile', 'field' => 'mobile', 'width' => 130],
+    //         ['headerName' => 'Sales Consultant', 'field' => 'consultant', 'width' => 170],
+    //         ['headerName' => 'Finance Mode', 'field' => 'fin_mode', 'width' => 130],
+    //         ['headerName' => 'Financier', 'field' => 'financier', 'width' => 150],
+    //         ['headerName' => 'Amount', 'field' => 'booking_amount', 'width' => 130, 'type' => 'rightAligned'],
+    //         [
+    //             'headerName'    => 'Action',
+    //             'field'         => 'action',
+    //             'width'         => 180,
+    //             'pinned'        => 'right',
+    //             'sortable'      => false,
+    //             'filter'        => false,
+    //             'cellRenderer'  => 'actionRenderer',  // JS mein define karna padega
+    //         ],
+    //     ];
+    // }
+
+    public function refundRequested(Request $request)
+    {
+        $this->crud->hasAccessOrFail('list');
+
+        $this->data['crud'] = $this->crud;
+        $this->data['title'] = 'Pending Refunds';
+
+        // ────────────────────────────────────────────────
+        // Query – getBaseQuery() se start karo
+        // ────────────────────────────────────────────────
+        $query = $this->getBaseQuery();
+
+        // Refund Requested filter
+        $query->where('bookings.status', 4);  // Refund Requested status
+
+        // Optional status filter from dropdown
+        $status_filter = $request->input('status_filter', '');
+        if ($status_filter !== '' && $status_filter !== 'all') {
+            $query->where('bookings.status', $status_filter);
+        }
+
+        $query->orderBy('bookings.id', 'DESC');
+
+        $paginatedBookings = $query->paginate(50);
+
+        // ────────────────────────────────────────────────
+        // Preloads (tumhare lookups)
+        // ────────────────────────────────────────────────
+        $lookups = $this->getCommonLookups();
+        extract($lookups);
+
+        $saleConsultants = $lookups['saleConsultants'] ?? [];
+
+        // ────────────────────────────────────────────────
+        // Mapping – action button tumhara original
+        // ────────────────────────────────────────────────
+        $gridData = $paginatedBookings->map(function ($t, $index) use (
+            $paginatedBookings,
+            $segments,
+            $saleConsultants
+        ) {
+            $row = $this->mapBookingForGrid($t);
+
+            $row->serial_no = ($paginatedBookings->currentPage() - 1) * $paginatedBookings->perPage() + $index + 1;
+
+            // Extra refund-specific fields (tumhare blade ke hisaab se)
+            $row->refund_request_date = $t->refund_request_date
+                ? Carbon::parse($t->refund_request_date)->format('d-M-Y')
+                : 'N/A';
+
+            // Action button (tumhara original – View Refund)
+            $row->action = '
+            <div class="text-center">
+                <a href="' . backpack_url("booking/{$t->id}/refund-view") . '"
+                   class="btn-sm btn-link text-info" title="View Refund">
+                    <i class="la la-edit la-lg"></i> View
+                </a>
+            </div>';
+
+            return $row;
+        })->values();
+
+        // ────────────────────────────────────────────────
+        // Columns – sirf reusable wala call
+        // ────────────────────────────────────────────────
+        $columns = $this->getAgGridColumns();
+
+        // Action column add agar missing hai (duplicate avoid)
+        $hasAction = collect($columns)->contains('field', 'action');
+        if (!$hasAction) {
+            $columns[] = [
+                'field'         => 'action',
+                'headerName'    => 'Action',
+                'width'         => 120,
+                'pinned'        => 'right',
+                'sortable'      => false,
+                'filter'        => false,
+                'cellRenderer'  => 'htmlRenderer',
+                'cellClass'     => 'text-center p-0',
+                'autoHeight'    => true,
+            ];
+        }
+
+        $gridConfig = [
+            'columns' => $columns,
+            'data'    => $gridData,
+        ];
+
+        $this->data['gridConfig'] = $gridConfig;
+
+        if ($gridData->isEmpty()) {
+            session()->flash('info', 'No pending refund requests found.');
+        }
+
+        return view('booking.pending-refund', $this->data);
+    }
+    public function refundView($id)
+    {
+        $entry = Booking::findOrFail($id);
+
+        // Ensure it's refund requested
+        if ($entry->status != 4) {
+            abort(404, 'This booking is not in refund requested status.');
+        }
+
+        // Refund data fetch (tumhara code)
+        $ref = Xl_Refunds::where('entity_type', 'booking')
+            ->where('entity_id', $id)
+            ->first();
+
+        $data = []; // ya existing $data array
+
+        if ($ref) {
+            $data['acc_proof'] = $ref->getFirstMediaUrl('acc-proof') ?: '';
+            $data['aadhar']    = $ref->getFirstMediaUrl('aadhar')    ?: '';
+            $data['pan']       = $ref->getFirstMediaUrl('pan')       ?: '';
+            $data['pay_proof'] = $ref->getFirstMediaUrl('pay-proof') ?: '';
+
+            $refundDetails = Xl_Refunds::where('entity_id', $id)
+                ->select(
+                    'id',
+                    'entity_type',
+                    'entity_id',
+                    'bank_name',
+                    'branch_name',
+                    'account_type',
+                    'account_number',
+                    'holder_name',
+                    'ifsc_code',
+                    'req_date',
+                    'amount',
+                    'details',
+                    'ref_date',
+                    'mode',
+                    'transaction_details',
+                    'remark'
+                )
+                ->first();
+
+            if ($refundDetails) {
+                $data['refund'] = $refundDetails->toArray();
+                // Deduction = total amount - refunded amount
+                $data['deduction'] = ($entry->booking_amount ?? 0) - ($refundDetails->amount ?? 0);
+                $data['amount']    = $entry->booking_amount ?? 0; // original booking amount
+            }
+        }
+
+        // Pass booking + refund data
+        return view('booking.show', compact('entry', 'data'));
+    }
+    // public function rejected(Request $request)
+    // {
+    //     $this->crud->hasAccessOrFail('list');
+
+    //     // Direct query – no getBaseQuery() dependency
+    //     $query = Booking::query()
+    //         ->select([
+    //             'id',
+    //             'name',
+    //             'mobile',
+    //             'booking_amount',
+    //             'booking_date',
+    //             'refund_request_date',
+    //             'refund_rejection_date',  // assuming this field exists for rejection date
+    //             'status',
+    //             // add more fields if needed
+    //         ])
+    //         ->where('status', 7)     // Rejected status = 7
+    //         ->orderBy('id', 'DESC');
+
+    //     // Optional status filter (same as order-verification)
+    //     if ($request->filled('status_filter') && $request->status_filter !== 'all') {
+    //         $query->where('status', $request->status_filter);
+    //     }
+
+    //     $bookings = $query->get();
+
+    //     $gridData = [];
+    //     foreach ($bookings as $t) {
+    //         $gridData[] = [
+    //             'booking_no'            => $t->id,
+    //             'customer'              => $t->name ?? 'N/A',
+    //             'mobile'                => $t->mobile ?? 'N/A',
+    //             'amount'                => '₹ ' . number_format($t->booking_amount ?? 0),
+    //             'booking_date'          => $t->booking_date
+    //                 ? \Carbon\Carbon::parse($t->booking_date)->format('d-M-Y')
+    //                 : 'N/A',
+    //             'requested_date'        => $t->refund_request_date
+    //                 ? \Carbon\Carbon::parse($t->refund_request_date)->format('d-M-Y')
+    //                 : 'N/A',
+    //             'rejection_date'        => $t->refund_rejection_date
+    //                 ? \Carbon\Carbon::parse($t->refund_rejection_date)->format('d-M-Y')
+    //                 : 'N/A',
+    //             'status'                => 'Rejected', // can be dynamic later
+    //             'action'                => '
+    //             <div class="text-center">
+    //                 <a href="' . route('rejected.view', $t->id) . '"
+    //                    class="btn btn-info btn-sm"
+    //                    title="View Rejected Booking">
+    //                     <i class="fas fa-eye"></i> View
+    //                 </a>
+    //             </div>'
+    //         ];
+    //     }
+
+    //     $gridConfig = [
+    //         'columns' => $this->getAgGridColumnsForRejected(),
+    //         'data'    => $gridData
+    //     ];
+
+    //     return view('booking.rejected', compact('gridConfig'));
+    // }
+
+    // private function getAgGridColumnsForRejected()
+    // {
+    //     return [
+    //         [
+    //             'headerName' => 'Booking No',
+    //             'field'      => 'booking_no',
+    //             'width'      => 120,
+    //         ],
+    //         [
+    //             'headerName' => 'Customer',
+    //             'field'      => 'customer',
+    //             'width'      => 180,
+    //         ],
+    //         [
+    //             'headerName' => 'Mobile',
+    //             'field'      => 'mobile',
+    //             'width'      => 140,
+    //         ],
+    //         [
+    //             'headerName' => 'Amount',
+    //             'field'      => 'amount',
+    //             'width'      => 120,
+    //             'cellClass'  => 'text-right',
+    //         ],
+    //         [
+    //             'headerName' => 'Booking Date',
+    //             'field'      => 'booking_date',
+    //             'width'      => 140,
+    //         ],
+    //         [
+    //             'headerName' => 'Refund Requested',
+    //             'field'      => 'requested_date',
+    //             'width'      => 160,
+    //         ],
+    //         [
+    //             'headerName' => 'Rejected Date',
+    //             'field'      => 'rejected_date',
+    //             'width'      => 160,
+    //         ],
+    //         [
+    //             'headerName' => 'Status',
+    //             'field'      => 'status',
+    //             'width'      => 120,
+    //             'cellClass'  => 'text-danger font-weight-bold',
+    //         ],
+    //         [
+    //             'headerName'   => 'Action',
+    //             'field'        => 'action',
+    //             'width'        => 150,
+    //             'sortable'     => false,
+    //             'filter'       => false,
+    //             'cellRenderer' => 'html',
+    //         ],
+    //     ];
+    // }
+    public function rejected(Request $request)
+    {
+        $this->crud->hasAccessOrFail('list');
+
+        $this->data['crud'] = $this->crud;
+        $this->data['title'] = 'Refund Rejected Bookings';
+
+        // ────────────────────────────────────────────────
+        // Query – getBaseQuery() se start karo
+        // ────────────────────────────────────────────────
+        $query = $this->getBaseQuery();
+
+        // Rejected filter
+        $query->where('bookings.status', 7);  // Rejected status = 7
+
+        // Optional status filter from dropdown
+        $status_filter = $request->input('status_filter', '');
+        if ($status_filter !== '' && $status_filter !== 'all') {
+            $query->where('bookings.status', $status_filter);
+        }
+
+        $query->orderBy('bookings.id', 'DESC');
+
+        $paginatedBookings = $query->paginate(50);
+
+        // ────────────────────────────────────────────────
+        // Preloads
+        // ────────────────────────────────────────────────
+        $lookups = $this->getCommonLookups();
+        extract($lookups);
+
+        $saleConsultants = $lookups['saleConsultants'] ?? [];
+
+        // ────────────────────────────────────────────────
+        // Mapping – action button tumhara original
+        // ────────────────────────────────────────────────
+        $gridData = $paginatedBookings->map(function ($t, $index) use (
+            $paginatedBookings,
+            $segments,
+            $saleConsultants
+        ) {
+            $row = $this->mapBookingForGrid($t);
+
+            $row->serial_no = ($paginatedBookings->currentPage() - 1) * $paginatedBookings->perPage() + $index + 1;
+
+            // Rejected-specific fields
+            $row->refund_request_date = $t->refund_request_date
+                ? Carbon::parse($t->refund_request_date)->format('d-M-Y')
+                : 'N/A';
+
+            $row->refund_rejection_date = $t->refund_rejection_date
+                ? Carbon::parse($t->refund_rejection_date)->format('d-M-Y')
+                : 'N/A';
+
+            // Action button (tumhara original – View Rejected Booking)
+            $row->action = '
+            <div class="text-center">
+                <a href="' . route('rejected.view', $t->id) . '"
+                   class="btn-info btn-sm"
+                   title="View Rejected Booking">
+                    <i class="fas fa-eye"></i> View
+                </a>
+            </div>';
+
+            return $row;
+        })->values();
+
+        // ────────────────────────────────────────────────
+        // Columns – sirf reusable wala call
+        // ────────────────────────────────────────────────
+        $columns = $this->getAgGridColumns();
+
+        // Action column add agar missing hai (duplicate avoid)
+        $hasAction = collect($columns)->contains('field', 'action');
+        if (!$hasAction) {
+            $columns[] = [
+                'field'         => 'action',
+                'headerName'    => 'Action',
+                'width'         => 120,
+                'pinned'        => 'right',
+                'sortable'      => false,
+                'filter'        => false,
+                'cellRenderer'  => 'htmlRenderer',
+                'cellClass'     => 'text-center p-0',
+                'autoHeight'    => true,
+            ];
+        }
+
+        $gridConfig = [
+            'columns' => $columns,
+            'data'    => $gridData,
+        ];
+
+        $this->data['gridConfig'] = $gridConfig;
+
+        if ($gridData->isEmpty()) {
+            session()->flash('info', 'No rejected refund bookings found.');
+        }
+
+        return view('booking.rejected', $this->data);
+    }
+    public function rejectedView($id)
+    {
+        $entry = Booking::findOrFail($id);
+
+        // Ensure it's refund requested
+        if ($entry->status != 7) {
+            abort(404, 'This booking is not in refund requested status.');
+        }
+
+        // Refund data fetch (tumhara code)
+        $ref = Xl_Refunds::where('entity_type', 'booking')
+            ->where('entity_id', $id)
+            ->first();
+
+        $data = []; // ya existing $data array
+
+        if ($ref) {
+            $data['acc_proof'] = $ref->getFirstMediaUrl('acc-proof') ?: '';
+            $data['aadhar']    = $ref->getFirstMediaUrl('aadhar')    ?: '';
+            $data['pan']       = $ref->getFirstMediaUrl('pan')       ?: '';
+            $data['pay_proof'] = $ref->getFirstMediaUrl('pay-proof') ?: '';
+
+            $refundDetails = Xl_Refunds::where('entity_id', $id)
+                ->select(
+                    'id',
+                    'entity_type',
+                    'entity_id',
+                    'bank_name',
+                    'branch_name',
+                    'account_type',
+                    'account_number',
+                    'holder_name',
+                    'ifsc_code',
+                    'req_date',
+                    'amount',
+                    'details',
+                    'ref_date',
+                    'mode',
+                    'transaction_details',
+                    'remark'
+                )
+                ->first();
+
+            if ($refundDetails) {
+                $data['refund'] = $refundDetails->toArray();
+                // Deduction = total amount - refunded amount
+                $data['deduction'] = ($entry->booking_amount ?? 0) - ($refundDetails->amount ?? 0);
+                $data['amount']    = $entry->booking_amount ?? 0; // original booking amount
+            }
+        }
+        $receiptLogs = \App\Models\Bookingamount::where('bid', $entry->id)
+            ->orderBy('date', 'desc') // or 'created_at'
+            ->get();
+
+        // Pass booking + refund data
+        return view('booking.show', compact('entry', 'data', 'receiptLogs'));
+    }
+    public function refundUpdate(Request $request, $id)
+    {
+        // For debugging (remove later)
+        // print_r($request->all());
+        // die();
+
+        // 1. Find the booking first (using the passed $id)
+        $booking = Booking::findOrFail($id);
+
+        // 2. Validation
+        $validator = Validator::make($request->all(), [
+            'ref_date'             => 'required|date',
+            'mode'                 => 'required|string',
+            'transaction_details'  => 'required|string',
+            'remark'               => 'required|string',
+            'pay_proof'            => 'required|file|mimes:jpeg,png,jpg,pdf|max:2048', // 2MB max
+        ]);
+
+        if ($validator->fails()) {
+            return redirect()->back()
+                ->withErrors($validator)
+                ->withInput()
+                ->with('error', 'Please fix the errors below.');
+        }
+
+        // 3. Find existing refund record for this booking
+        $refund = Xl_Refunds::where('entity_type', 'booking')
+            ->where('entity_id', $id)
+            ->first();
+
+        if (!$refund) {
+            return redirect()->back()->with('error', 'Refund record not found for this booking.');
+        }
+
+        // 4. Update refund record
+        $refund->update([
+            'ref_date'            => $request->hidden_ref ?? $request->ref_date,  // use hidden or visible
+            'ref_by'              => backpack_auth()->id(),                       // current admin user
+            'mode'                => $request->mode,
+            'transaction_details' => $request->transaction_details,
+            'remark'              => $request->remark,
+        ]);
+
+        // 5. Handle proof upload (replace old if exists)
+        if ($request->hasFile('pay_proof') && $request->file('pay_proof')->isValid()) {
+            // Clear old proof if any
+            $refund->clearMediaCollection('pay-proof');
+            // Add new one
+            $refund->addMedia($request->file('pay_proof'))
+                ->toMediaCollection('pay-proof');
+        }
+
+        // 6. Update booking status to Refunded (5)
+        $oldStatus = $booking->status;
+        $newStatus = 5;
+
+        $statusNames = [
+            1 => 'Live',
+            2 => 'Invoiced',
+            3 => 'Cancelled',
+            4 => 'Refund Queued',
+            5 => 'Refunded',
+            6 => 'On Hold',
+            7 => 'Refund Rejected',
+            8 => 'Pending',
+        ];
+
+        $oldName = $statusNames[$oldStatus] ?? 'Unknown';
+        $newName = $statusNames[$newStatus] ?? 'Unknown';
+
+        $statusRemark = ($oldStatus != $newStatus)
+            ? "Booking status changed from {$oldName} to {$newName}"
+            : null;
+
+        $adminRemark = trim($request->remark) ?: 'Refund processed';
+
+        // 7. Add followup log
+        if ($statusRemark || $adminRemark) {
+            $commid = ChatHelper::get_commid(3, $booking->id, "Booking Created");
+
+            ChatHelper::add_followup(
+                $commid,
+                $statusRemark ?: $adminRemark,
+                $statusRemark ? $adminRemark : null,
+                null,
+                1
+            );
+        }
+
+        // 8. Final booking update
+        $booking->update([
+            'status'      => $newStatus,
+            'refund_date' => now()->format('Y-m-d'),
+        ]);
+
+        // 9. Success redirect
+        return redirect()->route('booking.refund.requested') // ya jo bhi route chahiye (e.g. 'booking.index', 'finance.payout')
+            ->with('success', 'Refund details updated successfully and booking marked as Refunded.');
+    }
+    // public function refunded(Request $request)
+    // {
+    //     $this->crud->hasAccessOrFail('list');
+
+    //     // Direct query – no getBaseQuery() dependency
+    //     $query = Booking::query()
+    //         ->select([
+    //             'id',
+    //             'name',
+    //             'mobile',
+    //             'booking_amount',
+    //             'booking_date',
+    //             'refund_date',           // assuming this field exists for refunded date
+    //             'refund_request_date',
+    //             'status',
+    //             // add any other fields you need
+    //         ])
+    //         ->where('status', 5)     // Refunded status
+    //         ->orderBy('id', 'DESC');
+
+    //     // Optional status filter (same as order-verification)
+    //     if ($request->filled('status_filter') && $request->status_filter !== 'all') {
+    //         $query->where('status', $request->status_filter);
+    //     }
+
+    //     $bookings = $query->get();
+
+    //     $gridData = [];
+    //     foreach ($bookings as $t) {
+    //         $gridData[] = [
+    //             'booking_no'         => $t->id,
+    //             'customer'           => $t->name ?? 'N/A',
+    //             'mobile'             => $t->mobile ?? 'N/A',
+    //             'amount'             => '₹ ' . number_format($t->booking_amount ?? 0),
+    //             'booking_date'       => $t->booking_date
+    //                 ? \Carbon\Carbon::parse($t->booking_date)->format('d-M-Y')
+    //                 : 'N/A',
+    //             'refund_date'        => $t->refund_date
+    //                 ? \Carbon\Carbon::parse($t->refund_date)->format('d-M-Y')
+    //                 : 'N/A',
+    //             'requested_date'     => $t->refund_request_date
+    //                 ? \Carbon\Carbon::parse($t->refund_request_date)->format('d-M-Y')
+    //                 : 'N/A',
+    //             'status'             => 'Refunded', // you can make dynamic later
+    //             'action'             => '
+    //             <div class="text-center">
+    //                 <a href="' . route('booking.show', $t->id) . '"
+    //                    class="btn btn-info btn-sm"
+    //                    title="View Refunded Booking">
+    //                     <i class="fas fa-eye"></i> View
+    //                 </a>
+    //             </div>'
+    //         ];
+    //     }
+
+    //     // Same ag-grid config as order-verification
+    //     $gridConfig = [
+    //         'columns' => $this->getAgGridColumnsForRefunded(), // we'll define below
+    //         'data'    => $gridData
+    //     ];
+
+    //     return view('booking.refunded', compact('gridConfig'));
+    // }
+
+    // private function getAgGridColumnsForRefunded()
+    // {
+    //     return [
+    //         [
+    //             'headerName' => 'Booking No',
+    //             'field'      => 'booking_no',
+    //             'width'      => 120,
+    //         ],
+    //         [
+    //             'headerName' => 'Customer',
+    //             'field'      => 'customer',
+    //             'width'      => 180,
+    //         ],
+    //         [
+    //             'headerName' => 'Mobile',
+    //             'field'      => 'mobile',
+    //             'width'      => 140,
+    //         ],
+    //         [
+    //             'headerName' => 'Amount',
+    //             'field'      => 'amount',
+    //             'width'      => 120,
+    //             'cellClass'  => 'text-right',
+    //         ],
+    //         [
+    //             'headerName' => 'Booking Date',
+    //             'field'      => 'booking_date',
+    //             'width'      => 140,
+    //         ],
+    //         [
+    //             'headerName' => 'Refund Requested',
+    //             'field'      => 'requested_date',
+    //             'width'      => 160,
+    //         ],
+    //         [
+    //             'headerName' => 'Refunded Date',
+    //             'field'      => 'refund_date',
+    //             'width'      => 140,
+    //         ],
+    //         [
+    //             'headerName' => 'Status',
+    //             'field'      => 'status',
+    //             'width'      => 120,
+    //             'cellClass'  => 'text-success font-weight-bold',
+    //         ],
+    //         [
+    //             'headerName' => 'Action',
+    //             'field'      => 'action',
+    //             'width'      => 150,
+    //             'sortable'   => false,
+    //             'filter'     => false,
+    //             'cellRenderer' => 'html',
+    //         ],
+    //     ];
+    // }
+    public function refunded(Request $request)
+    {
+        $this->crud->hasAccessOrFail('list');
+
+        $this->data['crud'] = $this->crud;
+        $this->data['title'] = 'Refunded Bookings';
+
+        // ────────────────────────────────────────────────
+        // Query – getBaseQuery() se start karo
+        // ────────────────────────────────────────────────
+        $query = $this->getBaseQuery();
+
+        // Refunded filter
+        $query->where('bookings.status', 5);  // Refunded status
+
+        // Optional status filter from dropdown
+        $status_filter = $request->input('status_filter', '');
+        if ($status_filter !== '' && $status_filter !== 'all') {
+            $query->where('bookings.status', $status_filter);
+        }
+
+        $query->orderBy('bookings.id', 'DESC');
+
+        $paginatedBookings = $query->paginate(50);
+
+        // ────────────────────────────────────────────────
+        // Preloads
+        // ────────────────────────────────────────────────
+        $lookups = $this->getCommonLookups();
+        extract($lookups);
+
+        $saleConsultants = $lookups['saleConsultants'] ?? [];
+
+        // ────────────────────────────────────────────────
+        // Mapping – action button tumhara original
+        // ────────────────────────────────────────────────
+        $gridData = $paginatedBookings->map(function ($t, $index) use (
+            $paginatedBookings,
+            $segments,
+            $saleConsultants
+        ) {
+            $row = $this->mapBookingForGrid($t);
+
+            $row->serial_no = ($paginatedBookings->currentPage() - 1) * $paginatedBookings->perPage() + $index + 1;
+
+            // Refund-specific fields
+            $row->refund_date = $t->refund_date
+                ? Carbon::parse($t->refund_date)->format('d-M-Y')
+                : 'N/A';
+
+            $row->refund_request_date = $t->refund_request_date
+                ? Carbon::parse($t->refund_request_date)->format('d-M-Y')
+                : 'N/A';
+
+            // Action button (tumhara original – View Refunded Booking)
+            $row->action = '
+            <div class="text-center">
+                <a href="' . route('booking.show', $t->id) . '"
+                   class="btn btn-info btn-sm"
+                   title="View Refunded Booking">
+                    <i class="fas fa-eye"></i> View
+                </a>
+            </div>';
+
+            return $row;
+        })->values();
+
+        // ────────────────────────────────────────────────
+        // Columns – sirf reusable wala call
+        // ────────────────────────────────────────────────
+        $columns = $this->getAgGridColumns();
+
+        // Action column add agar missing hai (duplicate avoid)
+        $hasAction = collect($columns)->contains('field', 'action');
+        if (!$hasAction) {
+            $columns[] = [
+                'field'         => 'action',
+                'headerName'    => 'Action',
+                'width'         => 120,
+                'pinned'        => 'right',
+                'sortable'      => false,
+                'filter'        => false,
+                'cellRenderer'  => 'htmlRenderer',
+                'cellClass'     => 'text-center p-0',
+                'autoHeight'    => true,
+            ];
+        }
+
+        $gridConfig = [
+            'columns' => $columns,
+            'data'    => $gridData,
+        ];
+
+        $this->data['gridConfig'] = $gridConfig;
+
+        if ($gridData->isEmpty()) {
+            session()->flash('info', 'No refunded bookings found.');
+        }
+
+        return view('booking.refunded', $this->data);
+    }
+    /**
+     * Update refund details for a booking that is already in "Refunded" status (status = 5)
+     */
+    public function refundedUpdate(Request $request, $id)
+    {
+        // 1. Find the booking (using xcelr8_booking_master table)
+        $booking = Booking::findOrFail($id);
+
+        // 2. Security check: only allow if already refunded
+        if ($booking->status != 5) {
+            return redirect()->back()->with('error', 'This booking is not in Refunded status.');
+        }
+
+        // 3. Validate incoming data
+        $validator = Validator::make($request->all(), [
+            'ref_date'             => 'required|date',
+            'mode'                 => 'required|in:Cash,Online,Cheque',
+            'transaction_details'  => 'nullable|string|max:255',
+            'remark'               => 'nullable|string|max:1000',
+            'pay_proof'            => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:2048', // 2MB
+            'booking_id'           => 'required|integer|exists:xcelr8_booking_master,id',
+        ]);
+
+        if ($validator->fails()) {
+            return redirect()->back()
+                ->withErrors($validator)
+                ->withInput()
+                ->with('error', $validator->messages()->first());
+        }
+
+        // 4. Find the existing refund record
+        $refund = Xl_Refunds::where('entity_type', 'booking')
+            ->where('entity_id', $id)
+            ->first();
+
+        if (!$refund) {
+            return redirect()->back()->with('error', 'Refund record not found for this booking.');
+        }
+
+        // 5. Track changes for logging
+        $changes = [];
+
+        // Refund Date
+        $newRefDate = $request->hidden_ref ?? $request->ref_date;
+        if ($refund->ref_date != $newRefDate) {
+            $changes[] = "Refund Date changed from " .
+                ($refund->ref_date ? Carbon::parse($refund->ref_date)->format('d-M-Y') : 'N/A') .
+                " to " . Carbon::parse($newRefDate)->format('d-M-Y');
+            $refund->ref_date = $newRefDate;
+        }
+
+        // Mode
+        if ($refund->mode != $request->mode) {
+            $changes[] = "Mode of Payment changed from {$refund->mode} to {$request->mode}";
+            $refund->mode = $request->mode;
+        }
+
+        // Transaction Details
+        if ($refund->transaction_details != $request->transaction_details) {
+            $changes[] = "Transaction Details updated";
+            $refund->transaction_details = $request->transaction_details;
+        }
+
+        // Remark
+        if ($refund->remark != $request->remark) {
+            $changes[] = "Remark updated";
+            $refund->remark = $request->remark;
+        }
+
+        // 6. Handle payment proof upload (replace old one)
+        if ($request->hasFile('pay_proof') && $request->file('pay_proof')->isValid()) {
+            // Remove old proof if exists
+            $refund->clearMediaCollection('pay-proof');
+
+            // Add new proof
+            $refund->addMedia($request->file('pay_proof'))
+                ->toMediaCollection('pay-proof');
+
+            $changes[] = "Payment Proof updated";
+        }
+
+        // 7. Update who last modified it
+        $refund->ref_by = backpack_auth()->id(); // or Auth::id() if not Backpack
+
+        // 8. Save refund changes
+        $refund->save();
+
+        // 9. Log changes in chat/followup
+        if (!empty($changes)) {
+            $commid = ChatHelper::get_commid(3, $booking->id, "Booking Created");
+
+            $logMessage = "Refund Details Updated:\n" . implode("\n", $changes);
+
+            ChatHelper::add_followup(
+                $commid,
+                $logMessage,
+                "Updated by " . backpack_user()->name,
+                null,
+                1
+            );
+        }
+
+        // 10. Success redirect (adjust route name as needed)
+        return redirect()->route('bookings.refunded') // or 'booking.show', $id, etc.
+            ->with('success', 'Refund details updated successfully!');
+    }
+
+
+
+
+    public function stockReport(Request $request)
+    {
+        $this->crud->hasAccessOrFail('list');
+
+        $this->data['crud'] = $this->crud;
+        $this->data['title'] = 'Stock Report';
+
+        $now = Carbon::now();
+        $py = $now->format('Y') - 1;
+        $cy = $now->format('Y');
+        $ovin = "STOCK VIN-" . $py;
+        $cvin = "STOCK VIN-" . $cy;
+
+        $locbr = DB::table('xcelr8_us_location')
+            ->whereNotNull('abbr')
+            ->where('status', 1)
+            ->pluck('abbr')
+            ->unique()
+            ->sort()
+            ->values()
+            ->toArray() ?: ['BKN', 'CHR'];
+
+        // Real stock query
+        $stocks = DB::table('xcelr8_stock_master as stock')
+            ->leftJoin('xcelr8_vehicle_master as vm', 'stock.vh_id', '=', 'vm.id')
+            ->leftJoin('bmpl_enum_master as seg', 'vm.segment_id', '=', 'seg.id')
+            ->leftJoin('xcelr8_us_location as loc', 'stock.location_id', '=', 'loc.id') // agar branch_id hai to change kar dena
+            ->selectRaw("
+            stock.id,
+            stock.chasis_no,
+            stock.oem_invoice_date,
+            stock.damage,
+            COALESCE(stock.v_status, stock.status, 'Unknown') as v_status,
+            COALESCE(seg.value, '-') as seg,
+            COALESCE(vm.oem_model, '-') as mdl,
+            COALESCE(vm.oem_variant, '-') as vrnt,
+            COALESCE(vm.color, '-') as clr,
+            COALESCE(loc.abbr, 'UNKNOWN') as loc_abbr
+        ")
+            // Filter comment out kiya hai kyuki sold_date nahi hai
+            // Agar stock filter karna hai to yeh try karo:
+            // ->where('stock.status', 'available')   // ya stock.status = 1, ya stock.inv_date IS NULL
+            ->whereNotNull('vm.id')
+            ->get();
+
+        // Agar real data nahi aaya to dummy dikhao (layout check ke liye)
+        if ($stocks->isEmpty()) {
+            session()->flash('info', 'No physical stock records found in xcelr8_stock_master. Showing sample data.');
+            $stocks = collect([
+                (object) [
+                    'seg' => 'SUV',
+                    'mdl' => 'SCORPIO N',
+                    'vrnt' => 'Z8L',
+                    'clr' => 'NAPOLI BLACK',
+                    'loc_abbr' => 'BKN',
+                    'chasis_no' => 'MAKS1234567890AB',
+                    'oem_invoice_date' => $now->subDays(45)->format('Y-m-d'),
+                    'damage' => 0,
+                    'v_status' => 'Dealer Stock',
+                ],
+                (object) [
+                    'seg' => 'MUV',
+                    'mdl' => 'MARAZZO',
+                    'vrnt' => 'M2 8STR',
+                    'clr' => 'AQUA MARINE',
+                    'loc_abbr' => 'CHR',
+                    'chasis_no' => 'MAKS9876543210CD',
+                    'oem_invoice_date' => $now->subDays(10)->format('Y-m-d'),
+                    'damage' => 0,
+                    'v_status' => 'In Transit',
+                ],
+                (object) [
+                    'seg' => 'SEDAN',
+                    'mdl' => 'XUV 700',
+                    'vrnt' => 'AX7',
+                    'clr' => 'RED RAGE',
+                    'loc_abbr' => 'BKN',
+                    'chasis_no' => 'MAKS1112223334EF',
+                    'oem_invoice_date' => $now->subDays(70)->format('Y-m-d'),
+                    'damage' => 1,
+                    'v_status' => 'Dealer Stock',
+                ]
+            ]);
+        }
+
+        // Group by model
+        $grouped = $stocks->groupBy('mdl');
+
+        $data = [];
+        $sno = 1;
+
+        foreach ($grouped as $mc => $groupStocks) {
+            if ($groupStocks->isEmpty()) continue;
+
+            $first = $groupStocks->first();
+
+            $row = [
+                'sno'           => $sno++,
+                'seg'           => $first->seg  ?? '-',
+                'mdl'           => $first->mdl  ?? '-',
+                'vrnt'          => $first->vrnt ?? '-',
+                'clr'           => $first->clr  ?? '-',
+                'total'         => $groupStocks->count(),
+                'tst_max_age'   => '0 D',
+                'stock_max_age' => '0 D',
+                'stock_gt_60'   => 0,
+                'bkng'          => (int) Booking::where('model', $mc)->count(),
+                'enq'           => (int) Booking::where('model', $mc)->where('status', 1)->count(),
+                'lordr'         => 0,
+            ];
+
+            $ovin_stats = array_fill_keys($locbr, 0) + ['damage' => 0, 'dlr_transit' => 0, 'oem_transit' => 0];
+            $cvin_stats = array_fill_keys($locbr, 0) + ['damage' => 0, 'dlr_transit' => 0, 'oem_transit' => 0];
+
+            $tst_max_age = 0;
+            $stock_max_age = 0;
+            $stock_gt_60 = 0;
+
+            foreach ($groupStocks as $stock) {
+                if (empty($stock->oem_invoice_date) || empty($stock->chasis_no) || strlen($stock->chasis_no) < 10) {
+                    continue;
+                }
+
+                $age = $now->diffInDays(Carbon::parse($stock->oem_invoice_date));
+                $is_current = str_starts_with($stock->chasis_no, 'S');
+
+                $year_stats = $is_current ? $cvin_stats : $ovin_stats;
+
+                $loc = $stock->loc_abbr ?? 'UNKNOWN';
+
+                if (in_array($loc, $locbr)) {
+                    $year_stats[$loc]++;
+                }
+
+                if ($stock->damage == 1) {
+                    $year_stats['damage']++;
+                }
+
+                if (strtolower($stock->v_status) === 'in transit') {
+                    $year_stats['oem_transit']++;
+                    $tst_max_age = max($tst_max_age, $age);
+                } else {
+                    $year_stats['dlr_transit']++;
+                    $stock_max_age = max($stock_max_age, $age);
+                    if ($age >= 60) $stock_gt_60++;
+                }
+            }
+
+            foreach ($locbr as $loc) {
+                $row["ovin_" . strtolower($loc)] = $ovin_stats[$loc];
+                $row["cvin_" . strtolower($loc)] = $cvin_stats[$loc];
+            }
+
+            $row['ovin_damage']      = $ovin_stats['damage'];
+            $row['ovin_dlr_transit'] = $ovin_stats['dlr_transit'];
+            $row['ovin_oem_transit'] = $ovin_stats['oem_transit'];
+            $row['cvin_damage']      = $cvin_stats['damage'];
+            $row['cvin_dlr_transit'] = $cvin_stats['dlr_transit'];
+            $row['cvin_oem_transit'] = $cvin_stats['oem_transit'];
+
+            $row['tst_max_age']   = $tst_max_age ? $tst_max_age . ' D' : '0 D';
+            $row['stock_max_age'] = $stock_max_age ? $stock_max_age . ' D' : '0 D';
+            $row['stock_gt_60']   = $stock_gt_60;
+
+            $data[] = $row;
+        }
+
+        // Columns (tumhare original se copy-paste)
+        $columns = [
+            ['field' => 'sno', 'headerName' => 'S.No.', 'width' => 80, 'pinned' => 'left', 'filter' => false],
+
+            [
+                'headerName' => 'VEHICLE INFO',
+                'children' => [
+                    ['field' => 'seg',  'headerName' => 'SEGMENT', 'width' => 140],
+                    ['field' => 'mdl',  'headerName' => 'MODEL',   'width' => 160],
+                    ['field' => 'vrnt', 'headerName' => 'VARIANT', 'width' => 220],
+                    ['field' => 'clr',  'headerName' => 'COLOR',   'width' => 130],
+                ]
+            ],
+
+            [
+                'headerName' => 'TOTAL STOCK',
+                'children' => [
+                    ['field' => 'total', 'headerName' => 'TOTAL', 'width' => 100, 'cellClass' => 'text-right'],
+                    ['field' => 'bkn',   'headerName' => 'BKN',   'width' => 80,  'cellClass' => 'text-right'],
+                    ['field' => 'chr',   'headerName' => 'CHR',   'width' => 80,  'cellClass' => 'text-right'],
+                ]
+            ],
+
+            [
+                'headerName' => $ovin,
+                'children' => array_merge(
+                    array_map(fn($loc) => ['field' => "ovin_" . strtolower($loc), 'headerName' => $loc, 'width' => 80, 'cellClass' => 'text-right'], $locbr),
+                    [
+                        ['field' => 'ovin_damage',      'headerName' => 'DAMAGE',     'width' => 100, 'cellClass' => 'text-right'],
+                        ['field' => 'ovin_dlr_transit', 'headerName' => 'DLR TST',    'width' => 110, 'cellClass' => 'text-right'],
+                        ['field' => 'ovin_oem_transit', 'headerName' => 'OEM TST',    'width' => 110, 'cellClass' => 'text-right'],
+                    ]
+                )
+            ],
+
+            [
+                'headerName' => $cvin,
+                'children' => array_merge(
+                    array_map(fn($loc) => ['field' => "cvin_" . strtolower($loc), 'headerName' => $loc, 'width' => 80, 'cellClass' => 'text-right'], $locbr),
+                    [
+                        ['field' => 'cvin_damage',      'headerName' => 'DAMAGE',     'width' => 100, 'cellClass' => 'text-right'],
+                        ['field' => 'cvin_dlr_transit', 'headerName' => 'DLR TST',    'width' => 110, 'cellClass' => 'text-right'],
+                        ['field' => 'cvin_oem_transit', 'headerName' => 'OEM TST',    'width' => 110, 'cellClass' => 'text-right'],
+                    ]
+                )
+            ],
+
+            [
+                'headerName' => 'GLOBAL DATA',
+                'children' => [
+                    ['field' => 'tst_max_age',  'headerName' => 'TST MAX AGE', 'width' => 140],
+                    ['field' => 'stock_max_age', 'headerName' => 'PHY MAX AGE', 'width' => 140],
+                    ['field' => 'stock_gt_60',  'headerName' => 'AGE > 60D',   'width' => 120, 'cellClass' => 'text-right'],
+                    ['field' => 'bkng',         'headerName' => 'BOOKED',      'width' => 120, 'cellClass' => 'text-right'],
+                    ['field' => 'enq',          'headerName' => 'HOT ENQ',     'width' => 120, 'cellClass' => 'text-right'],
+                    ['field' => 'lordr',        'headerName' => 'LIVE ORDERS', 'width' => 130, 'cellClass' => 'text-right'],
+                ]
+            ],
+        ];
+
+        $gridConfig = [
+            'columns' => $columns,
+            'data'    => $data,
+            'ovin'    => $ovin,
+            'cvin'    => $cvin,
+            'locbr'   => $locbr,
+        ];
+
+        $this->data['gridConfig'] = $gridConfig;
+
+        return view('booking.stock', $this->data);
+    }
+
+
+
+
+    // Render the AG Grid view for live order report
+    public function liveOrderReport(Request $request)
+    {
+        $this->crud->hasAccessOrFail('list');
+
+        $this->data['crud'] = $this->crud;
+        $this->data['title'] = 'Live Order Report';
+
+        // Correct table + prevent duplicates with GROUP BY
+        $vehicles = DB::table('xcelr8_vehicle_master as vm')
+            ->where('vm.lorder', '>', 0)
+            ->leftJoin('xcelr8_stock_master as stock', 'vm.id', '=', 'stock.vh_id')
+            ->leftJoin('xcelr8_us_location as loc', 'stock.location_id', '=', 'loc.id')
+            ->select(
+                'vm.segment_id',
+                'vm.custom_model',
+                'vm.custom_variant',
+                'vm.color',
+                'vm.lorder',
+                DB::raw("COALESCE(MAX(loc.abbr), 'Not Allocated') as branch")  // ← MAX to avoid NULL if multiple
+            )
+            ->groupBy('vm.id', 'vm.segment_id', 'vm.custom_model', 'vm.custom_variant', 'vm.color', 'vm.lorder')  // ← Yeh line duplicates khatam karegi
+            ->get();
+
+        // Segments
+        $segments = XpricingHelper::getSegments();
+
+        // Grid data
+        $gridData = $vehicles->map(function ($vh, $index) use ($segments) {
+            $seg = CommonHelper::enumValueById($vh->segment_id) ?? 'N/A';
+
+            return [
+                'sno'    => $index + 1,
+                'seg'    => $seg,
+                'mdl'    => $vh->custom_model ?? 'N/A',
+                'vrnt'   => $vh->custom_variant ?? 'N/A',
+                'clr'    => $vh->color ?? 'N/A',
+                'branch' => $vh->branch ?? 'Not Allocated',
+                'lordr'  => $vh->lorder ?? 0,
+            ];
+        })->values();
+
+        // Columns (same)
+        $columns = [
+            ['field' => 'sno',   'headerName' => 'S.No.', 'width' => 100,  'pinned' => 'left'],
+            ['field' => 'seg',   'headerName' => 'Segment', 'width' => 200],
+            ['field' => 'mdl',   'headerName' => 'Model',   'width' => 240],
+            ['field' => 'vrnt',  'headerName' => 'Variant', 'width' => 280],
+            ['field' => 'clr',   'headerName' => 'Color',   'width' => 250],
+            ['field' => 'branch', 'headerName' => 'Branch',  'width' => 200],
+            ['field' => 'lordr', 'headerName' => 'Live Orders', 'width' => 230, 'cellClass' => 'text-right'],
+        ];
+
+        $gridConfig = [
+            'columns' => $columns,
+            'data'    => $gridData,
+        ];
+
+        $this->data['gridConfig'] = $gridConfig;
+
+        if ($gridData->isEmpty()) {
+            session()->flash('info', 'No live orders found.');
+        }
+
+        return view('booking.live-order', $this->data);
+    }
+
+    public function fetchCbrData()
+    {
+        $now = Carbon::now();
+        $mtdStart = $now->copy()->startOfMonth();
+        $ytdStart = $now->copy()->startOfYear();
+
+        // Cache the query for 1 hour
+        $data = Cache::remember('cbr_data_' . $now->format('YmdH'), 3600, function () use ($mtdStart, $ytdStart, $now) {
+            // Bulk fetch bookings
+            $bookings = DB::table('xcelr8_booking_master as bm')
+                ->join('xcelr8_vehicle_master as vm', 'bm.vh_id', '=', 'vm.id')
+                ->join('bmpl_enum_master as em', 'vm.segment_id', '=', 'em.id')
+                ->whereIn('bm.status', [1, 4, 6, 8])
+                ->select(
+                    'bm.id',
+                    'bm.status',
+                    'bm.b_type',
+                    'bm.fin_mode',
+                    'bm.buyer_type',
+                    'bm.pending',
+                    'bm.order',
+                    'bm.dms_so',
+                    'bm.booking_amount',
+                    'bm.created_at',
+                    DB::raw('CONCAT(em.value, "|", COALESCE(vm.oem_model, ""), "|", COALESCE(vm.oem_variant, ""), "|", COALESCE(vm.color, "")) as group_key'),
+                    'em.value as seg',
+                    'vm.oem_model as model',
+                    'vm.oem_variant as variant',
+                    'vm.color as clr',
+                    'vm.code'
+                )
+                ->get()
+                ->groupBy('group_key');
+
+            // Bulk fetch booking amounts
+            $bookingAmounts = DB::table('xcelr8_booking_amount')
+                ->where('status', 1)
+                ->select('bid', DB::raw('SUM(amount) as total_amount'))
+                ->groupBy('bid')
+                ->pluck('total_amount', 'bid');
+
+            // Bulk fetch live orders
+            $liveOrders = DB::table('xcelr8_vehicle_master as vm')
+                ->join('bmpl_enum_master as em', 'vm.segment_id', '=', 'em.id')
+                ->selectRaw('CONCAT(em.value, "|", COALESCE(vm.oem_model, ""), "|", COALESCE(vm.oem_variant, ""), "|", COALESCE(vm.color, "")) as group_key, SUM(vm.lorder) as lorder')
+                ->groupBy('group_key')
+                ->pluck('lorder', 'group_key');
+
+            // Bulk fetch stock
+            $stocksRaw = DB::table('xcelr8_stock_master as sm')
+                ->join('xcelr8_vehicle_master as vm', 'sm.model_code', '=', 'vm.code')
+                ->join('bmpl_enum_master as em', 'vm.segment_id', '=', 'em.id')
+                ->join('xcelr8_us_location as ul', 'sm.location_id', '=', 'ul.id')
+                ->selectRaw('CONCAT(em.value, "|", COALESCE(vm.oem_model, ""), "|", COALESCE(vm.oem_variant, ""), "|", COALESCE(vm.color, "")) as group_key, ul.branch_id, COUNT(sm.id) as quantity')
+                ->groupBy('group_key', 'ul.branch_id')
+                ->get();
+
+            $stocks = $stocksRaw->groupBy('group_key')->map(function ($group) {
+                return $group->groupBy('branch_id')->map(fn($bg) => $bg->sum('quantity'));
+            });
+
+            // Bulk fetch exchange and scrappage pending statuses
+            $exchanges = DB::table('xcelr8_exchange')
+                ->whereIn('verification_status', [0, null])
+                ->select('bid', 'purchase_type')
+                ->get()
+                ->groupBy('bid')
+                ->map(function ($group) {
+                    return [
+                        'exchange_pending' => $group->where('purchase_type', 'Exchange')->count() > 0 ? 1 : 0,
+                        'scrappage_pending' => $group->where('purchase_type', 'Scrappage')->count() > 0 ? 1 : 0,
+                    ];
+                });
+
+            // Bulk fetch finance pending statuses
+            $finances = DB::table('xcelr8_finance')
+                ->whereIn('verification_status', [0, null])
+                ->pluck('bid')
+                ->mapWithKeys(fn($bid) => [$bid => 1]);
+
+            $data = collect();
+            $index = 1;
+
+            foreach ($bookings as $groupKey => $groupBookings) {
+                [$seg, $model, $variant, $clr] = explode('|', $groupKey);
+
+                $liveGroup = $groupBookings->whereIn('status', [1, 6, 8])->where('b_type', '!=', 'dummy');
+
+                $total_bookings = $liveGroup->count();
+                if ($total_bookings === 0) continue;
+
+                $bkn_bookings = $liveGroup->where('b_type', 'Individual')->count();
+                $chr_bookings = $liveGroup->where('b_type', 'Dealer')->count();
+
+                $max_age_days = $liveGroup->max(
+                    fn($booking) => abs(Carbon::parse($booking->created_at)->diffInDays(now()))
+                );
+
+                $age_gt_60 = $liveGroup->filter(fn($booking) => abs(Carbon::parse($booking->created_at)->diffInDays(now()))
+                    > 60)->count();
+
+                $live_orders = $liveOrders->get($groupKey, 0);
+
+                $dummy_bookings = $groupBookings->whereIn('status', [1, 6, 8])->where('b_type', 'dummy')->count();
+
+                $on_hold = $liveGroup->where('status', 6)->count();
+
+                $verify = $liveGroup->where('order', 1)->count();
+
+                $orders = $liveGroup->where('order', 2)->whereNull('dms_so')->count();
+
+                $payments = $liveGroup->filter(function ($booking) use ($bookingAmounts) {
+                    $total_amount = $bookingAmounts->get($booking->id, 0);
+                    return $total_amount < $booking->booking_amount;
+                })->count();
+
+                $data_pending = $liveGroup->where('pending', '>', 0)->count();
+
+                $refunds = $groupBookings->where('status', 4)->count();
+
+                $cash = $liveGroup->where('fin_mode', 'Cash')->count();
+                $cash_pct = $total_bookings > 0 ? round(($cash / $total_bookings) * 100, 2) : 0;
+
+                $inhouse = $liveGroup->where('fin_mode', 'In-house')->count();
+                $inhouse_pct = $total_bookings > 0 ? round(($inhouse / $total_bookings) * 100, 2) : 0;
+
+                $self = $liveGroup->where('fin_mode', 'Customer-Self')->count();
+                $self_pct = $total_bookings > 0 ? round(($self / $total_bookings) * 100, 2) : 0;
+
+                $finance_pending = $liveGroup->filter(fn($booking) => $finances->get($booking->id, 0) > 0)->count();
+
+                $mtd_live = $liveGroup->where('created_at', '>=', $mtdStart);
+                $mtd_total = $mtd_live->count();
+                $mtd_inhouse = $mtd_live->where('fin_mode', 'In-house')->count();
+                $mtd_finance = $mtd_total > 0 ? round(($mtd_inhouse / $mtd_total) * 100, 2) : 0;
+
+                $ytd_live = $liveGroup->where('created_at', '>=', $ytdStart);
+                $ytd_total = $ytd_live->count();
+                $ytd_inhouse = $ytd_live->where('fin_mode', 'In-house')->count();
+                $ytd_finance = $ytd_total > 0 ? round(($ytd_inhouse / $ytd_total) * 100, 2) : 0;
+
+                $exchange_inhouse = $liveGroup->where('buyer_type', 'Exchange')->count();
+                $exchange_pct = $total_bookings > 0 ? round(($exchange_inhouse / $total_bookings) * 100, 2) : 0;
+                $exchange_pending = $liveGroup->filter(fn($booking) => ($exchanges->get($booking->id)['exchange_pending'] ?? 0) > 0)->count();
+
+                $mtd_exchange_inhouse = $mtd_live->where('buyer_type', 'Exchange')->count();
+                $mtd_exchange = $mtd_total > 0 ? round(($mtd_exchange_inhouse / $mtd_total) * 100, 2) : 0;
+
+                $ytd_exchange_inhouse = $ytd_live->where('buyer_type', 'Exchange')->count();
+                $ytd_exchange = $ytd_total > 0 ? round(($ytd_exchange_inhouse / $ytd_total) * 100, 2) : 0;
+
+                $scrappage_inhouse = $liveGroup->where('buyer_type', 'Scrappage')->count();
+                $scrappage_pct = $total_bookings > 0 ? round(($scrappage_inhouse / $total_bookings) * 100, 2) : 0;
+                $scrappage_pending = $liveGroup->filter(fn($booking) => ($exchanges->get($booking->id)['scrappage_pending'] ?? 0) > 0)->count();
+
+                $mtd_scrappage_inhouse = $mtd_live->where('buyer_type', 'Scrappage')->count();
+                $mtd_scrappage = $mtd_total > 0 ? round(($mtd_scrappage_inhouse / $mtd_total) * 100, 2) : 0;
+
+                $ytd_scrappage_inhouse = $ytd_live->where('buyer_type', 'Scrappage')->count();
+                $ytd_scrappage = $ytd_total > 0 ? round(($ytd_scrappage_inhouse / $ytd_total) * 100, 2) : 0;
+
+                $stock_group = $stocks->get($groupKey, collect());
+                $stock_total = $stock_group->values()->sum();
+                $stock_bkn = $stock_group->get(1, 0);
+                $stock_chr = $stock_group->get(2, 0);
+
+                $data->push([
+                    'sno' => $index++,
+                    'seg' => $seg,
+                    'model' => $model,
+                    'variant' => $variant,
+                    'clr' => $clr,
+                    'stock_total' => $stock_total,
+                    'stock_bkn' => $stock_bkn,
+                    'stock_chr' => $stock_chr,
+                    'total_bookings' => $total_bookings,
+                    'bkn_bookings' => $bkn_bookings,
+                    'chr_bookings' => $chr_bookings,
+                    // 'max_age' => $max_age_days ? $max_age_days . ' D' : '',
+                    'max_age' => $max_age_days ? ceil($max_age_days) . ' D' : '0 D',
+                    'age_gt_60d' => $age_gt_60,
+                    'live_orders' => $live_orders,
+                    'dummy_bookings' => $dummy_bookings,
+                    'on_hold' => $on_hold,
+                    'verify' => $verify,
+                    'orders' => $orders,
+                    'payments' => $payments,
+                    'data' => $data_pending,
+                    'refund' => $refunds,
+                    'cash' => $cash,
+                    'cash_pct' => number_format($cash_pct, 2) . '%',
+                    'inhouse' => $inhouse,
+                    'inhouse_pct' => number_format($inhouse_pct, 2) . '%',
+                    'self' => $self,
+                    'self_pct' => number_format($self_pct, 2) . '%',
+                    'finance_pending' => $finance_pending,
+                    'mtd' => number_format($mtd_finance, 2) . '%',
+                    'ytd' => number_format($ytd_finance, 2) . '%',
+                    'exchange_inhouse' => $exchange_inhouse,
+                    'exchange_inhouse_pct' => number_format($exchange_pct, 2) . '%',
+                    'exchange_pending' => $exchange_pending,
+                    'exchange_mtd' => number_format($mtd_exchange, 2) . '%',
+                    'exchange_ytd' => number_format($ytd_exchange, 2) . '%',
+                    'scrappage_inhouse' => $scrappage_inhouse,
+                    'scrappage_inhouse_pct' => number_format($scrappage_pct, 2) . '%',
+                    'scrappage_pending' => $scrappage_pending,
+                    'scrappage_mtd' => number_format($mtd_scrappage, 2) . '%',
+                    'scrappage_ytd' => number_format($ytd_scrappage, 2) . '%',
+                ]);
+            }
+
+            return $data;
+        });
+
+        $tbr = [
+            'seg' => 'Total',
+            'total_bookings' => $data->sum('total_bookings'),
+            'bkn_bookings' => $data->sum('bkn_bookings'),
+            'chr_bookings' => $data->sum('chr_bookings'),
+            'stock_total' => $data->sum('stock_total'),
+            'stock_bkn' => $data->sum('stock_bkn'),
+            'stock_chr' => $data->sum('stock_chr'),
+            'max_age' => $data->max('max_age') ? str_replace(' D', '', $data->max('max_age')) . ' D' : '',
+            'age_gt_60d' => $data->sum('age_gt_60d'),
+            'live_orders' => $data->sum('live_orders'),
+            'dummy_bookings' => $data->sum('dummy_bookings'),
+            'on_hold' => $data->sum('on_hold'),
+            'verify' => $data->sum('verify'),
+            'orders' => $data->sum('orders'),
+            'payments' => $data->sum('payments'),
+            'data' => $data->sum('data'),
+            'refund' => $data->sum('refund'),
+            'cash' => $data->sum('cash'),
+            'cash_pct' => $data->count() > 0 ? number_format($data->avg(fn($r) => (float) str_replace('%', '', $r['cash_pct'])), 2) . '%' : '0.00%',
+            'inhouse' => $data->sum('inhouse'),
+            'inhouse_pct' => $data->count() > 0 ? number_format($data->avg(fn($r) => (float) str_replace('%', '', $r['inhouse_pct'])), 2) . '%' : '0.00%',
+            'self' => $data->sum('self'),
+            'self_pct' => $data->count() > 0 ? number_format($data->avg(fn($r) => (float) str_replace('%', '', $r['self_pct'])), 2) . '%' : '0.00%',
+            'finance_pending' => $data->sum('finance_pending'),
+            'mtd' => $data->count() > 0 ? number_format($data->avg(fn($r) => (float) str_replace('%', '', $r['mtd'])), 2) . '%' : '0.00%',
+            'ytd' => $data->count() > 0 ? number_format($data->avg(fn($r) => (float) str_replace('%', '', $r['ytd'])), 2) . '%' : '0.00%',
+            'exchange_inhouse' => $data->sum('exchange_inhouse'),
+            'exchange_inhouse_pct' => $data->count() > 0 ? number_format($data->avg(fn($r) => (float) str_replace('%', '', $r['exchange_inhouse_pct'])), 2) . '%' : '0.00%',
+            'exchange_pending' => $data->sum('exchange_pending'),
+            'exchange_mtd' => $data->count() > 0 ? number_format($data->avg(fn($r) => (float) str_replace('%', '', $r['exchange_mtd'])), 2) . '%' : '0.00%',
+            'exchange_ytd' => $data->count() > 0 ? number_format($data->avg(fn($r) => (float) str_replace('%', '', $r['exchange_ytd'])), 2) . '%' : '0.00%',
+            'scrappage_inhouse' => $data->sum('scrappage_inhouse'),
+            'scrappage_inhouse_pct' => $data->count() > 0 ? number_format($data->avg(fn($r) => (float) str_replace('%', '', $r['scrappage_inhouse_pct'])), 2) . '%' : '0.00%',
+            'scrappage_pending' => $data->sum('scrappage_pending'),
+            'scrappage_mtd' => $data->count() > 0 ? number_format($data->avg(fn($r) => (float) str_replace('%', '', $r['scrappage_mtd'])), 2) . '%' : '0.00%',
+            'scrappage_ytd' => $data->count() > 0 ? number_format($data->avg(fn($r) => (float) str_replace('%', '', $r['scrappage_ytd'])), 2) . '%' : '0.00%',
+        ];
+
+        $stkbr = [
+            'stock_total' => DB::table('xcelr8_stock_master')->count('id'),
+            'stock_bkn' => DB::table('xcelr8_stock_master')
+                ->join('xcelr8_us_location', 'xcelr8_stock_master.location_id', '=', 'xcelr8_us_location.id')
+                ->where('xcelr8_us_location.branch_id', 1)
+                ->count('xcelr8_stock_master.id'),
+            'stock_chr' => DB::table('xcelr8_stock_master')
+                ->join('xcelr8_us_location', 'xcelr8_stock_master.location_id', '=', 'xcelr8_us_location.id')
+                ->where('xcelr8_us_location.branch_id', 2)
+                ->count('xcelr8_stock_master.id'),
+        ];
+
+        $title = 'Consolidated Booking Report';
+        $filename = 'CnsldtBkngRprt_' . $now->format('Y-m-d-H-i-s') . '.xlsx';
+
+        $header = [
+            ['title' => 'S.No.', 'field' => 'sno', 'hozAlign' => 'center', 'formatter' => 'plaintext'],
+            [
+                'title' => 'Vehicle Info',
+                'columns' => [
+                    ['title' => 'Segment', 'field' => 'seg', 'headerFilter' => 'select'],
+                    ['title' => 'Model', 'field' => 'model', 'headerFilter' => 'select'],
+                    ['title' => 'Variant', 'field' => 'variant', 'headerFilter' => 'select'],
+                    ['title' => 'Color', 'field' => 'clr', 'headerFilter' => 'select'],
+                ]
+            ],
+            [
+                'title' => 'Stock',
+                'columns' => [
+                    ['title' => 'Total', 'field' => 'stock_total', 'bottomCalc' => 'sum'],
+                    ['title' => 'BKN', 'field' => 'stock_bkn', 'bottomCalc' => 'sum'],
+                    ['title' => 'CHR', 'field' => 'stock_chr', 'bottomCalc' => 'sum'],
+                ]
+            ],
+            [
+                'title' => 'Bookings',
+                'columns' => [
+                    ['title' => 'Total', 'field' => 'total_bookings', 'bottomCalc' => 'sum'],
+                    ['title' => 'BKN', 'field' => 'bkn_bookings', 'bottomCalc' => 'sum'],
+                    ['title' => 'CHR', 'field' => 'chr_bookings', 'bottomCalc' => 'sum'],
+                ]
+            ],
+            [
+                'title' => 'Global Info',
+                'columns' => [
+                    ['title' => 'Max Age', 'field' => 'max_age', 'bottomCalc' => function ($values) {
+                        $max = collect($values)->map(fn($val) => (int) str_replace(' D', '', $val))->max();
+                        return $max . ' D';
+                    }],
+                    ['title' => 'Age > 60D', 'field' => 'age_gt_60d', 'bottomCalc' => function ($values) {
+                        $max = collect($values)->map(fn($val) => (int) str_replace(' D', '', $val))->max();
+                        return $max . ' D';
+                    }],
+                    ['title' => 'Live Orders', 'field' => 'live_orders', 'bottomCalc' => 'sum'],
+                    ['title' => 'Dummy Bookings', 'field' => 'dummy_bookings', 'bottomCalc' => 'sum'],
+                    ['title' => 'On Hold', 'field' => 'on_hold', 'bottomCalc' => 'sum'],
+                ]
+            ],
+            [
+                'title' => 'Pending Actions',
+                'columns' => [
+                    ['title' => 'Verify', 'field' => 'verify', 'bottomCalc' => 'sum'],
+                    ['title' => 'Orders', 'field' => 'orders', 'bottomCalc' => 'sum'],
+                    ['title' => 'Payments', 'field' => 'payments', 'bottomCalc' => 'sum'],
+                    ['title' => 'Data', 'field' => 'data', 'bottomCalc' => 'sum'],
+                    ['title' => 'Refund', 'field' => 'refund', 'bottomCalc' => 'sum'],
+                ]
+            ],
+            [
+                'title' => 'Finance',
+                'columns' => [
+                    ['title' => 'Cash', 'field' => 'cash'],
+                    ['title' => 'Cash %', 'field' => 'cash_pct', 'bottomCalc' => function ($values) {
+                        $avg = collect($values)->map(fn($val) => (float) str_replace('%', '', $val))->avg();
+                        return number_format($avg, 2) . '%';
+                    }],
+                    ['title' => 'In-house', 'field' => 'inhouse'],
+                    ['title' => 'In-house %', 'field' => 'inhouse_pct', 'bottomCalc' => function ($values) {
+                        $avg = collect($values)->map(fn($val) => (float) str_replace('%', '', $val))->avg();
+                        return number_format($avg, 2) . '%';
+                    }],
+                    ['title' => 'Self', 'field' => 'self'],
+                    ['title' => 'Self %', 'field' => 'self_pct', 'bottomCalc' => function ($values) {
+                        $avg = collect($values)->map(fn($val) => (float) str_replace('%', '', $val))->avg();
+                        return number_format($avg, 2) . '%';
+                    }],
+                    ['title' => 'Pending', 'field' => 'finance_pending'],
+                    ['title' => 'MTD', 'field' => 'mtd', 'bottomCalc' => function ($values) {
+                        $avg = collect($values)->map(fn($val) => (float) str_replace('%', '', $val))->avg();
+                        return number_format($avg, 2) . '%';
+                    }],
+                    ['title' => 'YTD', 'field' => 'ytd', 'bottomCalc' => function ($values) {
+                        $avg = collect($values)->map(fn($val) => (float) str_replace('%', '', $val))->avg();
+                        return number_format($avg, 2) . '%';
+                    }],
+                ]
+            ],
+            [
+                'title' => 'Exchange',
+                'columns' => [
+                    ['title' => 'In-house', 'field' => 'exchange_inhouse'],
+                    ['title' => 'In-house %', 'field' => 'exchange_inhouse_pct', 'bottomCalc' => function ($values) {
+                        $avg = collect($values)->map(fn($val) => (float) str_replace('%', '', $val))->avg();
+                        return number_format($avg, 2) . '%';
+                    }],
+                    ['title' => 'Pending', 'field' => 'exchange_pending'],
+                    ['title' => 'MTD', 'field' => 'exchange_mtd', 'bottomCalc' => function ($values) {
+                        $avg = collect($values)->map(fn($val) => (float) str_replace('%', '', $val))->avg();
+                        return number_format($avg, 2) . '%';
+                    }],
+                    ['title' => 'YTD', 'field' => 'exchange_ytd', 'bottomCalc' => function ($values) {
+                        $avg = collect($values)->map(fn($val) => (float) str_replace('%', '', $val))->avg();
+                        return number_format($avg, 2) . '%';
+                    }],
+                ]
+            ],
+            [
+                'title' => 'Scrappage',
+                'columns' => [
+                    ['title' => 'In-house', 'field' => 'scrappage_inhouse'],
+                    ['title' => 'In-house %', 'field' => 'scrappage_inhouse_pct'],
+                    ['title' => 'Pending', 'field' => 'scrappage_pending'],
+                    ['title' => 'MTD', 'field' => 'scrappage_mtd'],
+                    ['title' => 'YTD', 'field' => 'scrappage_ytd'],
+                ]
+            ],
+        ];
+
+        return [$header, $data, $tbr, $stkbr, $filename, $title];
+    }
+
+    public function consolidatedBookingReport(Request $request)
+    {
+        $this->crud->hasAccessOrFail('list');
+
+        $this->data['crud'] = $this->crud;
+        $this->data['title'] = 'Consolidated Booking Report';
+
+        $now = Carbon::now();
+
+        // ────────────────────────────────────────────────
+        // Exact same complex logic jo photo mein data de raha tha
+        // ────────────────────────────────────────────────
+        $bookings = DB::table('xcelr8_booking_master as bm')
+            ->join('xcelr8_vehicle_master as vm', 'bm.vh_id', '=', 'vm.id')
+            ->join('bmpl_enum_master as em', 'vm.segment_id', '=', 'em.id')
+            ->whereIn('bm.status', [1, 4, 6, 8])
+            ->select(
+                'bm.id',
+                'bm.status',
+                'bm.b_type',
+                'bm.fin_mode',
+                'bm.buyer_type',
+                'bm.pending',
+                'bm.order',
+                'bm.dms_so',
+                'bm.booking_amount',
+                'bm.created_at',
+                DB::raw('CONCAT(em.value, "|", COALESCE(vm.oem_model, ""), "|", COALESCE(vm.oem_variant, ""), "|", COALESCE(vm.color, "")) as group_key'),
+                'em.value as seg',
+                'vm.oem_model as model',
+                'vm.oem_variant as variant',
+                'vm.color as clr',
+                'vm.code'
+            )
+            ->get()
+            ->groupBy('group_key');
+
+        $bookingAmounts = DB::table('xcelr8_booking_amount')
+            ->where('status', 1)
+            ->select('bid', DB::raw('SUM(amount) as total_amount'))
+            ->groupBy('bid')
+            ->pluck('total_amount', 'bid');
+
+        $liveOrders = DB::table('xcelr8_vehicle_master as vm')
+            ->join('bmpl_enum_master as em', 'vm.segment_id', '=', 'em.id')
+            ->selectRaw('CONCAT(em.value, "|", COALESCE(vm.oem_model, ""), "|", COALESCE(vm.oem_variant, ""), "|", COALESCE(vm.color, "")) as group_key, SUM(vm.lorder) as lorder')
+            ->groupBy('group_key')
+            ->pluck('lorder', 'group_key');
+
+        $stocksRaw = DB::table('xcelr8_stock_master as sm')
+            ->join('xcelr8_vehicle_master as vm', 'sm.model_code', '=', 'vm.code')
+            ->join('bmpl_enum_master as em', 'vm.segment_id', '=', 'em.id')
+            ->join('xcelr8_us_location as ul', 'sm.location_id', '=', 'ul.id')
+            ->selectRaw('CONCAT(em.value, "|", COALESCE(vm.oem_model, ""), "|", COALESCE(vm.oem_variant, ""), "|", COALESCE(vm.color, "")) as group_key, ul.branch_id, COUNT(sm.id) as quantity')
+            ->groupBy('group_key', 'ul.branch_id')
+            ->get();
+
+        $stocks = $stocksRaw->groupBy('group_key')->map(function ($group) {
+            return $group->groupBy('branch_id')->map(fn($bg) => $bg->sum('quantity'));
+        });
+
+        $exchanges = DB::table('xcelr8_exchange')
+            ->whereIn('verification_status', [0, null])
+            ->select('bid', 'purchase_type')
+            ->get()
+            ->groupBy('bid')
+            ->map(function ($group) {
+                return [
+                    'exchange_pending' => $group->where('purchase_type', 'Exchange')->count() > 0 ? 1 : 0,
+                    'scrappage_pending' => $group->where('purchase_type', 'Scrappage')->count() > 0 ? 1 : 0,
+                ];
+            });
+
+        $finances = DB::table('xcelr8_finance')
+            ->whereIn('verification_status', [0, null])
+            ->pluck('bid')
+            ->mapWithKeys(fn($bid) => [$bid => 1]);
+
+        // ────────────────────────────────────────────────
+        // Data Processing (exact same as your old fetchCbrData)
+        // ────────────────────────────────────────────────
+        $gridData = [];
+        $sno = 1;
+
+        foreach ($bookings as $groupKey => $groupBookings) {
+            [$seg, $model, $variant, $clr] = explode('|', $groupKey);
+
+            $liveGroup = $groupBookings->whereIn('status', [1, 6, 8])->where('b_type', '!=', 'dummy');
+
+            $total_bookings = $liveGroup->count();
+            if ($total_bookings === 0) continue;
+
+            $bkn_bookings = $liveGroup->where('b_type', 'Individual')->count();
+            $churu_bookings = $liveGroup->where('b_type', 'Dealer')->count();
+
+            $max_age_days = $liveGroup->max(fn($b) => abs(Carbon::parse($b->created_at)->diffInDays($now)));
+
+            $age_gt_60 = $liveGroup->filter(fn($b) => abs(Carbon::parse($b->created_at)->diffInDays($now)) > 60)->count();
+
+            $live_orders = $liveOrders->get($groupKey, 0);
+
+            $dummy_bookings = $groupBookings->whereIn('status', [1, 6, 8])->where('b_type', 'dummy')->count();
+
+            $on_hold = $liveGroup->where('status', 6)->count();
+
+            $verify = $liveGroup->where('order', 1)->count();
+
+            $orders = $liveGroup->where('order', 2)->whereNull('dms_so')->count();
+
+            $payments = $liveGroup->filter(function ($b) use ($bookingAmounts) {
+                return ($bookingAmounts->get($b->id, 0) ?? 0) < $b->booking_amount;
+            })->count();
+
+            $data_pending = $liveGroup->where('pending', '>', 0)->count();
+
+            $refund = $groupBookings->where('status', 4)->count();
+
+            $cash = $liveGroup->where('fin_mode', 'Cash')->count();
+            $cash_pct = $total_bookings ? round($cash / $total_bookings * 100, 2) : 0;
+
+            $inhouse = $liveGroup->where('fin_mode', 'In-house')->count();
+            $inhouse_pct = $total_bookings ? round($inhouse / $total_bookings * 100, 2) : 0;
+
+            $self = $liveGroup->where('fin_mode', 'Customer-Self')->count();
+            $self_pct = $total_bookings ? round($self / $total_bookings * 100, 2) : 0;
+
+            $finance_pending = $liveGroup->filter(fn($b) => $finances->get($b->id, 0))->count();
+
+            $stock_group = $stocks->get($groupKey, collect());
+            $stock_total = $stock_group->values()->sum();
+            $stock_bkn = $stock_group->get(1, 0); // BIKANER
+            $stock_churu = $stock_group->get(2, 0); // CHURU
+
+            $gridData[] = [
+                'sno' => $sno++,
+                'seg' => $seg,
+                'model' => $model,
+                'variant' => $variant,
+                'clr' => $clr,
+                'stock_total' => $stock_total,
+                'stock_bikaner' => $stock_bkn,
+                'stock_churu' => $stock_churu,
+                'booking_total' => $total_bookings,
+                'booking_bikaner' => $bkn_bookings,
+                'booking_churu' => $churu_bookings,
+                'hot_enq_total' => 0, // agar hot enquiry hai to add kar dena
+                'hot_enq_bikaner' => 0,
+                'hot_enq_churu' => 0,
+                'finance_total' => $cash + $inhouse + $self,
+                'finance_bikaner' => 0,
+                'finance_churu' => 0,
+                'finance_pending' => $finance_pending,
+                'exchange_total' => $liveGroup->where('buyer_type', 'Exchange')->count(),
+                'exchange_bikaner' => 0,
+                'exchange_churu' => 0,
+                'exchange_pending' => $liveGroup->filter(fn($b) => $exchanges->get($b->id)['exchange_pending'] ?? 0)->count(),
+                'max_age' => $max_age_days ? ceil($max_age_days) . ' D' : '0 D',
+                // 'max_age' => $max_age_days ? $max_age_days . ' D' : '0 D',
+                'age_gt_60d' => $age_gt_60,
+                'live_orders' => $live_orders,
+                'dummy_bookings' => $dummy_bookings,
+                'on_hold' => $on_hold,
+                'order_verification' => $verify,
+                'order_creation' => $orders,
+                'booking_creation' => $total_bookings,
+                'customer_data' => $data_pending,
+                'book_canc' => 0,
+                'refund' => $refund,
+            ];
+        }
+
+        // ────────────────────────────────────────────────
+        // Columns – exact photo jaisa
+        // ────────────────────────────────────────────────
+        $columns = [
+            ['field' => 'sno', 'headerName' => 'S.No.', 'width' => 70, 'pinned' => 'left'],
+
+            [
+                'headerName' => 'Vehicle Info',
+                'headerClass' => 'group-vehicle-info',
+                'children' => [
+                    ['field' => 'seg', 'headerName' => 'Segment', 'width' => 140],
+                    ['field' => 'model', 'headerName' => 'Model', 'width' => 180],
+                    ['field' => 'variant', 'headerName' => 'Variant', 'width' => 240],
+                    ['field' => 'clr', 'headerName' => 'Color', 'width' => 140],
+                ]
+            ],
+
+            [
+                'headerName' => 'STOCK',
+                'headerClass' => 'group-stock',
+                'children' => [
+                    ['field' => 'stock_total', 'headerName' => 'TOTAL', 'width' => 90, 'cellClass' => 'text-right'],
+                    ['field' => 'stock_bikaner', 'headerName' => 'BIKANER', 'width' => 90, 'cellClass' => 'text-right'],
+                    ['field' => 'stock_churu', 'headerName' => 'CHURU', 'width' => 90, 'cellClass' => 'text-right'],
+                ]
+            ],
+
+            [
+                'headerName' => 'BOOKING',
+                'headerClass' => 'group-booking',
+                'children' => [
+                    ['field' => 'booking_total', 'headerName' => 'TOTAL', 'width' => 90, 'cellClass' => 'text-right'],
+                    ['field' => 'booking_bikaner', 'headerName' => 'BIKANER', 'width' => 90, 'cellClass' => 'text-right'],
+                    ['field' => 'booking_churu', 'headerName' => 'CHURU', 'width' => 90, 'cellClass' => 'text-right'],
+                ]
+            ],
+
+            [
+                'headerName' => 'HOT ENQ',
+                'headerClass' => 'group-hot-enq',
+                'children' => [
+                    ['field' => 'hot_enq_total', 'headerName' => 'TOTAL', 'width' => 90, 'cellClass' => 'text-right'],
+                    ['field' => 'hot_enq_bikaner', 'headerName' => 'BIKANER', 'width' => 90, 'cellClass' => 'text-right'],
+                    ['field' => 'hot_enq_churu', 'headerName' => 'CHURU', 'width' => 90, 'cellClass' => 'text-right'],
+                ]
+            ],
+
+            [
+                'headerName' => 'INT IN FINANCE',
+                'headerClass' => 'group-finance',
+                'children' => [
+                    ['field' => 'finance_total', 'headerName' => 'TOTAL', 'width' => 90, 'cellClass' => 'text-right'],
+                    ['field' => 'finance_bikaner', 'headerName' => 'BIKANER', 'width' => 90, 'cellClass' => 'text-right'],
+                    ['field' => 'finance_churu', 'headerName' => 'CHURU', 'width' => 90, 'cellClass' => 'text-right'],
+                    ['field' => 'finance_pending', 'headerName' => 'PENDING', 'width' => 110, 'cellClass' => 'text-right fw-bold'],
+                ]
+            ],
+
+            [
+                'headerName' => 'INT IN EXCHANGE',
+                'headerClass' => 'group-exchange',
+                'children' => [
+                    ['field' => 'exchange_total', 'headerName' => 'TOTAL', 'width' => 90, 'cellClass' => 'text-right'],
+                    ['field' => 'exchange_bikaner', 'headerName' => 'BIKANER', 'width' => 90, 'cellClass' => 'text-right'],
+                    ['field' => 'exchange_churu', 'headerName' => 'CHURU', 'width' => 90, 'cellClass' => 'text-right'],
+                    ['field' => 'exchange_pending', 'headerName' => 'PENDING', 'width' => 110, 'cellClass' => 'text-right fw-bold'],
+                ]
+            ],
+
+            [
+                'headerName' => 'GLOBAL INFO',
+                'headerClass' => 'group-global',
+                'children' => [
+                    ['field' => 'max_age', 'headerName' => 'MAX AGE', 'width' => 100],
+                    ['field' => 'age_gt_60d', 'headerName' => 'AGE > 60D', 'width' => 110, 'cellClass' => 'text-right'],
+                    ['field' => 'live_orders', 'headerName' => 'LIVE ORDERS', 'width' => 120, 'cellClass' => 'text-right'],
+                    ['field' => 'dummy_bookings', 'headerName' => 'DUMMY BOOKINGS', 'width' => 140, 'cellClass' => 'text-right'],
+                    ['field' => 'on_hold', 'headerName' => 'ON HOLD', 'width' => 100, 'cellClass' => 'text-right'],
+                    ['field' => 'order_verification', 'headerName' => 'ORDER VERIFICATION', 'width' => 140, 'cellClass' => 'text-right'],
+                    ['field' => 'order_creation', 'headerName' => 'ORDER CREATION', 'width' => 140, 'cellClass' => 'text-right'],
+                    ['field' => 'booking_creation', 'headerName' => 'BOOKING CREATION', 'width' => 140, 'cellClass' => 'text-right'],
+                    ['field' => 'customer_data', 'headerName' => 'CUSTOMER DATA', 'width' => 140, 'cellClass' => 'text-right'],
+                    ['field' => 'book_canc', 'headerName' => 'BOOK CANC', 'width' => 120, 'cellClass' => 'text-right'],
+                    ['field' => 'refund', 'headerName' => 'REFUND', 'width' => 100, 'cellClass' => 'text-right'],
+                ]
+            ],
+        ];
+
+        $gridConfig = [
+            'columns' => $columns,
+            'data' => $gridData,
+        ];
+
+        $this->data['gridConfig'] = $gridConfig;
+
+        if (empty($gridData)) {
+            session()->flash('info', 'No consolidated booking data found.');
+        }
+
+        return view('booking.consolidated-booking', $this->data);
+    }
+
+    public function branchBookingReport(Request $request)
+    {
+        $this->crud->hasAccessOrFail('list');
+
+        $this->data['crud'] = $this->crud;
+        $this->data['title'] = 'Branch Booking Report';
+
+        $now = Carbon::now();
+
+        // ────────────────────────────────────────────────
+        // Grouped bookings by vehicle
+        // ────────────────────────────────────────────────
+        $bookings = DB::table('xcelr8_booking_master as bm')
+            ->join('xcelr8_vehicle_master as vm', 'bm.vh_id', '=', 'vm.id')
+            ->join('bmpl_enum_master as em', 'vm.segment_id', '=', 'em.id')
+            ->whereIn('bm.status', [1, 4, 6, 8])
+            ->select(
+                'bm.id',
+                'bm.status',
+                'bm.b_type',
+                'bm.created_at',
+                'bm.pending',
+                'bm.order',
+                'bm.dms_so',
+                'bm.booking_amount',
+                DB::raw('CONCAT(em.value, "|", COALESCE(vm.oem_model, ""), "|", COALESCE(vm.oem_variant, ""), "|", COALESCE(vm.color, "")) as group_key'),
+                'em.value as seg',
+                'vm.oem_model as model',
+                'vm.oem_variant as variant',
+                'vm.color as clr'
+            )
+            ->get()
+            ->groupBy('group_key');
+
+        // ────────────────────────────────────────────────
+        // Branch-wise stock (multiple branches as per photo)
+        // ────────────────────────────────────────────────
+        $stocksRaw = DB::table('xcelr8_stock_master as sm')
+            ->join('xcelr8_vehicle_master as vm', 'sm.model_code', '=', 'vm.code')
+            ->join('bmpl_enum_master as em', 'vm.segment_id', '=', 'em.id')
+            ->join('xcelr8_us_location as ul', 'sm.location_id', '=', 'ul.id')
+            ->selectRaw('CONCAT(em.value, "|", COALESCE(vm.oem_model, ""), "|", COALESCE(vm.oem_variant, ""), "|", COALESCE(vm.color, "")) as group_key, ul.name as branch_name, COUNT(sm.id) as quantity')
+            ->groupBy('group_key', 'ul.name')
+            ->get();
+
+        $stocks = $stocksRaw->groupBy('group_key')->map(fn($g) => $g->pluck('quantity', 'branch_name')->toArray());
+
+        // ────────────────────────────────────────────────
+        // Grid Data – photo ke exact fields
+        // ────────────────────────────────────────────────
+        $gridData = [];
+        $sno = 1;
+
+        foreach ($bookings as $groupKey => $groupBookings) {
+            [$seg, $model, $variant, $clr] = explode('|', $groupKey);
+
+            $liveGroup = $groupBookings->whereIn('status', [1, 6, 8])->where('b_type', '!=', 'dummy');
+
+            $total_bookings = $liveGroup->count();
+            if ($total_bookings === 0) continue;
+
+            $bkn_bookings = $liveGroup->where('b_type', 'Individual')->count();
+            $churu_bookings = $liveGroup->where('b_type', 'Dealer')->count();
+
+            $max_age_days = $liveGroup->max(fn($b) => abs(Carbon::parse($b->created_at)->diffInDays($now)));
+
+            $age_gt_60 = $liveGroup->filter(fn($b) => abs(Carbon::parse($b->created_at)->diffInDays($now)) > 60)->count();
+
+            $on_hold = $liveGroup->where('status', 6)->count();
+
+            $verify = $liveGroup->where('order', 1)->count();
+
+            $orders = $liveGroup->where('order', 2)->whereNull('dms_so')->count();
+
+            $payments = $liveGroup->filter(function ($b) {
+                $paid = DB::table('xcelr8_booking_amount')
+                    ->where('bid', $b->id)
+                    ->where('status', 1)
+                    ->sum('amount');
+                return $paid < ($b->booking_amount ?? 0);
+            })->count();
+
+            $customer_data = $liveGroup->where('pending', '>', 0)->count();
+
+            $refund = $groupBookings->where('status', 4)->count();
+
+            $dummy_bookings = $groupBookings->where('b_type', 'dummy')->count();
+
+            $stock_group = $stocks->get($groupKey, []);
+
+            $gridData[] = [
+                'sno' => $sno++,
+                'seg' => $seg,
+                'model' => $model,
+                'variant' => $variant,
+                'clr' => $clr,
+                'stock_total' => array_sum($stock_group),
+                'stock_bikaner' => $stock_group['BIKANER'] ?? 0,
+                'stock_churu' => $stock_group['CHURU'] ?? 0,
+                'stock_khajuwala' => $stock_group['KHAJUWALA'] ?? 0,
+                'stock_kolayat' => $stock_group['KOLAYAT'] ?? 0,
+                'stock_lunkaransar' => $stock_group['LUNKARANSAR'] ?? 0,
+                'stock_other' => array_sum(array_diff_key($stock_group, array_flip(['BIKANER', 'CHURU', 'KHAJUWALA', 'KOLAYAT', 'LUNKARANSAR']))),
+                'total_bookings' => $total_bookings,
+                'bkn_bookings' => $bkn_bookings,
+                'churu_bookings' => $churu_bookings,
+                'max_age' => $max_age_days ? ceil($max_age_days) . ' D' : '0 D',
+                // 'max_age' => $max_age_days ? $max_age_days . ' D' : '0 D',
+                'age_gt_60d' => $age_gt_60,
+                'lie_orders' => 0, // agar alag table se hai to add karna
+                'dummy_bookings' => $dummy_bookings,
+                'on_hold' => $on_hold,
+                'order_verification' => $verify,
+                'order_creation' => $orders,
+                'booking_creation' => $total_bookings,
+                'customer_payment' => $payments,
+                'customer_data' => $customer_data,
+                'book_canc' => 0,
+                'refund' => $refund,
+            ];
+        }
+
+        // ────────────────────────────────────────────────
+        // Columns – EXACTLY photo jaisa (sab groups + sub-columns)
+        // ────────────────────────────────────────────────
+        $columns = [
+            ['field' => 'sno', 'headerName' => 'S.No.', 'width' => 70, 'pinned' => 'left'],
+
+            [
+                'headerName' => 'Vehicle Info',
+                'headerClass' => 'group-vehicle-info',
+                'children' => [
+                    ['field' => 'seg', 'headerName' => 'Segment', 'width' => 140],
+                    ['field' => 'model', 'headerName' => 'Model', 'width' => 180],
+                    ['field' => 'variant', 'headerName' => 'Variant', 'width' => 240],
+                    ['field' => 'clr', 'headerName' => 'Color', 'width' => 140],
+                ]
+            ],
+
+            [
+                'headerName' => 'STOCK',
+                'headerClass' => 'group-stock',
+                'children' => [
+                    ['field' => 'stock_total', 'headerName' => 'TOTAL', 'width' => 90, 'cellClass' => 'text-right'],
+                    ['field' => 'stock_bikaner', 'headerName' => 'BIKANER', 'width' => 90, 'cellClass' => 'text-right'],
+                    ['field' => 'stock_churu', 'headerName' => 'CHURU', 'width' => 90, 'cellClass' => 'text-right'],
+                ]
+            ],
+
+            [
+                'headerName' => 'SELECTED BRANCH LOCATIONS',
+                'headerClass' => 'group-selected-branch',
+                'children' => [
+                    ['field' => 'stock_bikaner', 'headerName' => 'BIKANER', 'width' => 90, 'cellClass' => 'text-right'],
+                    ['field' => 'stock_khajuwala', 'headerName' => 'KHAJUWALA', 'width' => 100, 'cellClass' => 'text-right'],
+                    ['field' => 'stock_kolayat', 'headerName' => 'KOLAYAT', 'width' => 90, 'cellClass' => 'text-right'],
+                    ['field' => 'stock_lunkaransar', 'headerName' => 'LUNKARANSAR', 'width' => 110, 'cellClass' => 'text-right'],
+                    ['field' => 'stock_other', 'headerName' => 'OTHER', 'width' => 90, 'cellClass' => 'text-right'],
+                    ['field' => 'stock_churu', 'headerName' => 'CHURU', 'width' => 90, 'cellClass' => 'text-right'],
+                ]
+            ],
+
+            [
+                'headerName' => 'HOT ENQ',
+                'headerClass' => 'group-hot-enq',
+                'children' => [
+                    ['field' => 'hot_enq_total', 'headerName' => 'TOTAL', 'width' => 90, 'cellClass' => 'text-right'],
+                    ['field' => 'hot_enq_bikaner', 'headerName' => 'BIKANER', 'width' => 90, 'cellClass' => 'text-right'],
+                    ['field' => 'hot_enq_churu', 'headerName' => 'CHURU', 'width' => 90, 'cellClass' => 'text-right'],
+                ]
+            ],
+
+            [
+                'headerName' => 'INT IN FINANCE',
+                'headerClass' => 'group-finance',
+                'children' => [
+                    ['field' => 'finance_total', 'headerName' => 'TOTAL', 'width' => 90, 'cellClass' => 'text-right'],
+                    ['field' => 'finance_bikaner', 'headerName' => 'BIKANER', 'width' => 90, 'cellClass' => 'text-right'],
+                    ['field' => 'finance_churu', 'headerName' => 'CHURU', 'width' => 90, 'cellClass' => 'text-right'],
+                    ['field' => 'finance_pending', 'headerName' => 'PENDING ACTION', 'width' => 110, 'cellClass' => 'text-right fw-bold'],
+                ]
+            ],
+
+            [
+                'headerName' => 'INT IN EXCH',
+                'headerClass' => 'group-exchange',
+                'children' => [
+                    ['field' => 'exchange_total', 'headerName' => 'TOTAL', 'width' => 90, 'cellClass' => 'text-right'],
+                    ['field' => 'exchange_bikaner', 'headerName' => 'BIKANER', 'width' => 90, 'cellClass' => 'text-right'],
+                    ['field' => 'exchange_churu', 'headerName' => 'CHURU', 'width' => 90, 'cellClass' => 'text-right'],
+                    ['field' => 'exchange_pending', 'headerName' => 'PENDING ACTION', 'width' => 110, 'cellClass' => 'text-right fw-bold'],
+                ]
+            ],
+
+            [
+                'headerName' => 'GLOBAL INFO',
+                'headerClass' => 'group-global',
+                'children' => [
+                    ['field' => 'max_age', 'headerName' => 'MAX AGE', 'width' => 100],
+                    ['field' => 'age_gt_60d', 'headerName' => 'AGE > 60D', 'width' => 110, 'cellClass' => 'text-right'],
+                    ['field' => 'lie_orders', 'headerName' => 'LIE ORDERS', 'width' => 100, 'cellClass' => 'text-right'],
+                    ['field' => 'dummy_bookings', 'headerName' => 'DUMMY BOOKINGS', 'width' => 140, 'cellClass' => 'text-right'],
+                    ['field' => 'on_hold', 'headerName' => 'ON HOLD', 'width' => 100, 'cellClass' => 'text-right'],
+                    ['field' => 'refund', 'headerName' => 'REFUND', 'width' => 90, 'cellClass' => 'text-right'],
+                ]
+            ],
+
+            [
+                'headerName' => 'PENDING ACTIONS',
+                'headerClass' => 'group-pending',
+                'children' => [
+                    ['field' => 'order_verification', 'headerName' => 'ORDER VERIFICATION', 'width' => 140, 'cellClass' => 'text-right'],
+                    ['field' => 'order_creation', 'headerName' => 'ORDER CREATION', 'width' => 140, 'cellClass' => 'text-right'],
+                    ['field' => 'booking_creation', 'headerName' => 'BOOKING CREATION', 'width' => 140, 'cellClass' => 'text-right'],
+                    ['field' => 'customer_payment', 'headerName' => 'CUSTOMER PAMENT', 'width' => 140, 'cellClass' => 'text-right'],
+                    ['field' => 'customer_data', 'headerName' => 'CUSTOMER DATA', 'width' => 140, 'cellClass' => 'text-right'],
+                    ['field' => 'book_canc', 'headerName' => 'BOOK CANC.', 'width' => 120, 'cellClass' => 'text-right'],
+                ]
+            ],
+        ];
+
+        $gridConfig = [
+            'columns' => $columns,
+            'data' => $gridData,
+        ];
+
+        $this->data['gridConfig'] = $gridConfig;
+
+        if (empty($gridData)) {
+            session()->flash('info', 'No branch booking data found.');
+        }
+
+        return view('booking.branch-booking', $this->data);
+    }
+
+    public function pendingActionsReport(Request $request)
+    {
+        $this->crud->hasAccessOrFail('list');
+
+        $this->data['crud'] = $this->crud;
+        $this->data['title'] = 'Pending Actions Report';
+
+        // Quick check if any pending records exist
+        $pendingCount = DB::table('xcelr8_booking_master')->whereIn('status', [1, 6, 8])->count();
+        if ($pendingCount === 0) {
+            session()->flash('info', 'No pending bookings found (status 1,6,8 not present in table).');
+        }
+
+        $query = DB::table('xcelr8_booking_master as b')
+            ->leftJoin('xcelr8_vehicle_master as vm', 'b.vh_id', '=', 'vm.id')
+            ->leftJoin('bmpl_enum_master as em', 'vm.segment_id', '=', 'em.id')
+            ->leftJoin('xcelr8_us_location as loc', 'b.location_id', '=', 'loc.id')
+            ->whereIn('b.status', [1, 6, 8])
+            ->selectRaw('
+            COALESCE(em.value, "Unknown") as segment,
+            COALESCE(vm.oem_model, "Unknown") as model,
+            COALESCE(vm.oem_variant, "Unknown") as variant,
+            COALESCE(vm.color, "Unknown") as color,
+            COUNT(b.id) as total_bookings,
+            SUM(CASE WHEN b.order = 1 THEN 1 ELSE 0 END) as order_verif,
+            SUM(CASE WHEN b.order = 2 AND b.dms_so IS NULL THEN 1 ELSE 0 END) as order_creation,
+            SUM(CASE WHEN b.pending > 0 THEN 1 ELSE 0 END) as customer_data,
+            SUM(CASE WHEN b.status = 4 THEN 1 ELSE 0 END) as refund,
+            SUM(CASE WHEN b.status = 4 THEN 1 ELSE 0 END) as book_canc,
+            loc.abbr as branch_abbr
+        ')
+            ->groupByRaw('em.value, vm.oem_model, vm.oem_variant, vm.color, loc.abbr');
+
+        $pendings = $query->get();
+
+        // ────────────────────────────────────────────────
+        // Group by vehicle + branch counts
+        // ────────────────────────────────────────────────
+        $gridData = [];
+        $grouped = $pendings->groupBy(function ($item) {
+            return $item->segment . '|' . $item->model . '|' . $item->variant . '|' . $item->color;
+        });
+
+        $sno = 1;
+
+        foreach ($grouped as $groupKey => $rows) {
+            [$seg, $model, $variant, $clr] = explode('|', $groupKey);
+
+            $total_bookings = $rows->sum('total_bookings');
+
+            if ($total_bookings == 0) continue;
+
+            $bkn = $rows->where('branch_abbr', 'BKN')->sum('total_bookings');
+            $chr = $rows->where('branch_abbr', 'CHR')->sum('total_bookings');
+
+            $gridData[] = [
+                'sno' => $sno++,
+                'segment' => $seg,
+                'model' => $model,
+                'variant' => $variant,
+                'color' => $clr,
+                'total_bookings' => (int)$total_bookings,
+                'bkn' => (int)$bkn,
+                'chr' => (int)$chr,
+                'exchange' => 0,
+                'finance' => 0,
+                'order_verif' => (int)$rows->sum('order_verif'),
+                'order_creation' => (int)$rows->sum('order_creation'),
+                'booking_creation' => (int)$total_bookings,
+                'customer_payment' => 0,
+                'kyc_data' => (int)$rows->sum('customer_data'),
+                'book_canc' => (int)$rows->sum('book_canc'),
+                'refund' => (int)$rows->sum('refund'),
+            ];
+        }
+
+        // ────────────────────────────────────────────────
+        // Columns (your blade already expects these)
+        // ────────────────────────────────────────────────
+        $columns = [
+            ['field' => 'sno', 'headerName' => 'S.No.', 'width' => 70, 'pinned' => 'left'],
+
+            [
+                'headerName' => 'Vehicle Info',
+                'headerClass' => 'group-vehicle-info',
+                'children' => [
+                    ['field' => 'segment', 'headerName' => 'Segment', 'width' => 140],
+                    ['field' => 'model', 'headerName' => 'Model', 'width' => 180],
+                    ['field' => 'variant', 'headerName' => 'Variant', 'width' => 240],
+                    ['field' => 'color', 'headerName' => 'Color', 'width' => 140],
+                ]
+            ],
+
+            [
+                'headerName' => 'Bookings',
+                'headerClass' => 'group-booking',
+                'children' => [
+                    ['field' => 'total_bookings', 'headerName' => 'Total', 'width' => 90, 'cellClass' => 'text-right'],
+                    ['field' => 'bkn', 'headerName' => 'BKN', 'width' => 70, 'cellClass' => 'text-right'],
+                    ['field' => 'chr', 'headerName' => 'CHR', 'width' => 70, 'cellClass' => 'text-right'],
+                    ['field' => 'exchange', 'headerName' => 'EXCHANGE', 'width' => 110, 'cellClass' => 'text-right'],
+                    ['field' => 'finance', 'headerName' => 'FINANCE', 'width' => 110, 'cellClass' => 'text-right'],
+                ]
+            ],
+
+            [
+                'headerName' => 'PENDING ACTIONS',
+                'headerClass' => 'group-pending',
+                'children' => [
+                    ['field' => 'order_verif', 'headerName' => 'ORDER VERIFICATION', 'width' => 160, 'cellClass' => 'text-right'],
+                    ['field' => 'order_creation', 'headerName' => 'ORDER CREATION', 'width' => 140, 'cellClass' => 'text-right'],
+                    ['field' => 'booking_creation', 'headerName' => 'BOOKING CREATION', 'width' => 160, 'cellClass' => 'text-right'],
+                    ['field' => 'customer_payment', 'headerName' => 'CUSTOMER PAYMENT', 'width' => 160, 'cellClass' => 'text-right'],
+                    ['field' => 'kyc_data', 'headerName' => 'KYC DATA', 'width' => 110, 'cellClass' => 'text-right'],
+                    ['field' => 'book_canc', 'headerName' => 'BOOK CANC.', 'width' => 110, 'cellClass' => 'text-right'],
+                    ['field' => 'refund', 'headerName' => 'REFUND', 'width' => 110, 'cellClass' => 'text-right'],
+                ]
+            ],
+        ];
+
+        $gridConfig = [
+            'columns' => $columns,
+            'data' => $gridData,
+        ];
+
+        $this->data['gridConfig'] = $gridConfig;
+
+        return view('booking.pending-actions', $this->data);
     }
 }

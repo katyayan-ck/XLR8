@@ -22,7 +22,7 @@
             <div class="col-lg-6">
                 <div class="page-header-title">
                     <i class="ik ik-car bg-blue"></i>
-                    <h5 class="fw-bold mb-0">Add New Booking</h5>
+                    <h4 class="fw-bold mb-0">Add New Booking</h4>
                 </div>
             </div>
             <div class="col-lg-6 text-end">
@@ -52,23 +52,27 @@
                 <!-- Payment Details Section -->
                 <div class="card p-3">
                     <div class="card-body">
-                        <h5 class="mb-3">Payment Details</h5>
+                        <h4 class="mb-3">Payment Details</h4>
                         <div class="row">
                             <div class="col-sm-2">
                                 <div class="form-group">
                                     <label for="customertype">Customer Type <span class="required-mark">*</span></label>
-                                    <select name="customertype" id="customertype" class="form-control" required>
+                                    <select name="customertype" id="customertype" class="form-control form-select"
+                                        required>
+                                        <option value="" disabled selected>-- Select Customer Type --</option>
                                         <option value="Actual">Actual</option>
                                         <option value="Dummy">Dummy</option>
                                     </select>
                                 </div>
                             </div>
 
-                            <div class="col-sm-3">
+                            <div class="col-sm-2">
                                 <div class="form-group">
                                     <label for="customercat">Customer Category <span
                                             class="required-mark">*</span></label>
-                                    <select name="customercat" id="customercat" class="form-control" required>
+                                    <select name="customercat" id="customercat" class="form-control form-select"
+                                        required>
+                                        <option value="" disabled selected>-- Select Category --</option>
                                         <option value="Individual">Individual</option>
                                         <option value="CSD">CSD</option>
                                         <option value="Firm">Firm</option>
@@ -85,10 +89,11 @@
                                 </div>
                             </div>
 
-                            <div class="col-sm-2">
+                            <div class="col-sm-3">
                                 <div class="form-group">
                                     <label for="coltype">Collection Type <span class="required-mark">*</span></label>
-                                    <select name="coltype" id="coltype" class="form-control" required>
+                                    <select name="coltype" id="coltype" class="form-control form-select" required>
+                                        <option value="" disabled selected>-- Select Collection Type --</option>
                                         <option value="1">Receipt</option>
                                         <option value="2">Field Collection By Sales Team</option>
                                         <option value="3">Field Collection By DSA</option>
@@ -139,7 +144,7 @@
                             </div>
 
                             <!-- UPDATED: Upload Image or PDF * with right aligned preview, scrollable PDF, cross on both -->
-                            <div class="col-sm-3">
+                            {{-- <div class="col-sm-3">
                                 <div class="form-group">
                                     <label for="fdoc">Upload Image or PDF <span class="required-mark">*</span></label>
                                     <input type="file" name="amountproof" id="fdoc" class="form-control"
@@ -147,10 +152,25 @@
                                         onchange="previewAmountProof(this)" required>
                                     <small class="form-text text-muted">Max 2MB (JPG, PNG, PDF)</small>
                                 </div>
+                            </div> --}}
+                            <!-- Upload Input (ये वही रहेगा) -->
+                            <div class="col-sm-3">
+                                <div class="form-group">
+                                    <label for="fdoc">Upload Image or PDF <span class="required-mark">*</span></label>
+                                    <input type="file" name="amountproof" id="fdoc" class="form-control"
+                                        accept="image/jpeg,image/png,application/pdf" onchange="handleProofUpload(this)"
+                                        required>
+                                    <small class="form-text text-muted">Max 2MB (JPG, PNG, PDF)</small>
+                                </div>
+                            </div>
+
+                            <!-- नया Chip Area – यहीं chip बनेगा -->
+                            <div class="col-sm-3 mt-1" id="proofChipContainer">
+                                <!-- dynamically chip आएगा -->
                             </div>
 
                             <!-- Right aligned preview with scrollable PDF -->
-                            <div class="col-sm-12 mt-3 text-end">
+                            {{-- <div class="col-sm-12 mt-3 text-end">
                                 <div id="amountProofPreview"
                                     style="position: relative; display: none; max-width: 250px; border: 1px dashed #ccc; border-radius: 12px; padding: 15px; background: #f8f9fa; margin-left: auto;">
                                     <div style="position: relative; display: inline-block;">
@@ -167,7 +187,8 @@
                                         <span id="fileNameDisplay"></span>
                                     </div>
                                 </div>
-                            </div>
+                            </div> --}}
+
                         </div>
                     </div>
                 </div>
@@ -175,7 +196,7 @@
                 <!-- Customer Details Section -->
                 <div class="card p-3 mt-3">
                     <div class="card-body">
-                        <h5 class="mb-3">Customer Details</h5>
+                        <h4 class="mb-3">Customer Details</h4>
                         <div class="row">
                             <div class="col-sm-3">
                                 <div class="form-group">
@@ -201,8 +222,10 @@
 
                             <div class="col-sm-3">
                                 <div class="form-group">
-                                    <label id="careofnamelabel">Care Of Name <span class="required-mark">*</span></label>
-                                    <input type="text" name="careofname" id="careofname" class="form-control uppercase" required>
+                                    <label id="careofnamelabel">Care Of Name <span
+                                            class="required-mark">*</span></label>
+                                    <input type="text" name="careofname" id="careofname" class="form-control uppercase"
+                                        required>
                                 </div>
                             </div>
 
@@ -223,7 +246,8 @@
                             <div class="col-sm-4">
                                 <div class="form-group">
                                     <label for="gender">Gender <span class="required-mark">*</span></label>
-                                    <select name="gender" id="gender" class="form-control" required>
+                                    <select name="gender" id="gender" class="form-control form-select" required>
+                                        <option value="" disabled selected>-- Select Gender --</option>
                                         <option value="Male">Male</option>
                                         <option value="Female">Female</option>
                                         <option value="Transgender">Transgender</option>
@@ -234,13 +258,14 @@
                             <div class="col-sm-4">
                                 <div class="form-group">
                                     <label for="occupation">Occupation <span class="required-mark">*</span></label>
-                                    <select name="occupation" id="occupation" class="form-control" required>
-                                        <option value="">Please Select...</option>
+                                    <select name="occupation" id="occupation" class="form-control form-select" required>
+                                        <option value="" disabled selected>-- Select Occupation --</option>
                                         <option value="Agriculture">Agriculture</option>
                                         <option value="Business">Business</option>
                                         <option value="Salaried (Govt.)">Salaried (Govt.)</option>
                                         <option value="Salaried (Pvt.)">Salaried (Pvt.)</option>
-                                        <option value="Self Employed (Professional)">Self Employed (Professional)</option>
+                                        <option value="Self Employed (Professional)">Self Employed (Professional)
+                                        </option>
                                         <option value="Pensioner">Pensioner</option>
                                         <option value="Other">Other</option>
                                     </select>
@@ -296,8 +321,8 @@
                             <div class="col-sm-4">
                                 <div class="form-group">
                                     <label for="branch">Branch <span class="required-mark">*</span></label>
-                                    <select name="branch" id="branch" class="form-control" required>
-                                        <option value="">Please Select...</option>
+                                    <select name="branch" id="branch" class="form-control form-select" required>
+                                        <option value="" disabled selected>-- Select Branch --</option>
                                         @foreach($data['branches'] ?? [] as $branch)
                                         <option value="{{ $branch->id }}">{{ $branch->name }}</option>
                                         @endforeach
@@ -308,8 +333,9 @@
                             <div class="col-sm-4">
                                 <div class="form-group">
                                     <label for="location">Location <span class="required-mark">*</span></label>
-                                    <select name="location" id="location" class="form-control" required disabled>
-                                        <option value="0">Please Select...</option>
+                                    <select name="location" id="location" class="form-control form-select" required
+                                        disabled>
+                                        <option value="" disabled selected>-- Select Location --</option>
                                     </select>
                                 </div>
                             </div>
@@ -329,7 +355,7 @@
                 <!-- Referred By Details Section -->
                 <div class="card p-3 mt-3">
                     <div class="card-body">
-                        <h5 class="mb-3">Referred By Details</h5>
+                        <h4 class="mb-3">Referred By Details</h4>
                         <div class="row">
                             <div class="col-sm-1">
                                 <div class="form-group">
@@ -387,12 +413,13 @@
                 <!-- Purchase Type Details Section -->
                 <div class="card p-3 mt-3">
                     <div class="card-body">
-                        <h5 class="mb-3">Purchase Type Details</h5>
+                        <h4 class="mb-3">Purchase Type Details</h4>
                         <div class="row">
                             <div class="col-sm-2">
                                 <div class="form-group">
                                     <label for="buyertype">Purchase Type <span class="required-mark">*</span></label>
-                                    <select name="buyertype" id="buyertype" class="form-control" required>
+                                    <select name="buyertype" id="buyertype" class="form-control form-select" required>
+                                        <option value="" disabled>-- Select Purchase Type --</option>
                                         <option value="First time Buyer" selected>First time Buyer</option>
                                         <option value="Additional Buy">Additional Buy</option>
                                         <option value="Exchange Buy">Exchange Buy</option>
@@ -405,8 +432,9 @@
                                 <div class="form-group">
                                     <label for="enummaster1">Brand Make 1 <span class="required-mark"
                                             style="display: none;">*</span></label>
-                                    <select name="enummaster1" id="enummaster1" class="form-control" disabled>
-                                        <option value="0">Please Select...</option>
+                                    <select name="enummaster1" id="enummaster1" class="form-control form-select"
+                                        disabled>
+                                        <option value="" disabled selected>-- Select Brand Make 1 --</option>
                                         @foreach($data['enum_master'] ?? [] as $enum)
                                         <option value="{{ $enum->id }}">{{ $enum->value }}</option>
                                         @endforeach
@@ -427,8 +455,9 @@
                                 <div class="form-group">
                                     <label for="enummaster2">Brand Make 2 <span class="required-mark"
                                             style="display: none;">*</span></label>
-                                    <select name="enummaster2" id="enummaster2" class="form-control" disabled>
-                                        <option value="0">Please Select...</option>
+                                    <select name="enummaster2" id="enummaster2" class="form-control form-select"
+                                        disabled>
+                                        <option value="" disabled selected>-- Select Brand Make 2 --</option>
                                         @foreach($data['enum_master'] ?? [] as $enum)
                                         <option value="{{ $enum->id }}">{{ $enum->value }}</option>
                                         @endforeach
@@ -512,7 +541,7 @@
                 <!-- Vehicle Details Section -->
                 <div class="card p-3 mt-3">
                     <div class="card-body">
-                        <h5 class="mb-3">Vehicle Details</h5>
+                        <h4 class="mb-3">Vehicle Details</h4>
                         <div class="row">
                             <div class="col-sm-3">
                                 <div class="form-group">
@@ -556,7 +585,7 @@
 
                             <div class="col-sm-2">
                                 <div class="form-group">
-                                    <label for="seating">Seating</label>
+                                    <label for="seating">Seating<span class="required-mark">*</span></label>
                                     <input type="text" name="seating" id="seating" class="form-control" value="0"
                                         readonly>
                                 </div>
@@ -593,12 +622,14 @@
                 <!-- Booking Details Section -->
                 <div class="card p-3 mt-3">
                     <div class="card-body">
-                        <h5 class="mb-3">Booking Type & Source</h5>
+                        <h4 class="mb-3">Booking Type & Source</h4>
                         <div class="row">
                             <div class="col-sm-3">
                                 <div class="form-group">
                                     <label for="bookingmode">Booking Mode <span class="required-mark">*</span></label>
-                                    <select name="bookingmode" id="bookingmode" class="form-control" required>
+                                    <select name="bookingmode" id="bookingmode" class="form-control form-select"
+                                        required>
+                                        <option value="" disabled selected>-- Select Booking Mode --</option>
                                         <option value="Dealer">Dealer</option>
                                         <option value="Online">Online</option>
                                     </select>
@@ -617,7 +648,9 @@
                                 <div class="form-group">
                                     <label for="bookingsource">Booking Source <span
                                             class="required-mark">*</span></label>
-                                    <select name="bookingsource" id="bookingsource" class="form-control" required>
+                                    <select name="bookingsource" id="bookingsource" class="form-control form-select"
+                                        required>
+                                        <option value="" disabled selected>-- Select Booking Source --</option>
                                         <option value="Dealer">Dealer Sourcing</option>
                                         <option value="DSA">DSA</option>
                                     </select>
@@ -628,8 +661,8 @@
                                 <div class="form-group">
                                     <label for="dsadetails">Select DSA <span class="required-mark"
                                             style="display: none;">*</span></label>
-                                    <select name="dsadetails" id="dsadetails" class="form-control" disabled>
-                                        <option value="">Please Select...</option>
+                                    <select name="dsadetails" id="dsadetails" class="form-control form-select" disabled>
+                                        <option value="" disabled selected>-- Select DSA --</option>
                                         @foreach($data['dsa_details'] ?? [] as $dsa)
                                         <option value="{{ $dsa->id }}">{{ $dsa->name }} - {{ $dsa->mobile }}</option>
                                         @endforeach
@@ -677,7 +710,8 @@
                             <div class="col-sm-2">
                                 <div class="form-group">
                                     <label for="finmode">Finance Mode <span class="required-mark">*</span></label>
-                                    <select name="finmode" id="finmode" class="form-control" required>
+                                    <select name="finmode" id="finmode" class="form-control form-select" required>
+                                        <option value="" disabled selected>-- Select Finance Mode --</option>
                                         <option value="In-house">In-house</option>
                                         <option value="Customer Self">Customer Self</option>
                                         <option value="Cash">Cash</option>
@@ -714,7 +748,9 @@
                                 <div class="form-group" id="loanstatusbox">
                                     <label for="loanstatus">Loan File Status <span class="required-mark"
                                             style="display: none;">*</span></label>
-                                    <select name="loanstatus" id="loanstatus" class="form-control" disabled required>
+                                    <select name="loanstatus" id="loanstatus" class="form-control form-select" disabled
+                                        required>
+                                        <option value="" disabled selected>-- Select Loan File Status --</option>
                                         <option value="Pending">Pending</option>
                                         <option value="Complete">Complete</option>
                                     </select>
@@ -781,6 +817,40 @@
         </div>
     </div>
 </div> --}}
+
+<!-- Proof Preview Modal -->
+<div class="modal fade" id="proofPreviewModal" tabindex="-1" aria-labelledby="proofPreviewModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="proofPreviewModalLabel">Document Preview</h4>
+                {{-- <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button> --}}
+            </div>
+            <div class="modal-body text-center p-0" style="min-height: 60vh; background: #f8f9fa;">
+                <!-- Image Preview -->
+                <img id="modalProofImg" src="" class="img-fluid shadow align-items-center justify-content-center"
+                    style="display:inline-table; max-height:80vh; border-radius:8px;">
+                <!-- PDF Preview -->
+                <iframe id="modalProofPdf" style="display:none; width:100%; height:80vh; border:none;"
+                    sandbox="allow-scripts allow-same-origin"></iframe>
+                <!-- Fallback -->
+                <div id="modalNoPreview" class="d-flex align-items-center justify-content-center h-100 text-muted"
+                    style="display:none;">
+                    {{-- <p>No preview available for this file type.</p> --}}
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" id="modalDownloadBtn" class="btn btn-primary">
+                    <i class="fas fa-download me-1"></i> Download
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 </form>
 </div>
 
@@ -793,10 +863,10 @@
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="errorModalLabel">Form Errors</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <h4 class="modal-title" id="errorModalLabel">Form Errors</h4>
+                {{-- <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
-                </button>
+                </button> --}}
             </div>
             <div class="modal-body"></div>
             <div class="modal-footer">
@@ -811,8 +881,53 @@
 @push('after_scripts')
 {{--
 <link rel="stylesheet" href="{{ asset('plugins/select2/dist/css/select2.min.css') }}"> --}}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <style>
+    .proof-chip {
+        display: inline-flex;
+        align-items: center;
+        background-color: #f1f3f5;
+        border: 1px solid #ced4da;
+        border-radius: 50px;
+        padding: 6px 14px;
+        margin-right: 12px;
+        font-size: 0.95rem;
+        max-width: 320px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+
+    .proof-chip i {
+        font-size: 1.4rem;
+        margin-right: 10px;
+        color: #6c757d;
+    }
+
+    .proof-chip .file-name {
+        max-width: 160px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-right: 12px;
+    }
+
+    .proof-chip .btn-action {
+        background: none;
+        border: none;
+        font-size: 1.2rem;
+        padding: 0 6px;
+        cursor: pointer;
+        color: #6c757d;
+    }
+
+    .proof-chip .btn-download:hover {
+        color: #0d6efd;
+    }
+
+    .proof-chip .btn-remove:hover {
+        color: #dc3545;
+    }
+
     .is-valid {
         border-color: #28a745 !important;
         box-shadow: 0 0 5px rgba(40, 167, 69, 0.5);
@@ -827,6 +942,27 @@
         color: #dc3545;
         margin-left: 2px;
     }
+
+    .proof-chip {
+        transition: all 0.2s ease;
+        user-select: none;
+    }
+
+    .proof-chip:hover {
+        background-color: #e9ecef;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    }
+
+    .proof-chip .btn-action {
+        transition: color 0.2s;
+    }
+
+    #modalProofPdf,
+    #modalProofImg {
+        max-height: 100vh;
+        object-fit: contain;
+    }
 </style>
 
 {{-- <script src="{{ asset('plugins/select2/dist/js/select2.min.js') }}"></script> --}}
@@ -836,71 +972,71 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('fdoc').addEventListener('change', previewFile);
-});
+    //     document.addEventListener('DOMContentLoaded', function() {
+//     document.getElementById('fdoc').addEventListener('change', previewFile);
+// });
 
 // Global functions for Upload Preview (image + PDF with scroll + cross button)
-function previewAmountProof(input) {
-    const file = input.files[0];
-    const $preview = $('#amountProofPreview');
-    const $img = $('#amountProofImg');
-    const $pdf = $('#amountProofPdf');
-    const $clear = $('#amountProofClear');
-    const $name = $('#fileNameDisplay');
+// function previewAmountProof(input) {
+//     const file = input.files[0];
+//     const $preview = $('#amountProofPreview');
+//     const $img = $('#amountProofImg');
+//     const $pdf = $('#amountProofPdf');
+//     const $clear = $('#amountProofClear');
+//     const $name = $('#fileNameDisplay');
 
-    // Reset
-    $img.hide(); $pdf.hide(); $clear.hide(); $preview.hide(); $name.text('');
+//     // Reset
+//     $img.hide(); $pdf.hide(); $clear.hide(); $preview.hide(); $name.text('');
 
-    if (!file) return;
+//     if (!file) return;
 
-    // Validation
-    const validTypes = ['image/jpeg', 'image/png', 'application/pdf'];
-    if (!validTypes.includes(file.type)) {
-        alert('Only JPG, PNG or PDF allowed!');
-        input.value = '';
-        return;
-    }
-    if (file.size > 2 * 1024 * 1024) {
-        alert('File must be less than 2MB!');
-        input.value = '';
-        return;
-    }
+//     // Validation
+//     const validTypes = ['image/jpeg', 'image/png', 'application/pdf'];
+//     if (!validTypes.includes(file.type)) {
+//         alert('Only JPG, PNG or PDF allowed!');
+//         input.value = '';
+//         return;
+//     }
+//     if (file.size > 2 * 1024 * 1024) {
+//         alert('File must be less than 2MB!');
+//         input.value = '';
+//         return;
+//     }
 
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        if (file.type.startsWith('image/')) {
-            $img.attr('src', e.target.result).show();
-        } else {
-            const blob = new Blob([e.target.result], { type: 'application/pdf' });
-            const url = URL.createObjectURL(blob);
-            $pdf.attr('src', url).show();
-            $clear.data('pdfUrl', url);
-        }
-        $name.text(file.name);
-        $preview.show();
-        $clear.show();
-    };
+//     const reader = new FileReader();
+//     reader.onload = function(e) {
+//         if (file.type.startsWith('image/')) {
+//             $img.attr('src', e.target.result).show();
+//         } else {
+//             const blob = new Blob([e.target.result], { type: 'application/pdf' });
+//             const url = URL.createObjectURL(blob);
+//             $pdf.attr('src', url).show();
+//             $clear.data('pdfUrl', url);
+//         }
+//         $name.text(file.name);
+//         $preview.show();
+//         $clear.show();
+//     };
 
-    if (file.type === 'application/pdf') {
-        reader.readAsArrayBuffer(file);
-    } else {
-        reader.readAsDataURL(file);
-    }
-}
+//     if (file.type === 'application/pdf') {
+//         reader.readAsArrayBuffer(file);
+//     } else {
+//         reader.readAsDataURL(file);
+//     }
+// }
 
-function clearAmountProof() {
-    $('#fdoc').val('');
-    $('#amountProofImg, #amountProofPdf').hide().attr('src', '');
-    $('#amountProofPreview').hide();
-    $('#amountProofClear').hide();
-    $('#fileNameDisplay').text('');
-    const url = $('#amountProofClear').data('pdfUrl');
-    if (url) {
-        URL.revokeObjectURL(url);
-        $('#amountProofClear').removeData('pdfUrl');
-    }
-}
+// function clearAmountProof() {
+//     $('#fdoc').val('');
+//     $('#amountProofImg, #amountProofPdf').hide().attr('src', '');
+//     $('#amountProofPreview').hide();
+//     $('#amountProofClear').hide();
+//     $('#fileNameDisplay').text('');
+//     const url = $('#amountProofClear').data('pdfUrl');
+//     if (url) {
+//         URL.revokeObjectURL(url);
+//         $('#amountProofClear').removeData('pdfUrl');
+//     }
+// }
 // function previewFile() {
 //     const file = document.getElementById('fdoc').files[0];
 //     const previewContainer = document.getElementById('imagePreviewContainer');
@@ -940,6 +1076,148 @@ function clearAmountProof() {
 //     document.getElementById('removeImageButton').style.display = 'none';
 // }
 
+let uploadedFile = null; // global variable to hold the file for download
+
+function handleProofUpload(input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    // Validation
+    const validTypes = ['image/jpeg', 'image/png', 'application/pdf'];
+    if (!validTypes.includes(file.type)) {
+        alert('Only JPG, PNG or PDF allowed!');
+        input.value = '';
+        return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+        alert('File must be less than 2MB!');
+        input.value = '';
+        return;
+    }
+
+    uploadedFile = file; // store for download
+
+    const container = document.getElementById('proofChipContainer');
+    container.innerHTML = ''; // only one file allowed (replace old one)
+
+    const chip = document.createElement('div');
+    chip.className = 'proof-chip';
+
+    // Icon
+    const icon = document.createElement('i');
+    icon.className = file.type === 'application/pdf'
+        ? 'fas fa-file-pdf text-danger'
+        : 'fas fa-file-image text-primary';
+
+    // File name
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'file-name';
+    nameSpan.textContent = file.name;
+
+    // Download button
+    const downloadBtn = document.createElement('button');
+    downloadBtn.type = 'button';
+    downloadBtn.className = 'btn-action btn-download';
+    downloadBtn.innerHTML = '<i class="fas fa-download"></i>';
+    downloadBtn.title = 'Download';
+    downloadBtn.onclick = function() {
+        if (uploadedFile) {
+            const url = URL.createObjectURL(uploadedFile);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = uploadedFile.name;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    };
+
+    // Remove button
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'btn-action btn-remove';
+    removeBtn.innerHTML = '<i class="fas fa-times"></i>';
+    removeBtn.title = 'Remove';
+    removeBtn.onclick = function() {
+        input.value = '';
+        uploadedFile = null;
+        container.innerHTML = '';
+    };
+
+    // Assemble chip
+    chip.appendChild(icon);
+    chip.appendChild(nameSpan);
+    chip.appendChild(downloadBtn);
+    chip.appendChild(removeBtn);
+
+    // Make the entire chip clickable (except buttons)
+chip.style.cursor = 'pointer';
+chip.addEventListener('click', function(e) {
+    // अगर download या remove button पर क्लिक किया तो modal न खुलें
+    if (e.target.closest('.btn-action')) return;
+
+    const isPdf = uploadedFile.type === 'application/pdf';
+
+    // Reset modal content
+    document.getElementById('modalProofImg').style.display = 'none';
+    document.getElementById('modalProofPdf').style.display = 'none';
+    document.getElementById('modalNoPreview').style.display = 'none';
+
+    if (isPdf) {
+        const blob = new Blob([uploadedFile], { type: 'application/pdf' });
+        const url = URL.createObjectURL(blob);
+        const pdfFrame = document.getElementById('modalProofPdf');
+        pdfFrame.src = url;
+        pdfFrame.style.display = 'block';
+        // Store URL to clean up later
+        pdfFrame.dataset.pdfUrl = url;
+    } else if (uploadedFile.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = document.getElementById('modalProofImg');
+            img.src = e.target.result;
+            img.style.display = 'block';
+        };
+        reader.readAsDataURL(uploadedFile);
+    } else {
+        document.getElementById('modalNoPreview').style.display = 'flex';
+    }
+
+    // Set title
+    document.getElementById('proofPreviewModalLabel').textContent = 'Preview: ' + uploadedFile.name;
+
+    // Modal Download button
+    document.getElementById('modalDownloadBtn').onclick = function() {
+        if (uploadedFile) {
+            const url = URL.createObjectURL(uploadedFile);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = uploadedFile.name;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    };
+
+    // Show modal using Bootstrap 4 syntax (your version is 4.6.2)
+    $('#proofPreviewModal').modal('show');
+});
+
+// Clean up PDF URL when modal closes (memory leak prevention)
+$('#proofPreviewModal').on('hidden.bs.modal', function () {
+    const pdfFrame = document.getElementById('modalProofPdf');
+    if (pdfFrame.dataset.pdfUrl) {
+        URL.revokeObjectURL(pdfFrame.dataset.pdfUrl);
+        pdfFrame.removeAttribute('data-pdf-url');
+        pdfFrame.src = '';
+    }
+});
+
+    container.appendChild(chip);
+}
+
 (function() {
     'use strict';
 
@@ -957,12 +1235,12 @@ function clearAmountProof() {
         $('#customercat').on('change', function() {
             const isFirm = this.value === 'Firm';
             $('#ownedByOption').toggle(isFirm);
-            
+
             // अगर Firm नहीं तो Owned By select नहीं होना चाहिए
             if (!isFirm && $('#careof').val() === '5') {
                 $('#careof').val('').trigger('change');
             }
-            
+
             // Label change (सिर्फ display name)
             $('#careofnamelabel').html(isFirm ? 'Owner Name <span class="required-mark">*</span>' : 'Care Of Name <span class="required-mark">*</span>');
         }).trigger('change'); // Initial check
