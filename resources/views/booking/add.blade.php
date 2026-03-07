@@ -10,6 +10,8 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
 <link rel="stylesheet"
     href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 @endsection
 
 
@@ -22,7 +24,7 @@
             <div class="col-lg-6">
                 <div class="page-header-title">
                     <i class="ik ik-car bg-blue"></i>
-                    <h4 class="fw-bold mb-0">Add New Booking</h4>
+                    <h1 class="fw-bold mb-0">Add New Booking</h1>
                 </div>
             </div>
             <div class="col-lg-6 text-end">
@@ -52,15 +54,14 @@
                 <!-- Payment Details Section -->
                 <div class="card p-3">
                     <div class="card-body">
-                        <h4 class="mb-3">Payment Details</h4>
+                        <h2 class="mb-3">Payment Details</h2>
                         <div class="row">
                             <div class="col-sm-2">
                                 <div class="form-group">
                                     <label for="customertype">Customer Type <span class="required-mark">*</span></label>
                                     <select name="customertype" id="customertype" class="form-control form-select"
                                         required>
-                                        <option value="" disabled selected>-- Select Customer Type --</option>
-                                        <option value="Actual">Actual</option>
+                                        <option value="Actual" selected>Actual</option>
                                         <option value="Dummy">Dummy</option>
                                     </select>
                                 </div>
@@ -72,8 +73,7 @@
                                             class="required-mark">*</span></label>
                                     <select name="customercat" id="customercat" class="form-control form-select"
                                         required>
-                                        <option value="" disabled selected>-- Select Category --</option>
-                                        <option value="Individual">Individual</option>
+                                        <option value="Individual" selected>Individual</option>
                                         <option value="CSD">CSD</option>
                                         <option value="Firm">Firm</option>
                                     </select>
@@ -143,17 +143,7 @@
                                 </div>
                             </div>
 
-                            <!-- UPDATED: Upload Image or PDF * with right aligned preview, scrollable PDF, cross on both -->
-                            {{-- <div class="col-sm-3">
-                                <div class="form-group">
-                                    <label for="fdoc">Upload Image or PDF <span class="required-mark">*</span></label>
-                                    <input type="file" name="amountproof" id="fdoc" class="form-control"
-                                        accept="image/jpeg,image/png,application/pdf"
-                                        onchange="previewAmountProof(this)" required>
-                                    <small class="form-text text-muted">Max 2MB (JPG, PNG, PDF)</small>
-                                </div>
-                            </div> --}}
-                            <!-- Upload Input (ये वही रहेगा) -->
+
                             <div class="col-sm-3">
                                 <div class="form-group">
                                     <label for="fdoc">Upload Image or PDF <span class="required-mark">*</span></label>
@@ -164,39 +154,17 @@
                                 </div>
                             </div>
 
-                            <!-- नया Chip Area – यहीं chip बनेगा -->
                             <div class="col-sm-3 mt-1" id="proofChipContainer">
-                                <!-- dynamically chip आएगा -->
                             </div>
 
-                            <!-- Right aligned preview with scrollable PDF -->
-                            {{-- <div class="col-sm-12 mt-3 text-end">
-                                <div id="amountProofPreview"
-                                    style="position: relative; display: none; max-width: 250px; border: 1px dashed #ccc; border-radius: 12px; padding: 15px; background: #f8f9fa; margin-left: auto;">
-                                    <div style="position: relative; display: inline-block;">
-                                        <img id="amountProofImg" src="" class="img-fluid rounded shadow"
-                                            style="display:none; max-height:332px; border-radius:10px;">
-                                        <iframe id="amountProofPdf"
-                                            style="display:none; width:205px; height:250px; border:none; border-radius:10px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);"
-                                            sandbox="allow-scripts allow-same-origin"></iframe>
-                                        <button type="button" id="amountProofClear" class="btn btn-danger btn-sm"
-                                            style="position:absolute; top:-12px; right:-12px; border-radius:50%; width:36px; height:36px; padding:0; font-size:18px; z-index:9999; box-shadow:0 3px 10px rgba(0,0,0,0.4); display:none;"
-                                            onclick="clearAmountProof()">X</button>
-                                    </div>
-                                    <div class="text-center mt-2 text-muted small">
-                                        <span id="fileNameDisplay"></span>
-                                    </div>
-                                </div>
-                            </div> --}}
 
                         </div>
                     </div>
                 </div>
 
-                <!-- Customer Details Section -->
                 <div class="card p-3 mt-3">
                     <div class="card-body">
-                        <h4 class="mb-3">Customer Details</h4>
+                        <h2 class="mb-3">Customer Details</h2>
                         <div class="row">
                             <div class="col-sm-3">
                                 <div class="form-group">
@@ -247,8 +215,7 @@
                                 <div class="form-group">
                                     <label for="gender">Gender <span class="required-mark">*</span></label>
                                     <select name="gender" id="gender" class="form-control form-select" required>
-                                        <option value="" disabled selected>-- Select Gender --</option>
-                                        <option value="Male">Male</option>
+                                        <option value="Male" selected>Male</option>
                                         <option value="Female">Female</option>
                                         <option value="Transgender">Transgender</option>
                                     </select>
@@ -352,10 +319,9 @@
                     </div>
                 </div>
 
-                <!-- Referred By Details Section -->
                 <div class="card p-3 mt-3">
                     <div class="card-body">
-                        <h4 class="mb-3">Referred By Details</h4>
+                        <h2 class="mb-3">Referred By Details</h2>
                         <div class="row">
                             <div class="col-sm-1">
                                 <div class="form-group">
@@ -400,7 +366,7 @@
 
                             <div class="col-sm-2">
                                 <div class="form-group">
-                                    <label for="refchassisregno">Chassis Regn. No. <span class="required-mark"
+                                    <label for="refchassisregno">Chassis No. / Regn. No. <span class="required-mark"
                                             style="display: none;">*</span></label>
                                     <input type="text" name="refchassisregno" id="refchassisregno" class="form-control"
                                         disabled>
@@ -410,10 +376,9 @@
                     </div>
                 </div>
 
-                <!-- Purchase Type Details Section -->
                 <div class="card p-3 mt-3">
                     <div class="card-body">
-                        <h4 class="mb-3">Purchase Type Details</h4>
+                        <h2 class="mb-3">Purchase Type Details</h2>
                         <div class="row">
                             <div class="col-sm-2">
                                 <div class="form-group">
@@ -541,7 +506,7 @@
                 <!-- Vehicle Details Section -->
                 <div class="card p-3 mt-3">
                     <div class="card-body">
-                        <h4 class="mb-3">Vehicle Details</h4>
+                        <h2 class="mb-3">Vehicle Details</h2>
                         <div class="row">
                             <div class="col-sm-3">
                                 <div class="form-group">
@@ -622,15 +587,14 @@
                 <!-- Booking Details Section -->
                 <div class="card p-3 mt-3">
                     <div class="card-body">
-                        <h4 class="mb-3">Booking Type & Source</h4>
+                        <h2 class="mb-3">Booking Type & Source</h2>
                         <div class="row">
                             <div class="col-sm-3">
                                 <div class="form-group">
                                     <label for="bookingmode">Booking Mode <span class="required-mark">*</span></label>
                                     <select name="bookingmode" id="bookingmode" class="form-control form-select"
                                         required>
-                                        <option value="" disabled selected>-- Select Booking Mode --</option>
-                                        <option value="Dealer">Dealer</option>
+                                        <option value="Dealer" selected>Dealer</option>
                                         <option value="Online">Online</option>
                                     </select>
                                 </div>
@@ -650,8 +614,7 @@
                                             class="required-mark">*</span></label>
                                     <select name="bookingsource" id="bookingsource" class="form-control form-select"
                                         required>
-                                        <option value="" disabled selected>-- Select Booking Source --</option>
-                                        <option value="Dealer">Dealer Sourcing</option>
+                                        <option value="Dealer" selected>Dealer Sourcing</option>
                                         <option value="DSA">DSA</option>
                                     </select>
                                 </div>
@@ -767,18 +730,7 @@
                     </div>
                 </div>
 
-                <div class="row mt-3" id="makeordercontainer" style="display: none;">
-                    <div class="col-sm-12">
-                        <div class="form-group">
-                            <div class="form-check">
-                                <input type="checkbox" name="makeorder" id="makeorder" value="1"
-                                    class="form-check-input">
-                                <label for="makeorder" class="form-check-label fw-bold">Do you want to create a
-                                    new sales order (SO Number) against this booking?</label>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+
         </div>
         <!-- Remarks Section inside same card -->
 
@@ -796,27 +748,7 @@
         </div>
     </div>
 </div>
-<!-- Booking Type & Source Card End -->
 </div>
-
-<!-- Remarks and Submit -->
-{{-- <div class="row mt-3">
-    <div class="col-sm-12">
-        <div class="form-group">
-            <label for="details">Remarks</label>
-            <textarea name="details" id="details" class="form-control"></textarea>
-        </div>
-    </div>
-
-    <div class="row mt-5">
-        <div class="col-12 text-center">
-            <button type="submit" id="submitBtn"
-                class="btn btn-success btn-lg px-5 py-3 shadow-lg fw-bold text-uppercase">
-                <i class="ik ik-plus mr-2"></i> Add Booking
-            </button>
-        </div>
-    </div>
-</div> --}}
 
 <!-- Proof Preview Modal -->
 <div class="modal fade" id="proofPreviewModal" tabindex="-1" aria-labelledby="proofPreviewModalLabel"
@@ -824,10 +756,8 @@
     <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h4 class="modal-title" id="proofPreviewModalLabel">Document Preview</h4>
-                {{-- <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button> --}}
+                <h2 class="modal-title" id="proofPreviewModalLabel">Document Preview</h2>
+
             </div>
             <div class="modal-body text-center p-0" style="min-height: 60vh; background: #f8f9fa;">
                 <!-- Image Preview -->
@@ -863,7 +793,7 @@
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h4 class="modal-title" id="errorModalLabel">Form Errors</h4>
+                <h2 class="modal-title" id="errorModalLabel">Form Errors</h2>
                 {{-- <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button> --}}
@@ -879,6 +809,7 @@
 @endsection
 
 @push('after_scripts')
+
 {{--
 <link rel="stylesheet" href="{{ asset('plugins/select2/dist/css/select2.min.css') }}"> --}}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -963,6 +894,59 @@
         max-height: 100vh;
         object-fit: contain;
     }
+
+    /* Select2 के अंदर का default arrow पूरी तरह हटाओ */
+    .select2-container--bootstrap5 .select2-selection--single .select2-selection__arrow,
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        display: none !important;
+    }
+
+    /* Select2 के selection area को .form-select जैसा look दो + bootstrap का arrow background लगाओ */
+    .select2-container--bootstrap5 .select2-selection--single,
+    .select2-container .select2-selection--single {
+        /* Bootstrap 5 form-select जैसा base look */
+        height: calc(1.5em + 0.75rem + 2px) !important;
+        /* default height match */
+        padding: 0.375rem 2.25rem 0.375rem 0.75rem !important;
+        /* right padding for arrow */
+        font-size: 1rem;
+        font-weight: 400;
+        line-height: 1.5;
+        color: #212529;
+        background-color: #fff;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
+        background-repeat: no-repeat !important;
+        background-position: right 0.75rem center !important;
+        background-size: 16px 12px !important;
+        /* arrow size adjust कर सकते हो */
+        border: 1px solid #ced4da !important;
+        border-radius: 0.375rem !important;
+        transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+    }
+
+    /* Focus / active state – bootstrap जैसा blue glow */
+    .select2-container--bootstrap5.select2-container--focus .select2-selection--single,
+    .select2-container.select2-container--focus .select2-selection--single {
+        border-color: #86b7fe !important;
+        outline: 0;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, .25) !important;
+    }
+
+    /* Hover state */
+    .select2-container--bootstrap5 .select2-selection--single:hover,
+    .select2-container .select2-selection--single:hover {
+        border-color: #a8d0ff !important;
+    }
+
+    /* जब disabled हो तो भी arrow सही दिखे */
+    .select2-container--bootstrap5 .select2-selection--single[aria-disabled=true],
+    .select2-container .select2-selection--single[aria-disabled=true] {
+        background-color: #e9ecef !important;
+        opacity: 1;
+    }
+    .page-header{
+        display: block;
+    }
 </style>
 
 {{-- <script src="{{ asset('plugins/select2/dist/js/select2.min.js') }}"></script> --}}
@@ -970,113 +954,9 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.19.5/dist/jquery.validate.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
-
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-    //     document.addEventListener('DOMContentLoaded', function() {
-//     document.getElementById('fdoc').addEventListener('change', previewFile);
-// });
-
-// Global functions for Upload Preview (image + PDF with scroll + cross button)
-// function previewAmountProof(input) {
-//     const file = input.files[0];
-//     const $preview = $('#amountProofPreview');
-//     const $img = $('#amountProofImg');
-//     const $pdf = $('#amountProofPdf');
-//     const $clear = $('#amountProofClear');
-//     const $name = $('#fileNameDisplay');
-
-//     // Reset
-//     $img.hide(); $pdf.hide(); $clear.hide(); $preview.hide(); $name.text('');
-
-//     if (!file) return;
-
-//     // Validation
-//     const validTypes = ['image/jpeg', 'image/png', 'application/pdf'];
-//     if (!validTypes.includes(file.type)) {
-//         alert('Only JPG, PNG or PDF allowed!');
-//         input.value = '';
-//         return;
-//     }
-//     if (file.size > 2 * 1024 * 1024) {
-//         alert('File must be less than 2MB!');
-//         input.value = '';
-//         return;
-//     }
-
-//     const reader = new FileReader();
-//     reader.onload = function(e) {
-//         if (file.type.startsWith('image/')) {
-//             $img.attr('src', e.target.result).show();
-//         } else {
-//             const blob = new Blob([e.target.result], { type: 'application/pdf' });
-//             const url = URL.createObjectURL(blob);
-//             $pdf.attr('src', url).show();
-//             $clear.data('pdfUrl', url);
-//         }
-//         $name.text(file.name);
-//         $preview.show();
-//         $clear.show();
-//     };
-
-//     if (file.type === 'application/pdf') {
-//         reader.readAsArrayBuffer(file);
-//     } else {
-//         reader.readAsDataURL(file);
-//     }
-// }
-
-// function clearAmountProof() {
-//     $('#fdoc').val('');
-//     $('#amountProofImg, #amountProofPdf').hide().attr('src', '');
-//     $('#amountProofPreview').hide();
-//     $('#amountProofClear').hide();
-//     $('#fileNameDisplay').text('');
-//     const url = $('#amountProofClear').data('pdfUrl');
-//     if (url) {
-//         URL.revokeObjectURL(url);
-//         $('#amountProofClear').removeData('pdfUrl');
-//     }
-// }
-// function previewFile() {
-//     const file = document.getElementById('fdoc').files[0];
-//     const previewContainer = document.getElementById('imagePreviewContainer');
-//     const imgPreview = document.getElementById('frameLeft');
-//     const pdfIcon = document.getElementById('pdfIcon');
-//     const removeButton = document.getElementById('removeImageButton');
-
-//     if (file && file.size <= 2 * 1024 * 1024) {
-//         if (file.type === 'image/jpeg' || file.type === 'image/png') {
-//             const reader = new FileReader();
-//             reader.onload = function(e) {
-//                 imgPreview.src = e.target.result;
-//                 imgPreview.style.display = 'block';
-//                 pdfIcon.style.display = 'none';
-//                 previewContainer.style.display = 'block';
-//                 removeButton.style.display = 'block';
-//             };
-//             reader.readAsDataURL(file);
-//         } else if (file.type === 'application/pdf') {
-//             imgPreview.style.display = 'none';
-//             pdfIcon.style.display = 'block';
-//             previewContainer.style.display = 'block';
-//             removeButton.style.display = 'block';
-//         } else {
-//             alert('Please select a valid JPG, PNG, or PDF file up to 2MB.');
-//             document.getElementById('fdoc').value = '';
-//             previewContainer.style.display = 'none';
-//         }
-//     }
-// }
-
-// function clearImage() {
-//     document.getElementById('fdoc').value = '';
-//     document.getElementById('imagePreviewContainer').style.display = 'none';
-//     document.getElementById('frameLeft').style.display = 'none';
-//     document.getElementById('pdfIcon').style.display = 'none';
-//     document.getElementById('removeImageButton').style.display = 'none';
-// }
-
-let uploadedFile = null; // global variable to hold the file for download
+    let uploadedFile = null; // global variable to hold the file for download
 
 function handleProofUpload(input) {
     const file = input.files[0];
@@ -1681,8 +1561,23 @@ $('#financier').on('change', function() {
 
         $('#bookingsource').on('change', function() {
             const isDSA = this.value === 'DSA';
-            $('#dsadetails').prop('disabled', !isDSA).prop('required', isDSA);
+
+            // Enable/disable DSA dropdown based purely on Booking Source
+            $('#dsadetails')
+                .prop('disabled', !isDSA)
+                .prop('required', isDSA);
+
+            if (isDSA) {
+                $('#dsadetails').next('.select2-container').removeClass('select2-disabled-custom');
+            } else {
+                $('#dsadetails').next('.select2-container').addClass('select2-disabled-custom');
+                $('#dsadetails').val('').trigger('change'); // optional: clear when switching away
+            }
+        
             toggleRequiredMark($('#dsadetails'), isDSA);
+        
+            // Also update validation rules dynamically (good practice)
+            $('#bookingForm').validate().settings.rules.dsadetails.required = isDSA;
         });
 
         $('#finmode').on('change', function() {
@@ -1700,10 +1595,9 @@ $('#financier').on('change', function() {
         });
 
         $('#segmentid').on('change', function() {
-    const segmentId = this.value;  // Numeric ID
-    const segmentName = $(this).find(':selected').text();
-    const isPersonalOrBEV = ['PERSONAL', 'BEV'].includes(segmentName);
-    $('#makeordercontainer').toggle(isPersonalOrBEV);
+            const segmentId = this.value;  // Numeric ID
+            const segmentName = $(this).find(':selected').text();
+    
 
     $.ajax({
         url: '/xcl-v2/public/admin/get-models/' + segmentId,
@@ -1808,28 +1702,47 @@ $('#color').on('change', function() {
     }
 
     $.ajax({
-        url: '/xcl-v2/public/admin/get-chassis-numbers/' + encodeURIComponent(modelCode.trim()),
-        method: 'GET',
-        success: function(data) {
-            console.log('Chassis Numbers Received:', data);
+    url: '/xcl-v2/public/admin/get-chassis-numbers/' + encodeURIComponent(modelCode.trim()),
+    method: 'GET',
+    success: function(data) {
+        console.log('Chassis Numbers Received:', data);
 
-            if (Array.isArray(data) && data.length > 0) {
-                populateSelect($('#chassis'), data, 'chasis_no', 'id');
-                $('#chassis').prop('disabled', false);
-                console.log('Chassis dropdown loaded with', data.length, 'options');
-            } else {
-                console.warn('No chassis available for model code:', modelCode);
-                $('#chassis').html('<option value="">No chassis available</option>');
-                $('#chassis').prop('disabled', true);
-                alert('No allotted chassis found for this model + color.');
-            }
-        },
-        error: function(xhr) {
-            console.error('Chassis Load Failed:', xhr.status, xhr.responseText);
-            alert('Error loading chassis numbers. Check console.');
-            $('#chassis').html('<option value="">Error loading chassis</option>');
+        if (Array.isArray(data) && data.length > 0) {
+            populateSelect($('#chassis'), data, 'chasis_no', 'id');
+            $('#chassis').prop('disabled', false);
+            console.log('Chassis dropdown loaded with', data.length, 'options');
+        } else {
+            console.warn('No chassis available for model code:', modelCode);
+
+            $('#chassis').html('<option value="">No chassis available</option>');
+            $('#chassis').prop('disabled', true);
+
+            // SweetAlert2 इस्तेमाल करें
+            Swal.fire({
+                icon: 'warning',
+                title: 'Chassis Not Found',
+                text: 'No allotted chassis found for this model + color combination.',
+                confirmButtonColor: '#3085d6',
+                confirmButtonText: 'OK'
+            });
         }
-    });
+    },
+    error: function(xhr) {
+        console.error('Chassis Load Failed:', xhr.status, xhr.responseText);
+
+        $('#chassis').html('<option value="">Error loading chassis</option>');
+
+        // SweetAlert2 error version
+        Swal.fire({
+            icon: 'error',
+            title: 'Oops...',
+            text: 'Error loading chassis numbers. Please try again or contact support.',
+            footer: 'Status: ' + xhr.status,
+            confirmButtonColor: '#d33',
+            confirmButtonText: 'OK'
+        });
+    }
+});
 });
 
         $('#accessories').on('select2:select select2:unselect', function(e) {
@@ -1917,14 +1830,15 @@ $('#color').on('change', function() {
         }
     }
 
-    // Toggle collection fields
     function toggleCollectionFields(type) {
+
         const isDummy = $('#customertype').val() === 'Dummy';
-        const isFieldSales = type === '2';
-        const isFieldDSA = type === '3';
+        const isFieldSales = type == '2';
+        const isFieldDSA = type == '3';
         const isField = isFieldSales || isFieldDSA;
-        const isUsedCar = type === '4';
-        const isReceipt = type === '1';
+        const isUsedCar = type == '4';
+        const isReceipt = type == '1';
+        
 
         // User field
         $('#user').prop('disabled', !isField).prop('required', isField);
@@ -1936,13 +1850,13 @@ $('#color').on('change', function() {
         if (isFieldSales) {
             @php
                 foreach($data['allusers'] ?? [] as $user) {
-                    echo "userSelect.append('<option value=\"" . $user->id . "\">" . $user->name . " - " . ($user->emp_code ?? '') . "</option>');";
+                    echo "userSelect.append('<option value=\\\"" . $user->id . "\\\">" . $user->name . " - " . ($user->emp_code ?? '') . "</option>');";
                 }
             @endphp
         } else if (isFieldDSA) {
             @php
                 foreach($data['dsa_details'] ?? [] as $dsa) {
-                    echo "userSelect.append('<option value=\"" . $dsa->id . "\">" . $dsa->name . " - " . ($dsa->mobile ?? '') . "</option>');";
+                    echo "userSelect.append('<option value=\\\"" . $dsa->id . "\\\">" . $dsa->name . " - " . ($dsa->mobile ?? '') . "</option>');";
                 }
             @endphp
         }
@@ -1978,6 +1892,13 @@ $('#color').on('change', function() {
 
             input.unmask().mask(inputMask, { placeholder: inputPlaceholder, reverse: true });
             attachDuplicateCheck(input, inputName, 'type1');
+            
+            input.attr('name', inputName).attr('placeholder', inputPlaceholder).prop('required', isRequired);
+            label.html(labelText + '<span class="required-mark">*</span>');
+            group.show();
+            input.val('');
+            warning.hide();
+            input.removeClass('is-invalid');
         } else if (isUsedCar) {
             inputName = 'voucherno';
             inputPlaceholder = 'Enter Voucher No.';
@@ -1986,18 +1907,19 @@ $('#color').on('change', function() {
 
             input.unmask();
             attachDuplicateCheck(input, inputName, 'type4');
+            
+            input.attr('name', inputName).attr('placeholder', inputPlaceholder).prop('required', isRequired);
+            label.html(labelText + '<span class="required-mark">*</span>');
+            group.show();
+            input.val('');
+            warning.hide();
+            input.removeClass('is-invalid');
         } else {
+            // Field Collection (2,3) ya koi aur case - receipt/voucher hide karo
             group.hide();
             input.val('').prop('required', false);
-            return;
+            // IMPORTANT: Don't return - DSA logic neeche chalega
         }
-
-        input.attr('name', inputName).attr('placeholder', inputPlaceholder).prop('required', isRequired);
-        label.html(labelText + '<span class="required-mark">*</span>');
-        group.show();
-        input.val('');
-        warning.hide();
-        input.removeClass('is-invalid');
 
         const receiptDatePicker = $('#receiptdate').data('flatpickr');
         if (isReceipt || isUsedCar) {
@@ -2005,6 +1927,50 @@ $('#color').on('change', function() {
         } else {
             receiptDatePicker?.disable();
         }
+
+       
+        
+        if (isFieldDSA) {
+        // Force + freeze Booking Source = DSA
+        $('#bookingsource')
+            .val('DSA')
+            .prop('disabled', true)
+            .trigger('change');
+
+        $('#bookingsource').next('.select2-container').addClass('select2-disabled-custom');
+
+        // Mirror selected user → DSA field + freeze
+        const selectedUserId = $('#user').val();
+        if (selectedUserId) {
+            $('#dsadetails')
+                .val(selectedUserId)
+                .prop('disabled', true)
+                .trigger('change');
+            
+            $('#dsadetails').next('.select2-container').addClass('select2-disabled-custom');
+        }
+
+        // Keep them in sync if user changes "Collected By"
+        $('#user').off('change.syncDSA').on('change.syncDSA', function() {
+            $('#dsadetails')
+                .val(this.value)
+                .trigger('change');
+            $('#dsadetails').prop('disabled', true);
+            $('#dsadetails').next('.select2-container').addClass('select2-disabled-custom');
+        });
+    } 
+    else {
+        // ── Not DSA field collection ───────────────────────
+        $('#bookingsource')
+            .prop('disabled', false)
+            .trigger('change');
+        $('#bookingsource').next('.select2-container').removeClass('select2-disabled-custom');
+
+        $('#user').off('change.syncDSA');
+        
+        // Important: DSA field control moved OUT from here
+        // → now controlled only by #bookingsource change
+    }
     }
 
     // Toggle finance fields - 100% WORKING VERSION
@@ -2014,6 +1980,12 @@ function toggleFinanceFields(mode) {
     $('#financier')
         .prop('disabled', !isInHouse)
         .prop('required', isInHouse);
+
+    $('#financiershortname')
+        .prop('disabled', !isInHouse)
+        .prop('required', isInHouse);
+
+
 
     $('#loanstatus')
         .prop('disabled', !isInHouse)
@@ -2028,36 +2000,109 @@ function toggleFinanceFields(mode) {
     }
 }
 
+ function togglePurchaseFields(type) {
+    const fields = {
+        base:        [$('#enummaster1'), $('#vehicledetails')],
+        extraMake:   [$('#enummaster2'), $('#vehicledetails2')],
+        exchange:    [
+            $('#registrationno'),
+            $('#manufacturingyear'),
+            $('#odometerreading'),
+            $('#expectedprice'),
+            $('#offeredprice'),
+            $('#exchangebonus')
+        ]
+    };
 
-
-    // Toggle purchase fields
-    function togglePurchaseFields(type) {
-        const fields = {
-            base: [$('#enummaster1'), $('#vehicledetails'), $('#enummaster2'), $('#vehicledetails2')],
-            exchange: [$('#registrationno'), $('#manufacturingyear'), $('#odometerreading'), $('#expectedprice'), $('#offeredprice'), $('#exchangebonus')],
-            scrappage: [$('#registrationno'), $('#manufacturingyear')]
-        };
-
-        function toggleFields(enable, ids) {
-            ids.forEach(id => {
-                id.prop('disabled', !enable).prop('required', enable);
-                if (!enable) {
-                    id.val('');
-                }
-                toggleRequiredMark(id, enable);
-            });
-        }
-
-        toggleFields(false, [...fields.base, ...fields.exchange, ...fields.scrappage]);
-
-        if (type === 'Additional Buy') {
-            toggleFields(true, fields.base);
-        } else if (type === 'Exchange Buy') {
-            toggleFields(true, [...fields.base, ...fields.exchange]);
-        } else if (type === 'Scrappage') {
-            toggleFields(true, [...fields.base.slice(0, 2), ...fields.scrappage]);
-        }
+    // ──── Helpers ────────────────────────────────────────
+    function disableAll(arr) {
+        arr.forEach($el => {
+            $el
+                .prop('disabled', true)
+                .prop('required', false)
+                .val('')
+                .trigger('change')
+                .removeClass('is-invalid is-valid')
+                .siblings('span.text-danger').remove();  // clear old error messages
+            toggleRequiredMark($el, false);
+        });
     }
+
+    function makeRequired(arr) {
+        arr.forEach($el => {
+            $el
+                .prop('disabled', false)
+                .prop('required', true);
+            toggleRequiredMark($el, true);
+        });
+    }
+
+    function makeOptional(arr) {
+        arr.forEach($el => {
+            $el
+                .prop('disabled', false)
+                .prop('required', false);
+            toggleRequiredMark($el, false);
+        });
+    }
+
+    // ──── 1. Reset everything first (safe starting point) ────────
+    disableAll([...fields.base, ...fields.extraMake, ...fields.exchange]);
+
+    // ──── 2. Apply correct state based on type ───────────────────
+    if (type === 'First time Buyer') {
+        // everything stays disabled (already done)
+    }
+    else if (type === 'Additional Buy') {
+        makeRequired(fields.base);          // Required
+        makeOptional(fields.extraMake);     // Optional (enabled, no *)
+        // exchange → disabled (already)
+    }
+    else if (type === 'Exchange Buy') {
+        makeRequired(fields.base);          // Required
+        disableAll(fields.extraMake);       // Disabled (not optional)
+        makeRequired(fields.exchange);      // Required
+    }
+    else if (type === 'Scrappage') {
+        makeRequired(fields.base);          // Required
+        makeRequired([$('#registrationno'), $('#manufacturingyear')]);  // Required
+        // rest → disabled (already)
+        disableAll(fields.extraMake);
+        disableAll([
+            $('#odometerreading'),
+            $('#expectedprice'),
+            $('#offeredprice'),
+            $('#exchangebonus')
+        ]);
+    }
+
+    // ──── 3. Refresh validation state only for affected fields ───
+    const affectedSelectors = [
+        '#enummaster1', '#vehicledetails',
+        '#enummaster2', '#vehicledetails2',
+        '#registrationno', '#manufacturingyear',
+        '#odometerreading', '#expectedprice',
+        '#offeredprice', '#exchangebonus'
+    ];
+
+    const validator = $('#bookingForm').validate();
+
+    affectedSelectors.forEach(sel => {
+        const $field = $(sel);
+        if (!$field.length) return;
+
+        if ($field.prop('disabled')) {
+            // Disabled fields → clean up any leftover visual error state
+            $field.removeClass('is-invalid is-valid')
+                  .siblings('span.text-danger').remove();
+        }
+        else if ($field.data('touched')) {
+            // Only validate fields user has already interacted with
+            validator.element($field[0]);
+        }
+        // untouched enabled fields → no forced validation (clean look)
+    });
+}
 
     // Calculate price gap
     function calculatePriceGap() {
@@ -2166,7 +2211,70 @@ function toggleFinanceFields(mode) {
     // Initialize on document ready
     $(document).ready(initBookingForm);
 })();
+$('#bookingForm').on('submit', function(e) {
+    // Re-enable fields that are disabled but should be submitted
+    $('#bookingsource, #dsadetails, #user').prop('disabled', false);
+    
+    // Optional: if you want to keep UI disabled, disable again after submit (but not needed usually)
+});
+$(document).ready(function() {
+const initialBookingSource = $('#bookingsource').val();
+    $('#dsadetails').prop('disabled', initialBookingSource !== 'DSA');
+    
+    if (initialBookingSource !== 'DSA') {
+        $('#dsadetails').next('.select2-container').addClass('select2-disabled-custom');
+    } else {
+        $('#dsadetails').next('.select2-container').removeClass('select2-disabled-custom');
+    }
+    
+    // Optional: trigger change so rules & UI update cleanly
+    $('#bookingsource').trigger('change');
+    // 1. Vehicle Registration No. (#registrationno)
+    //    - No spaces allowed
+    //    - All letters → uppercase
+    $('#registrationno').on('input', function() {
+        let val = this.value;
 
+        // Remove all spaces
+        val = val.replace(/\s+/g, '');
+
+        // Convert letters to uppercase (numbers/symbols remain unchanged)
+        val = val.toUpperCase();
+
+        // Put cleaned value back
+        this.value = val;
+    });
+
+    // Prevent space key press completely (extra safety)
+    $('#registrationno').on('keydown', function(e) {
+        if (e.key === ' ' || e.keyCode === 32) {
+            e.preventDefault();
+        }
+    });
+
+
+    // 2. Chassis Regn. No. (#refchassisregno)
+    //    Same rules: no spaces, uppercase letters
+    $('#refchassisregno').on('input', function() {
+        let val = this.value;
+
+        // Remove all spaces
+        val = val.replace(/\s+/g, '');
+
+        // Convert to uppercase
+        val = val.toUpperCase();
+
+        this.value = val;
+    });
+
+    // Block space key
+    $('#refchassisregno').on('keydown', function(e) {
+        if (e.key === ' ' || e.keyCode === 32) {
+            e.preventDefault();
+        }
+    });
+
+});
 
 </script>
 @section('after_scripts')
@@ -2174,7 +2282,8 @@ function toggleFinanceFields(mode) {
 <script>
     $(document).ready(function() {
             $('.select2').select2({
-                theme: 'bootstrap'
+                theme: 'bootstrap-5',
+                width: '100%',
             });
         });
 </script>

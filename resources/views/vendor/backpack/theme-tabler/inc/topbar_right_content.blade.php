@@ -16,7 +16,7 @@
     <div class="dropdown">
         <a class="nav-link position-relative text-black p-0" data-bs-toggle="dropdown" href="#" role="button">
             <i class="la la-exclamation-triangle fs-2"></i>
-            <span class="position-absolute badge rounded-pill bg-danger alert-badge"
+            <span class="text-white position-absolute badge rounded-pill bg-danger alert-badge"
                 style="padding: 2px 6px; font-size: 10px; right: 11px; top: 12px; border-radius: 50%;">
                 3
             </span>
@@ -60,7 +60,7 @@
     <div class="dropdown">
         <a class="nav-link position-relative text-black p-0" data-bs-toggle="dropdown" href="#" role="button">
             <i class="la la-bell fs-2"></i>
-            <span class="position-absolute badge rounded-pill bg-danger notif-badge"
+            <span class="text-white position-absolute badge rounded-pill bg-danger notif-badge"
                 style="padding: 2px 6px; font-size: 10px; right: 14px; top: 11px; border-radius: 50%;">
                 3
             </span>
@@ -103,7 +103,7 @@
     <div class="dropdown">
         <a class="nav-link position-relative text-black p-0" data-bs-toggle="dropdown" href="#" role="button">
             <i class="la la-envelope fs-2"></i>
-            <span class="position-absolute badge rounded-pill bg-danger msg-badge"
+            <span class="text-white position-absolute badge rounded-pill bg-danger msg-badge"
                 style="padding: 2px 6px; font-size: 10px; right: 11px; top: 14px; border-radius: 50%;">
                 3
             </span>

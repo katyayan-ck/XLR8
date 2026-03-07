@@ -36,9 +36,9 @@
                     {{-- LEFT CONTROLS --}}
                     <div class="d-flex align-items-center gap-2 flex-wrap">
                         <input type="text" id="quickFilter" class="form-control w-100 w-md-auto"
-                            style="width:360px; min-width:260px;" placeholder="Quick search...">
+                            style="width:360px; min-width:260px;" placeholder="Smart Search...">
 
-                        
+
 
                         <button id="resetAll" class="btn btn-outline-danger btn-sm text-nowrap">
                             Reset
@@ -58,7 +58,7 @@
                 </div>
 
                 {{-- GRID --}}
-                <div id="myGrid" class="ag-theme-quartz" style="height: calc(100vh - 240px); width:100%;">
+                <div id="myGrid" class="ag-theme-quartz" style="height: calc(110vh - 240px); width:100%;">
                 </div>
             </div>
         </div>
@@ -107,7 +107,7 @@
 
     const gridOptions = {
         columnDefs,
-        rowHeight: 32,
+        rowHeight: 30,
         pagination: true,
         paginationPageSize: window.innerWidth < 768 ? 10 : 50,
         // sideBar: true,

@@ -8,8 +8,16 @@
             <div class="col-lg-auto ms-lg-auto">
                 <ul class="list-inline list-inline-dots mb-0">
                     <li class="list-inline-item">
-                        {{ trans('backpack::base.powered_by') }}
-                        <a rel="noopener" target="_blank"><b>Insightech</b></a>
+                        <b>{{ trans('backpack::base.powered_by') }}</b>
+                        <a rel="noopener" target="_blank">
+                            {{-- <b>
+                                Insightech
+                            </b> --}}
+                            <a href="https://insightechindia.in" rel="noopener" target="_blank">
+                                <img src="{{ asset('images/ins_logo_full.png') }}" alt="Insightech Logo"
+                                    style="height:20px;">
+                            </a>
+                        </a>
                     </li>
                 </ul>
             </div>
@@ -19,7 +27,7 @@
                 <ul class="list-inline list-inline-dots mb-0">
                     <li class="list-inline-item">
                         {{-- {{ trans('backpack::base.handcrafted_by') }} --}}
-                        Made for
+                        <b>Made for</b>
                         <a href="{{ backpack_theme_config('developer_link') }}" rel="noopener" target="_blank">{{
                             backpack_theme_config('developer_name') }}</a>
                     </li>

@@ -30,10 +30,10 @@
                     <label class="text-black mb-0 text-nowrap">Status:</label>
 
                     <select id="status_filter" class="form-control w-100 w-md-auto" style="min-width:200px;">
-                        <option value="1" {{ request('status_filter', '1') == '1' ? 'selected' : '' }}>Pending</option>
-                        <option value="2" {{ request('status_filter') == '2' ? 'selected' : '' }}>Accepted</option>
-                        <option value="0" {{ request('status_filter') == '0' ? 'selected' : '' }}>Rejected</option>
-                        <option value="all" {{ request('status_filter') == 'all' ? 'selected' : '' }}>All</option>
+                        <option value="1" {{ request('status_filter', '1' )=='1' ? 'selected' : '' }}>Pending</option>
+                        <option value="2" {{ request('status_filter')=='2' ? 'selected' : '' }}>Accepted</option>
+                        <option value="0" {{ request('status_filter')=='0' ? 'selected' : '' }}>Rejected</option>
+                        <option value="all" {{ request('status_filter')=='all' ? 'selected' : '' }}>All</option>
                     </select>
                 </div>
             </div>
@@ -50,14 +50,57 @@
                     {{-- LEFT CONTROLS --}}
                     <div class="d-flex align-items-center gap-2 flex-wrap">
                         <input type="text" id="quickFilter" class="form-control w-100 w-md-auto"
-                            style="width:360px; min-width:260px;" placeholder="Quick search...">
+                            style="width:360px; min-width:260px;" placeholder="Smart Search...">
 
-                        
+
 
                         <button id="resetAll" class="btn btn-outline-danger btn-sm text-nowrap">
                             Reset
                         </button>
                     </div>
+
+                    <div class="d-flex gap-2 flex-wrap justify-content-center">
+
+                        <button id="btnAllHeaders" class="btn btn-info btn-sm">
+                            All Headers
+                        </button>
+
+                        <button id="btnDefaultHeaders" class="btn btn-warning btn-sm">
+                            Default Headers
+                        </button>
+
+                        <div class="position-relative d-inline-block">
+                            <button id="btnCustomiseHeaders" class="btn btn-success btn-sm">
+                                Customise Headers
+                            </button>
+
+                            <div id="columnBubble" style="
+            display:none;
+            position:absolute;
+            top:110%;
+            left:0;
+            width:260px;
+            background:#fff;
+            border:1px solid #ddd;
+            border-radius:6px;
+            box-shadow:0 8px 20px rgba(0,0,0,.15);
+            z-index:9999;
+        ">
+                                <div class="d-flex justify-content-between align-items-center px-2 py-1 border-bottom">
+                                    <strong style="font-size:13px;">Customise Headers</strong>
+                                    <button id="closeColumnBubble"
+                                        class="btn btn-sm btn-link text-danger p-0">✕</button>
+                                </div>
+
+                                <div style="max-height:260px; overflow:auto;">
+                                    <table class="table table-sm mb-0">
+                                        <tbody id="columnBubbleBody"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
 
                     {{-- RIGHT EXPORT BUTTONS --}}
                     <div class="d-flex gap-2 flex-wrap mt-2 mt-md-0">
@@ -74,7 +117,7 @@
                 </div>
 
                 {{-- GRID --}}
-                <div id="myGrid" class="ag-theme-quartz" style="height: calc(100vh - 260px); width:100%;">
+                <div id="myGrid" class="ag-theme-quartz" style="height: calc(110vh - 260px); width:100%;">
                 </div>
             </div>
 

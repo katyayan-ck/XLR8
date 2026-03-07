@@ -3,9 +3,9 @@
 
 @section('header')
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-<section class="container-fluid">
+{{-- <section class="container-fluid">
     <h2>Booking Details #{{$booking->id }}</h2>
-</section>
+</section> --}}
 
 <style>
     /* Chip styles - same as before */
@@ -136,12 +136,12 @@
         <div class="col-md-12">
             {{-- <div class="card mt-3 shadow-sm"> --}}
                 {{-- <div class="card-header bg-primary text-black">
-                    <h4 class="mb-0 fw-bold">Booking Details (View Only)</h4>
+                    <h2 class="mb-0 fw-bold">Booking Details (View Only)</h2>
                 </div> --}}
                 <div class="card-body">
                     <div class="card card-body mt-3 shadow-sm">
                         <!-- Payment Details -->
-                        <h4 class="mb-3 fw-bold text-primary">Payment Details</h4>
+                        <h2 class="mb-3  ">Payment Details</h2>
                         <div class="row g-3">
                             <div class="col-sm-3">
                                 <label class="small fw-bold">Customer Type</label>
@@ -239,7 +239,7 @@
 
                                 @if($hasProof)
                                 <div class="mt-2">
-                                    <div class="proof-chip" style="cursor: pointer;"
+                                    <div class="proof-chip bg-primary" style="cursor: pointer;"
                                         onclick="openProofPreview('{{ $fileUrl }}', '{{ $isPdf ? 'pdf' : 'image' }}', '{{ addslashes($fileName ?? 'Payment Proof') }}')">
                                         <i
                                             class="{{ $isPdf ? 'fas fa-file-pdf text-danger' : 'fas fa-file-image text-primary' }} fs-4 me-2"></i>
@@ -263,7 +263,7 @@
 
                     <div class="card card-body mt-3 shadow-sm">
                         <!-- Customer Details -->
-                        <h4 class="mb-3 fw-bold text-primary">Customer Details</h4>
+                        <h2 class="mb-3  ">Customer Details</h2>
                         <div class="row g-3">
                             <div class="col-sm-3">
                                 <label class="small fw-bold">Customer Name</label>
@@ -361,7 +361,7 @@
 
                     <div class="card card-body mt-3 shadow-sm">
                         <!-- Referred By Details -->
-                        <h4 class="mb-3 fw-bold text-primary">Referred By Details</h4>
+                        <h2 class="mb-3  ">Referred By Details</h2>
                         <div class="row g-3">
 
                             <div class="col-sm-3">
@@ -394,28 +394,28 @@
 
                     <div class="card card-body mt-2 shadow-sm">
                         <!-- Purchase Type Details -->
-                        <h4 class="mb-3 fw-bold text-primary">Purchase Type Details</h4>
+                        <h2 class="mb-3  ">Purchase Type Details</h2>
                         <div class="row g-3">
                             <div class="col-sm-3">
                                 <label class="small fw-bold">Purchase Type</label>
                                 <input type="text" class="form-control" id="buyer_type" name="buyer_type"
                                     value="{{ $booking->buyer_type ?? 'N/A' }}" readonly>
                             </div>
-                            <div class="col-sm-3">
+                            {{-- <div class="col-sm-3">
                                 <label class="small fw-bold">Brand Make 1</label>
                                 <input type="text" class="form-control" id="enum_master1" name="enum_master1"
-                                    value="{{ $make1 }}" readonly> {{-- Fix: $data['make1'] -> $make1 --}}
-                            </div>
+                                    value="{{ $make1 }}" readonly> {{-- Fix: $data['make1'] -> $make1
+                            </div> --}}
                             <div class="col-sm-3">
                                 <label class="small fw-bold">Model Variant 1</label>
                                 <input type="text" class="form-control" value="{{ $booking->vh1_detail ?? 'N/A' }}"
                                     readonly>
                             </div>
-                            <div class="col-sm-3">
+                            {{-- <div class="col-sm-3">
                                 <label class="small fw-bold">Brand Make 1</label>
                                 <input type="text" class="form-control" id="enum_master1" name="enum_master1"
-                                    value="{{ $make2 }}" readonly> {{-- Fix: $data['make1'] -> $make1 --}}
-                            </div>
+                                    value="{{ $make2 }}" readonly> Fix: $data['make1'] -> $make1
+                            </div> --}}
                             <div class="col-sm-3">
                                 <label class="small fw-bold">Model Variant 2</label>
                                 <input type="text" class="form-control" value="{{ $booking->vh2_detail ?? 'N/A' }}"
@@ -463,7 +463,7 @@
 
                     <div class="card card-body mt-2 shadow-sm">
                         <!-- Vehicle Details -->
-                        <h4 class="mb-3 fw-bold text-primary">Vehicle Details</h4>
+                        <h2 class="mb-3  ">Vehicle Details</h2>
                         <div class="row g-3">
 
                             <div class="col-sm-3">
@@ -511,7 +511,7 @@
 
                     <div class="card card-body mt-2 shadow-sm">
                         <!-- Booking Type & Source -->
-                        <h4 class="mb-3 fw-bold text-primary">Booking Type & Source</h4>
+                        <h2 class="mb-3  ">Booking Type & Source</h2>
                         <div class="row g-3">
                             <div class="col-sm-3">
                                 <label class="small fw-bold">Booking Mode</label>
@@ -528,18 +528,18 @@
                                 <input type="text" class="form-control"
                                     value="{{ ucfirst($booking->b_source ?? 'N/A') }}" readonly>
                             </div>
-                            <div class="col-sm-3">
+                            {{-- <div class="col-sm-3">
                                 <label class="small fw-bold">DSA</label>
                                 <input type="text" class="form-control" value="{{ $dsaname }}" readonly>
-                            </div>
-                            <div class="col-sm-3">
+                            </div> --}}
+                            {{-- <div class="col-sm-3">
                                 <label class="small fw-bold">Sales Consultant</label>
                                 <input type="text" class="form-control" id="saleconsultant_display" value="{{
                                         optional(collect($saleconsultants)->firstWhere('id', $booking->consultant))['name'] ?? 'N/A'
                                     }} - ({{
                                         optional(collect($saleconsultants)->firstWhere('id', $booking->consultant))['emp_code'] ?? 'N/A'
                                     }})" readonly>
-                            </div>
+                            </div> --}}
                             <div class="col-sm-3">
                                 <label class="small fw-bold">Delivery Date Type</label>
                                 <input type="text" class="form-control"
@@ -575,7 +575,7 @@
                     </div>
 
                     <div class="card card-body mt-2 shadow-sm">
-                        <h4 class="mb-3 fw-bold text-primary">DMS Booking Details</h4>
+                        <h2 class="mb-3  ">DMS Booking Details</h2>
                         <div class="row g-3">
                             <div class="col-md-3 form-group">
                                 <label>
@@ -626,11 +626,11 @@
 
                     <div class="card-header">
 
-                        <h3>{{ __('Booking Journey (Remarks)') }}</h3>
+                        <h2>{{ __('Booking Journey (Remarks)') }}</h2>
 
                     </div>
 
-                    <div class="card-body">
+                    {{-- <div class="card-body"> --}}
 
                         <div class="row">
 
@@ -658,7 +658,7 @@
                                     <tbody>
 
 
-
+                                        {{--
                                         @foreach ($comm['status'] as $row)
                                         <tr>
 
@@ -680,7 +680,7 @@
                                             </td>
 
                                         </tr>
-                                        @endforeach
+                                        @endforeach --}}
 
                                     </tbody>
 
@@ -690,16 +690,17 @@
 
                         </div>
 
-                    </div>
+                        {{--
+                    </div> --}}
 
                 </div>
                 @if ($booking->status == 1 || $booking->status == 6 || $booking->status == 8)
                 <div class="card mt-4 shadow-sm">
-                    <div class="card-header bg-black text-red">
-                        <h4 class="mb-0 fw-bold">
+                    <div class="card-header">
+                        <h2 class="mb-0 fw-bold">
                             <i class="la la-cogs me-2"></i>
                             Actions
-                        </h4>
+                        </h2>
                     </div>
                     <div class="card-body">
 
@@ -715,7 +716,7 @@
                                     <label for="status" class="form-label fw-bold">
                                         Status <span class="text-danger">*</span>
                                     </label>
-                                    <select name="status" id="status" class="form-control"
+                                    <select name="status" id="status" class="form-control form-select"
                                         onchange="handleStatusChange(this.value, {{ $booking->pending ?? 0 }})">
                                         <option value="0" selected>No Change</option>
                                         <option value="2">Invoiced</option>
@@ -725,7 +726,7 @@
                                 </div>
 
                                 <!-- File Upload -->
-                                <div class="col-md-3">
+                                {{-- <div class="col-md-3">
                                     <label for="fdoc" class="form-label fw-bold">Upload Image or PDF</label>
                                     <input class="form-control" type="file" name="fdoc" id="fdoc"
                                         accept=".jpg,.jpeg,.png,.pdf" onchange="previewLeft()">
@@ -743,7 +744,23 @@
                                             ×
                                         </button>
                                     </div>
+                                </div> --}}
+                                <div class="col-md-3">
+                                    <label class="form-label fw-bold">
+                                        Upload Image or PDF
+                                    </label>
+
+                                    <input class="form-control" type="file" id="newProofFile" name="new_proof_file"
+                                        accept=".jpg,.jpeg,.png,.pdf">
+
+                                    <small class="form-text text-muted">
+                                        Only jpg, png, pdf allowed (max 2MB)
+                                    </small>
+
+                                    <!-- Chip Container -->
+                                    <div id="newProofChipContainer" class="mt-2"></div>
                                 </div>
+
 
                                 <!-- Invoice fields – shown only when status = 2 -->
                                 <div class="col-md-3" id="invoiceNumberField" style="display: none;">
@@ -806,13 +823,13 @@
                 </div>
                 @endif
 
-                @if ($booking->status == 3)
+                {{-- @if ($booking->status == 3)
                 <div class="card mt-4 shadow-sm">
                     <div class="card-header bg-danger text-black">
-                        <h4 class="mb-0 fw-bold">
+                        <h2 class="mb-0 fw-bold">
                             <i class="la la-exclamation-triangle me-2"></i>
                             Actions for Cancelled Booking
-                        </h4>
+                        </h2>
                     </div>
                     <div class="card-body">
                         <form method="POST" action="{{ route('request-refund', $booking->id) }}"
@@ -900,22 +917,14 @@
 
                                 <!-- Upload Account Image -->
                                 <div class="col-md-3">
-                                    <label for="ac_proof" class="form-label fw-bold">Upload Account Image</label>
+                                    <label for="ac_proof" class="form-label fw-bold">Upload Account Image <span
+                                            class="text-danger">*</span></label>
                                     <input class="form-control" type="file" name="acc_proof" id="ac_proof"
-                                        accept=".jpg,.jpeg,.png,.pdf" onchange="previewACP()" required>
-                                    <small class="form-text text-muted">Only jpg, png or pdf (up to 2MB)</small>
-                                    <!-- Preview -->
-                                    <div style="position: relative; display: inline-block; margin-top: 8px;">
-                                        <img id="acp_preview" src="" class="img-fluid" width="100"
-                                            style="display: none;" />
-                                        <img id="pdf_icon" src="{{ asset('images/pdf-icon.png') }}" class="img-fluid"
-                                            width="50" style="display: none;" />
-                                        <button type="button" id="discardACP"
-                                            style="position: absolute; top: -10px; right: -10px; background: red; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 14px; cursor: pointer; display: none;"
-                                            onclick="discardImageACP()">
-                                            ×
-                                        </button>
-                                    </div>
+                                        accept=".jpg,.jpeg,.png,.pdf" required>
+                                    <small class="form-text text-muted">Max 2MB • jpg, png, pdf</small>
+
+                                    <!-- Chip yahan aayegi -->
+                                    <div id="ac_proof_chip" class="mt-2"></div>
                                 </div>
 
                                 <!-- Reason for Deduction -->
@@ -928,66 +937,48 @@
                                 </div>
 
                                 <!-- Upload Aadhar Image -->
-                                <div class="col-md-6">
-                                    <label for="aadhar_proof" class="form-label fw-bold">Upload Aadhar Image</label>
+                                <div class="col-md-3">
+                                    <label for="aadhar_proof" class="form-label fw-bold">Upload Aadhar Image <span
+                                            class="text-danger">*</span></label>
                                     <input class="form-control" type="file" name="aadhar" id="aadhar_proof"
-                                        accept=".jpg,.jpeg,.png,.pdf" onchange="previewAadhar()" required>
-                                    <small class="form-text text-muted">Only jpg, png or pdf (up to 2MB)</small>
-                                    <!-- Preview -->
-                                    <div style="position: relative; display: inline-block; margin-top: 8px;">
-                                        <img id="aadhar_preview" src="" class="img-fluid" width="100"
-                                            style="display: none;" />
-                                        <img id="aadhar_pdf_icon" src="{{ asset('images/pdf-icon.png') }}"
-                                            class="img-fluid" width="50" style="display: none;" />
-                                        <button type="button" id="discardAadhar"
-                                            style="position: absolute; top: -10px; right: -10px; background: red; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 14px; cursor: pointer; display: none;"
-                                            onclick="discardImageAadhar()">
-                                            ×
-                                        </button>
-                                    </div>
+                                        accept=".jpg,.jpeg,.png,.pdf" required>
+                                    <small class="form-text text-muted">Max 2MB • jpg, png, pdf</small>
+
+                                    <div id="aadhar_proof_chip" class="mt-2"></div>
                                 </div>
 
                                 <!-- Upload PAN Image -->
-                                <div class="col-md-6">
-                                    <label for="pan_proof" class="form-label fw-bold">Upload PAN Image</label>
+                                <div class="col-md-3">
+                                    <label for="pan_proof" class="form-label fw-bold">Upload PAN Image <span
+                                            class="text-danger">*</span></label>
                                     <input class="form-control" type="file" name="pan" id="pan_proof"
-                                        accept=".jpg,.jpeg,.png,.pdf" onchange="previewPan()" required>
-                                    <small class="form-text text-muted">Only jpg, png or pdf (up to 2MB)</small>
-                                    <!-- Preview -->
-                                    <div style="position: relative; display: inline-block; margin-top: 8px;">
-                                        <img id="pan_preview" src="" class="img-fluid" width="100"
-                                            style="display: none;" />
-                                        <img id="pan_pdf_icon" src="{{ asset('images/pdf-icon.png') }}"
-                                            class="img-fluid" width="50" style="display: none;" />
-                                        <button type="button" id="discardPan"
-                                            style="position: absolute; top: -10px; right: -10px; background: red; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 14px; cursor: pointer; display: none;"
-                                            onclick="discardImagePan()">
-                                            ×
+                                        accept=".jpg,.jpeg,.png,.pdf" required>
+                                    <small class="form-text text-muted">Max 2MB • jpg, png, pdf</small>
+
+                                    <div id="pan_proof_chip" class="mt-2"></div>
+                                </div>
+
+                                <!-- Restore Button -->
+                                <div class="row mt-3 justify-content-center">
+                                    <div class="col-auto text-center">
+                                        <button type="button" class="btn btn-success btn-lg px-5 shadow me-4 me-md-5"
+                                            id="activateButton">
+                                            <i class="la la-undo me-1"></i> Restore Booking
+                                        </button>
+
+                                        <button type="submit" form="activateForm"
+                                            class="btn btn-primary btn-lg px-5 shadow">
+                                            Process for Refund
                                         </button>
                                     </div>
                                 </div>
 
-                                <!-- Restore Button -->
-                                <div class="row mt-3">
-                                    <div class="col-12 text-center">
-                                        <button type="button" class="btn btn-success btn-lg px-5 shadow"
-                                            id="activateButton">
-                                            <i class="la la-undo me-2"></i> Restore Booking
-                                        </button>
-                                    </div>
-                                </div>
+                                <!-- Hidden form same as before -->
                                 <form id="activateForm" method="POST" action="{{ route('statusave', $booking->id) }}"
                                     style="display:none;">
                                     @csrf
                                     <input type="hidden" name="status" value="{{ $booking->pending == 0 ? 1 : 8 }}">
                                 </form>
-
-                                <!-- Process Refund Button -->
-                                <div class="col-md-3 mt-4 offset-md-6">
-                                    <button type="submit" class="btn btn-primary btn-block">
-                                        Process for Refund
-                                    </button>
-                                </div>
                             </div>
                         </form>
 
@@ -999,6 +990,172 @@
                         </form>
                     </div>
                 </div>
+                @endif --}}
+                @if ($booking->status == 3)
+                <div class="card mt-4 shadow-sm">
+                    <div class="card-header bg-danger text-black">
+                        <h2 class="mb-0 fw-bold">
+                            <i class="la la-exclamation-triangle me-2"></i>
+                            Actions for Cancelled Booking
+                        </h2>
+                    </div>
+                    <div class="card-body">
+
+                        <!-- This is the REAL refund request form -->
+                        <form method="POST" action="{{ route('request-refund', $booking->id) }}"
+                            enctype="multipart/form-data" id="refundRequestForm">
+                            @csrf
+
+                            <div class="row g-3">
+
+                                <!-- Booking Amount (readonly) -->
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Booking Amount</label>
+                                    <input type="text" class="form-control"
+                                        value="{{ $booking->booking_amount ?? 'N/A' }}" readonly>
+                                    <input type="hidden" name="booking_amount"
+                                        value="{{ $booking->booking_amount ?? 0 }}">
+                                </div>
+
+                                <!-- Deduction -->
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Deduction <span
+                                            class="text-danger">*</span></label>
+                                    <input type="number" step="0.01" min="0" class="form-control" name="deduction"
+                                        id="deduction" value="0" required oninput="calculateRemaining()">
+                                </div>
+
+                                <!-- Remaining Amount -->
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Remaining Amount</label>
+                                    <input type="text" class="form-control" id="remaining_amount"
+                                        name="remaining_amount" value="{{ $booking->booking_amount ?? 0 }}" readonly>
+                                </div>
+
+                                <!-- Bank Name -->
+                                <div class="col-md-4">
+                                    <label for="bank_name" class="form-label fw-bold">
+                                        Bank Name <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="text" class="form-control" name="bank_name" id="bank_name" required>
+                                </div>
+
+                                <!-- Branch Name -->
+                                <div class="col-md-4">
+                                    <label for="branch_name" class="form-label fw-bold">
+                                        Branch Name <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="text" class="form-control" name="branch_name" id="branch_name"
+                                        required>
+                                </div>
+
+                                <!-- Account Type -->
+                                <div class="col-md-4">
+                                    <label for="account_type" class="form-label fw-bold">
+                                        Account Type <span class="text-danger">*</span>
+                                    </label>
+                                    <select name="account_type" id="account_type" class="form-control form-select"
+                                        required>
+                                        <option value="savings">Savings</option>
+                                        <option value="current">Current</option>
+                                    </select>
+                                </div>
+
+                                <!-- Account Number -->
+                                <div class="col-md-3">
+                                    <label for="account_number" class="form-label fw-bold">
+                                        Account Number <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="text" class="form-control" name="account_number" id="account_number"
+                                        required>
+                                </div>
+
+                                <!-- Account Holder Name -->
+                                <div class="col-md-3">
+                                    <label for="holder_name" class="form-label fw-bold">
+                                        Account Holder Name <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="text" class="form-control" name="holder_name" id="holder_name"
+                                        required>
+                                </div>
+
+                                <!-- IFSC Code -->
+                                <div class="col-md-3">
+                                    <label for="ifsc_code" class="form-label fw-bold">
+                                        IFSC Code <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="text" class="form-control" name="ifsc_code" id="ifsc_code" required>
+                                </div>
+
+                                <!-- Upload Account Image -->
+                                <div class="col-md-3">
+                                    <label for="ac_proof" class="form-label fw-bold">Upload Account Image <span
+                                            class="text-danger">*</span></label>
+                                    <input class="form-control" type="file" name="acc_proof" id="ac_proof"
+                                        accept=".jpg,.jpeg,.png,.pdf" required>
+                                    <small class="form-text text-muted">Max 2MB • jpg, png, pdf</small>
+
+                                    <!-- Chip yahan aayegi -->
+                                    <div id="ac_proof_chip" class="mt-2"></div>
+                                </div>
+
+                                <!-- Reason for Deduction -->
+                                <div class="col-md-6">
+                                    <label for="deduction_reason" class="form-label fw-bold">
+                                        Reason for Deduction <span class="text-danger">*</span>
+                                    </label>
+                                    <textarea class="form-control" name="deduction_reason" id="deduction_reason"
+                                        required></textarea>
+                                </div>
+
+                                <!-- Upload Aadhar Image -->
+                                <div class="col-md-3">
+                                    <label for="aadhar_proof" class="form-label fw-bold">Upload Aadhar Image <span
+                                            class="text-danger">*</span></label>
+                                    <input class="form-control" type="file" name="aadhar" id="aadhar_proof"
+                                        accept=".jpg,.jpeg,.png,.pdf" required>
+                                    <small class="form-text text-muted">Max 2MB • jpg, png, pdf</small>
+
+                                    <div id="aadhar_proof_chip" class="mt-2"></div>
+                                </div>
+
+                                <!-- Upload PAN Image -->
+                                <div class="col-md-3">
+                                    <label for="pan_proof" class="form-label fw-bold">Upload PAN Image <span
+                                            class="text-danger">*</span></label>
+                                    <input class="form-control" type="file" name="pan" id="pan_proof"
+                                        accept=".jpg,.jpeg,.png,.pdf" required>
+                                    <small class="form-text text-muted">Max 2MB • jpg, png, pdf</small>
+
+                                    <div id="pan_proof_chip" class="mt-2"></div>
+                                </div>
+
+
+
+                                <!-- Action buttons -->
+                                <div class="col-12 mt-4 text-center">
+                                    <button type="button" class="btn btn-success btn-lg px-5 me-4"
+                                        onclick="if(confirm('Restore this cancelled booking?')) document.getElementById('activateForm').submit();">
+                                        <i class="la la-undo"></i> Restore Booking
+                                    </button>
+
+                                    <button type="submit" class="btn btn-primary btn-lg px-5">
+                                        <i class="la la-arrow-right"></i> Process Refund Request
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+
+                        <!-- Hidden restore form - keep it, but don't attach the refund submit to it -->
+                        <form id="activateForm" method="POST" action="{{ route('statusave', $booking->id) }}"
+                            style="display:none;">
+                            @csrf
+                            <input type="hidden" name="status" value="{{ $booking->pending == 0 ? 1 : 8 }}">
+                        </form>
+
+                    </div>
+                </div>
+
                 @endif
 
                 <!-- Refund Related Sections - Only when status == 4 -->
@@ -1007,7 +1164,7 @@
                 <!-- Refund Queue Card -->
                 <div class="card mt-4 shadow-sm border-warning">
                     <div class="card-header bg-warning text-dark">
-                        <h3 class="mb-0">{{ __('Refund Queue') }}</h3>
+                        <h2 class="mb-0">{{ __('Refund Queue') }}</h2>
                     </div>
                     <div class="card-body">
                         <div class="row g-3">
@@ -1118,7 +1275,7 @@
                 <!-- Refund Details Form Card -->
                 <div class="card mt-4 shadow-sm">
                     <div class="card-header bg-info text-black">
-                        <h3 class="mb-0">{{ __('Refund Details') }}</h3>
+                        <h2 class="mb-0">{{ __('Refund Details') }}</h2>
                     </div>
                     <div class="card-body">
                         <form class="forms-sample" method="POST" action="{{ route('update-refund', $booking->id) }}"
@@ -1142,7 +1299,7 @@
                                 <div class="col-sm-4">
                                     <label for="mode">{{ __('Mode of Payment') }} <span
                                             class="text-danger">*</span></label>
-                                    <select class="form-control" name="mode" required>
+                                    <select class="form-control form-select" name="mode" required>
                                         <option value="">{{ __('Select Mode') }}</option>
                                         <option value="Cash">{{ __('Cash') }}</option>
                                         <option value="Cheque">{{ __('Cheque') }}</option>
@@ -1161,20 +1318,17 @@
 
                                 <!-- Upload Proof -->
                                 <div class="col-sm-4">
-                                    <label for="pay_proof">{{ __('Upload Refund Proof') }} <span
-                                            class="text-danger">*</span></label>
+                                    <label class="form-label fw-bold">
+                                        Upload Refund Proof <span class="text-danger">*</span>
+                                    </label>
+
                                     <input class="form-control" type="file" name="pay_proof" id="pay_proof"
-                                        accept=".jpg,.jpeg,.png,.pdf" onchange="previewPAY()" required>
-                                    <small class="text-muted">JPG, PNG, or PDF (Max 2MB)</small>
-                                    <div style="position: relative; display: inline-block; margin-top: 10px;">
-                                        <img id="payproof" src="" class="img-fluid" width="100"
-                                            style="display: none;" />
-                                        <img id="pdf_icon" src="{{ asset('images/pdf-icon.png') }}" class="img-fluid"
-                                            width="50" style="display: none;" />
-                                        <button type="button" id="discard-image"
-                                            style="position: absolute; top: -10px; right: -10px; background: red; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 14px; cursor: pointer; display: none;"
-                                            onclick="discardImage()">×</button>
-                                    </div>
+                                        accept=".jpg,.jpeg,.png,.pdf" required>
+
+                                    <small class="text-muted">JPG, PNG, PDF (Max 2MB)</small>
+
+                                    <!-- Chip container -->
+                                    <div id="pay_proof_chip" class="mt-2"></div>
                                 </div>
 
                                 <!-- Remarks -->
@@ -1205,7 +1359,7 @@
                 <!-- Rejection Card (Hidden by default) -->
                 <div class="card mt-4 border-danger" id="rejectionCard" style="display: none;">
                     <div class="card-header bg-danger text-black">
-                        <h3 class="mb-0">{{ __('Reject Refund Request') }}</h3>
+                        <h2 class="mb-0">{{ __('Reject Refund Request') }}</h2>
                     </div>
                     <div class="card-body">
                         <form method="POST" action="{{ route('statusave', $booking->id) }}"
@@ -1221,12 +1375,18 @@
                                         placeholder="Enter reason why refund is being rejected..." required></textarea>
                                 </div>
 
-                                <div class="col-sm-12">
-                                    <label for="fdoc">{{ __('Upload Supporting Document (Optional)') }}</label>
+                                <div class="col-sm-4">
+                                    <label class="form-label fw-bold">
+                                        {{ __('Upload Supporting Document (Optional)') }}
+                                    </label>
+
                                     <input type="file" name="fdoc" id="fdoc" class="form-control"
-                                        accept=".jpg,.jpeg,.png,.pdf" onchange="previewLeft()">
-                                    <small class="text-muted">JPG, PNG or PDF (Max 2MB)</small>
-                                    <div id="filePreview" style="margin-top: 10px;"></div>
+                                        accept=".jpg,.jpeg,.png,.pdf">
+
+                                    <small class="text-muted">JPG, PNG, PDF (Max 2MB)</small>
+
+                                    <!-- Chip container -->
+                                    <div id="fdoc_chip" class="mt-2"></div>
                                 </div>
 
                                 <div class="col-sm-12 text-center mt-4">
@@ -1250,7 +1410,7 @@
                 <!-- Receipt Log Card -->
                 <div class="card mt-4" id="receipt-log-card">
                     <div class="card-header position-relative">
-                        <h3 class="mb-0">{{ __('Receipt Log') }}</h3>
+                        <h2 class="mb-0">{{ __('Receipt Log') }}</h2>
                         <button type="button" class="btn btn-sm btn-light position-absolute top-0 end-0 m-2"
                             id="toggle-receipt-log">
                             <i class="ik ik-minus" id="receipt-icon"></i>
@@ -1288,21 +1448,16 @@
                                                 N/A
                                                 @endif
                                             </td>
-                                            <td>
+
+                                            <td class="text-center">
                                                 <a href="{{ route('receipt.edit', ['id' => $booking->id, 'receipt_id' => $log->id]) }}"
-                                                    title="Edit">
-                                                    <i class="ik ik-edit-2 f-16 mr-15 text-green"></i>
+                                                    class="btn btn-sm btn-outline-success">
+                                                    <i class="la la-edit"></i> Edit
                                                 </a>
                                             </td>
                                         </tr>
                                         @endforeach
-                                        <!-- Total Row -->
-                                        <tr class="table-active">
-                                            <td colspan="2" class="text-end"><strong>Total:</strong></td>
-                                            <td><strong>{{ number_format($data['total_amount'] ?? 0, 2) }}</strong></td>
-                                            <td></td>
-                                            <td></td>
-                                        </tr>
+
                                         @else
                                         <tr>
                                             <td colspan="5" class="text-center text-muted">
@@ -1323,7 +1478,7 @@
                     @csrf
                     <div class="card mt-4" id="refund-details-card">
                         <div class="card-header position-relative">
-                            <h3 class="mb-0">{{ __('Edit Refund Details') }}</h3>
+                            <h2 class="mb-0">{{ __('Edit Refund Details') }}</h2>
                             <button type="button" class="btn btn-sm btn-light position-absolute top-0 end-0 m-2"
                                 id="toggle-refund-details">
                                 <i class="ik ik-minus" id="refund-icon"></i>
@@ -1372,7 +1527,7 @@
                                 <!-- Account Type -->
                                 <div class="col-sm-4">
                                     <label>{{ __('Account Type') }} <span class="text-danger">*</span></label>
-                                    <select class="form-control" name="account_type" required>
+                                    <select class="form-control form-select" name="account_type" required>
                                         <option value="Savings" {{ ($data['refund']['account_type'] ?? '' )=='Savings'
                                             ? 'selected' : '' }}>Savings</option>
                                         <option value="Current" {{ ($data['refund']['account_type'] ?? '' )=='Current'
@@ -1381,14 +1536,14 @@
                                 </div>
 
                                 <!-- Account Number -->
-                                <div class="col-sm-6">
+                                <div class="col-sm-4">
                                     <label>{{ __('Account Number') }} <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control" name="account_number"
                                         value="{{ $data['refund']['account_number'] ?? '' }}" required>
                                 </div>
 
                                 <!-- Account Holder -->
-                                <div class="col-sm-6">
+                                <div class="col-sm-4">
                                     <label>{{ __('Account Holder') }} <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control" name="holder_name"
                                         value="{{ $data['refund']['holder_name'] ?? '' }}" required>
@@ -1403,30 +1558,53 @@
 
                                 <!-- Account Proof -->
                                 <div class="col-sm-4">
-                                    <label>{{ __('Account Proof') }}</label>
-                                    @if ($data['acc_proof'])
-                                    <div style="position: relative; display: inline-block;">
-                                        <a href="{{ $data['acc_proof'] }}" target="_blank">
-                                            <img src="{{ $data['acc_proof'] }}" class="img-fluid" width="100"
-                                                alt="Account Proof" id="current-acc-image">
-                                        </a>
-                                        <button type="button" id="remove-acc-image"
-                                            style="position: absolute; top: 0; right: 0; background: red; color: white; border: none; border-radius: 50%; font-size: 18px; cursor: pointer;"
-                                            onclick="removeAccImage()">×</button>
+                                    <label class="small fw-bold">Account Proof</label>
+
+                                    @php
+                                    $accProof = $data['acc_proof'] ?? null;
+                                    $fileName = $accProof ? basename($accProof) : null;
+                                    $isPdf = $accProof && str_contains($accProof, '.pdf');
+                                    @endphp
+
+                                    @if($accProof)
+
+                                    <div class="mt-2">
+                                        <div class="proof-chip bg-primary"
+                                            onclick="openProofPreview('{{ $accProof }}','{{ $isPdf ? 'pdf':'image' }}','{{ addslashes($fileName) }}')">
+
+                                            <i
+                                                class="{{ $isPdf ? 'fas fa-file-pdf text-danger':'fas fa-file-image text-white' }} fs-5 me-2"></i>
+
+                                            <span class="file-name text-truncate" title="{{ $fileName }}">
+                                                {{ Str::limit($fileName,24) }}
+                                            </span>
+
+                                            <button type="button" class="btn-action btn-download ms-2"
+                                                onclick="event.stopPropagation(); downloadFile('{{ $accProof }}','{{ addslashes($fileName) }}')">
+                                                <i class="fas fa-download"></i>
+                                            </button>
+
+                                            <button type="button" class="btn-action text-danger ms-1"
+                                                onclick="event.stopPropagation(); removeAccImage()">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+
+                                        </div>
                                     </div>
+
                                     @else
-                                    <button type="button" class="btn btn-primary btn-sm"
-                                        onclick="document.getElementById('acc-proof-input').click()">
-                                        Add Image/PDF
-                                    </button>
+
+                                    <input class="form-control" type="file" name="acc_proof" id="ac_proof"
+                                        accept=".jpg,.jpeg,.png,.pdf">
+
+                                    <small class="text-muted">JPG, PNG, PDF (Max 2MB)</small>
+
+                                    <div id="ac_proof_chip" class="mt-2"></div>
+
                                     @endif
-                                    <input type="file" name="acc_proof" id="acc-proof-input" accept="image/*,.pdf"
-                                        style="display:none;" onchange="previewAccProof(event)">
+
                                     <input type="hidden" name="remove_acc_proof" id="remove-acc-input" value="0">
 
-                                    <div id="acc-preview-container" style="display:none; margin-top:10px;">
-                                        <img id="acc-preview-img" class="img-fluid" width="100" alt="Preview">
-                                    </div>
                                 </div>
 
                                 <!-- Details -->
@@ -1450,7 +1628,7 @@
                 <!-- Add Remarks Card -->
                 <div class="card mt-4" id="remark-card">
                     <div class="card-header position-relative">
-                        <h3 class="mb-0">{{ __('Add Remarks') }}</h3>
+                        <h2 class="mb-0">{{ __('Add Remarks') }}</h2>
                         <button type="button" class="btn btn-sm btn-light position-absolute top-0 end-0 m-2"
                             id="toggle-remark">
                             <i class="ik ik-minus" id="remark-icon"></i>
@@ -1461,27 +1639,22 @@
                             enctype="multipart/form-data">
                             @csrf
                             <div class="row g-3">
-                                <div class="col-sm-10">
+                                <div class="col-sm-9">
                                     <label>{{ __('Remarks') }} <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control" name="remark" id="remark" required>
                                     <input type="hidden" name="id" value="{{ $booking->id }}">
                                 </div>
 
-                                <div class="col-sm-2">
-                                    <label>{{ __('Upload Image/PDF') }}</label>
-                                    <input type="file" class="form-control" name="fdoc" id="fdoc"
-                                        accept=".jpg,.jpeg,.png,.pdf" onchange="previewLeft()">
+                                <div class="col-sm-3">
+                                    <label class="small fw-bold">Upload Image/PDF</label>
+
+                                    <input class="form-control" type="file" name="fdoc" id="fdoc"
+                                        accept=".jpg,.jpeg,.png,.pdf">
+
                                     <small class="text-muted">JPG, PNG, PDF (max 2MB)</small>
 
-                                    <div style="margin-top:10px; position:relative; display:inline-block;">
-                                        <img id="frameLeft" class="img-fluid" width="100" style="display:none;">
-                                        <img id="pdfIcon" src="https://cdn-icons-png.flaticon.com/512/179/179483.png"
-                                            class="img-fluid" width="80" style="display:none;" />width="80"
-                                        style="display:none;">
-                                        <button type="button" id="clearImage"
-                                            style="position:absolute; top:-10px; right:-10px; background:red; color:white; border:none; border-radius:50%; width:24px; height:24px; cursor:pointer; display:none;"
-                                            onclick="clearImage()">×</button>
-                                    </div>
+                                    <!-- Chip container -->
+                                    <div id="fdoc_chip" class="mt-2"></div>
                                 </div>
 
                                 <div class="col-sm-12 mt-3">
@@ -1512,7 +1685,7 @@
                 <!-- Refund Details Card -->
                 <div class="card mt-4" id="refund-details-card">
                     <div class="card-header position-relative">
-                        <h3 class="mb-0">{{ __('Refund Details') }}</h3>
+                        <h2 class="mb-0">{{ __('Refund Details') }}</h2>
 
                         <button type="button" class="btn btn-sm btn-light position-absolute top-0 end-0 m-2"
                             id="toggle-edit-refund">
@@ -1540,7 +1713,7 @@
                                 </div> --}}
 
                                 <!-- Mode of Payment -->
-                                <div class="col-sm-4">
+                                <div class="col-sm-3">
                                     <label>{{ __('Mode of Payment') }}</label>
                                     <select class="form-control" name="mode" id="mode" disabled>
                                         <option value="Cash" {{ ($data['refund']['mode'] ?? '' )=='Cash' ? 'selected'
@@ -1553,14 +1726,14 @@
                                 </div>
 
                                 <!-- Transaction Details -->
-                                <div class="col-sm-4">
+                                <div class="col-sm-3">
                                     <label>{{ __('Transaction Details') }}</label>
                                     <input type="text" class="form-control" name="transaction_details"
                                         value="{{ $data['refund']['transaction_details'] ?? 'N/A' }}" readonly>
                                 </div>
 
                                 <!-- Remarks -->
-                                <div class="col-sm-10">
+                                <div class="col-sm-6">
                                     <label>{{ __('Remarks') }}</label>
                                     <input type="text" class="form-control" name="remark"
                                         value="{{ $data['refund']['remark'] ?? 'N/A' }}" readonly>
@@ -1601,7 +1774,7 @@
                 <!-- Add Remarks Card -->
                 <div class="card mt-4" id="remark-card">
                     <div class="card-header position-relative">
-                        <h3 class="mb-0">{{ __('Add Remarks') }}</h3>
+                        <h2 class="mb-0">{{ __('Add Remarks') }}</h2>
                         <button type="button" class="btn btn-sm btn-light position-absolute top-0 end-0 m-2"
                             id="toggle-remark">
                             <i class="ik ik-minus" id="remark-icon"></i>
@@ -1612,13 +1785,13 @@
                             enctype="multipart/form-data">
                             @csrf
                             <div class="row g-3">
-                                <div class="col-sm-10">
+                                <div class="col-sm-9">
                                     <label>{{ __('Remarks') }} <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control" name="remark" id="remark" required>
                                     <input type="hidden" name="id" value="{{ $booking->id }}">
                                 </div>
 
-                                <div class="col-sm-2">
+                                {{-- <div class="col-sm-3">
                                     <label>{{ __('Upload Image/PDF') }}</label>
                                     <input type="file" class="form-control" name="fdoc" id="fdoc"
                                         accept=".jpg,.jpeg,.png,.pdf" onchange="previewLeft()">
@@ -1627,22 +1800,32 @@
                                     <div style="margin-top:10px; position:relative; display:inline-block;">
                                         <img id="frameLeft" class="img-fluid" width="100" style="display:none;">
                                         <img id="pdfIcon" src="https://cdn-icons-png.flaticon.com/512/179/179483.png"
-                                            class="img-fluid" width="80" style="display:none;" />width="80"
-                                        style="display:none;">
+                                            class="img-fluid" width="80" style="display:none;" />
                                         <button type="button" id="clearImage"
                                             style="position:absolute; top:-10px; right:-10px; background:red; color:white; border:none; border-radius:50%; width:24px; height:24px; cursor:pointer; display:none;"
                                             onclick="clearImage()">×</button>
                                     </div>
-                                </div>
+                                </div> --}}
+                                <div class="col-sm-3">
+                                    <label>{{ __('Upload Image/PDF') }} <span class="text-danger">*</span></label>
+                                    <input type="file" class="form-control" name="fdoc" id="fdoc"
+                                        accept=".jpg,.jpeg,.png,.pdf" onchange="handleFdocAttachment(this)">
+                                    <small class="text-muted">JPG, PNG, PDF (max 2MB)</small>
 
+                                    <!-- Chip Preview Area -->
+                                    <div id="fdocProofPreview" class="mt-3"></div>
+
+                                    <!-- Hidden delete flag (agar edit mode mein existing file ho to) -->
+                                    <input type="hidden" name="delete_fdoc" id="delete_fdoc" value="0">
+                                </div>
                                 <div class="col-sm-12 mt-3">
                                     <div class="row">
-                                        <div class="col-sm-6">
+                                        <div class="col-sm-2">
                                             <button type="submit" class="btn btn-success btn-block">
                                                 {{ __('Add Remarks') }}
                                             </button>
                                         </div>
-                                        <div class="col-sm-6">
+                                        <div class="col-sm-10">
                                             <div class="form-group">
                                                 <a href="{{ backpack_url("booking/{$booking->id}/edit") }}"
                                                     class="btn btn-primary btn-block"
@@ -1705,17 +1888,154 @@
                     </div>
                 </div>
 
-                {{--
-            </div> --}}
-        </div>
-    </div>
-    @endsection
-    @section('after_scripts')
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
-    <script>
-        // document.getElementById('activateButton').addEventListener('click', function() {
+            </div>
+        </div>
+        <div class="modal fade" id="attachmentModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="modalFileName"></h5>
+                        {{-- <button type="button" class="close" data-bs-dismiss="modal">&times;</button> --}}
+                    </div>
+
+                    <div class="modal-body text-center">
+                        <iframe id="modalFilePreview" style="width:100%; height:500px;" frameborder="0"></iframe>
+                    </div>
+
+                    <div class="modal-footer">
+                        <a id="modalDownload" class="btn btn-success" download>
+                            Download
+                        </a>
+
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            Close
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+        <!-- Fdoc Proof Modal -->
+        <div class="modal fade" id="fdocProofModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title" id="fdocProofModalLabel"></h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body text-center">
+                        <img id="fdocProofImg" src="" alt="Preview"
+                            style="max-width:100%; max-height:70vh; display:none;">
+                        <iframe id="fdocProofIframe" style="width:100%; height:500px; display:none;"
+                            frameborder="0"></iframe>
+                    </div>
+                    <div class="modal-footer">
+                        <a id="fdocProofDownload" class="btn btn-success" download>Download</a>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @endsection
+        @section('after_scripts')
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+        <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+        <script>
+            // Common function to create invoiced-style proof chip
+        function createProofChip(containerId, fileName, fileUrl, isPdf = false) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            // Clear old chip
+            container.innerHTML = '';
+
+            const chip = document.createElement('div');
+            chip.className = 'd-inline-flex align-items-center gap-2 px-3 py-2 bg-primary text-white rounded-pill shadow-sm';
+            chip.style.cursor = 'pointer';
+            chip.style.fontSize = '0.95rem';
+            chip.style.maxWidth = '100%';
+
+            chip.innerHTML = `
+                <i class="fas fa-paperclip me-1"></i>
+                <span class="text-truncate" style="max-width: 180px;" title="${fileName.replace(/"/g, '&quot;')}">
+                    📎${fileName.length > 22 ? fileName.substring(0, 19) + '...' : fileName}
+                </span>
+                <button type="button" class="btn-close btn-close-white ms-2"
+                        style="font-size: 0.8rem;"
+                        title="Remove"
+                        onclick="event.stopPropagation(); removeProofChip('${containerId}');">
+                </button>
+            `;
+
+            // Whole chip clickable → preview khulega
+            chip.addEventListener('click', (e) => {
+                if (!e.target.closest('.btn-close')) {
+                    openProofPreview(fileUrl, isPdf ? 'pdf' : 'image', fileName);
+                }
+            });
+
+            container.appendChild(chip);
+        }
+
+        // Remove chip and clear input
+        function removeProofChip(containerId) {
+            const container = document.getElementById(containerId);
+            if (container) container.innerHTML = '';
+
+            // Clear corresponding file input
+            let inputId;
+            if (containerId === 'ac_proof_chip')     inputId = 'ac_proof';
+            else if (containerId === 'aadhar_proof_chip') inputId = 'aadhar_proof';
+            else if (containerId === 'pan_proof_chip')    inputId = 'pan_proof';
+            else if (containerId === 'pay_proof_chip') inputId = 'pay_proof';
+            else if (containerId === 'fdoc_chip') inputId = 'fdoc';
+            const input = document.getElementById(inputId);
+            if (input) input.value = '';
+        }
+
+        // Main upload handler (size check + chip create)
+        function handleFileUpload(input) {
+            if (!input.files?.[0]) return;
+
+            const file = input.files[0];
+
+            // 2MB limit
+            if (file.size > 2 * 1024 * 1024) {
+                alert("File must be less than 2MB");
+                input.value = '';
+                return;
+            }
+
+            const isPdf = file.type === 'application/pdf';
+            const url = URL.createObjectURL(file);
+
+            let containerId;
+            if (input.id === 'ac_proof')         containerId = 'ac_proof_chip';
+            else if (input.id === 'aadhar_proof') containerId = 'aadhar_proof_chip';
+            else if (input.id === 'pan_proof')    containerId = 'pan_proof_chip';
+            else if (input.id === 'pay_proof') containerId = 'pay_proof_chip';
+            else if (input.id === 'fdoc') containerId = 'fdoc_chip';
+            else return;
+
+            createProofChip(containerId, file.name, url, isPdf);
+        }
+
+// Attach listeners to all three inputs
+document.addEventListener('DOMContentLoaded', function() {
+    const inputs = ['ac_proof', 'aadhar_proof', 'pan_proof', 'pay_proof', 'fdoc'];
+    inputs.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('change', () => handleFileUpload(el));
+        }
+    });
+});
+
+            // document.getElementById('activateButton').addEventListener('click', function() {
         //     if (confirm('Are you sure you want to restore this booking?')) {
         //         document.getElementById('activateForm').submit();
         //     }
@@ -2071,34 +2391,6 @@ document.getElementById('proofPreviewModal')?.addEventListener('hidden.bs.modal'
                 }
             });
         }
-        // File preview functions (same as before)
-        // function previewLeft() {
-        //     const file = document.getElementById('fdoc').files[0];
-        //     if (!file) return;
-
-        //     const frame = document.getElementById('frameLeft');
-        //     const pdfIcon = document.getElementById('pdfIcon');
-        //     const clearBtn = document.getElementById('clearImage');
-
-        //     if (file.type.startsWith('image/')) {
-        //         frame.src = URL.createObjectURL(file);
-        //         frame.style.display = 'block';
-        //         pdfIcon.style.display = 'none';
-        //     } else if (file.type === 'application/pdf') {
-        //         frame.style.display = 'none';
-        //         pdfIcon.style.display = 'block';
-        //     }
-
-        //     clearBtn.style.display = 'block';
-        // }
-
-        // function discardImageLeft() {
-        //     document.getElementById('fdoc').value = '';
-        //     document.getElementById('frameLeft').src = '';
-        //     document.getElementById('frameLeft').style.display = 'none';
-        //     document.getElementById('pdfIcon').style.display = 'none';
-        //     document.getElementById('clearImage').style.display = 'none';
-        // }
 
         // Optional: Initialize Flatpickr for invoice dates (if not already in layout)
         document.addEventListener('DOMContentLoaded', function () {
@@ -2116,11 +2408,11 @@ document.getElementById('proofPreviewModal')?.addEventListener('hidden.bs.modal'
                 }
             });
         });
-    </script>
 
 
-    <script>
-        // Toggle invoice fields visibility (you probably already have this function)
+
+
+
         function toggleInvoiceFields() {
             const status = document.getElementById('status').value;
             const show = (status === "2");
@@ -2227,9 +2519,9 @@ document.getElementById('proofPreviewModal')?.addEventListener('hidden.bs.modal'
                 }
             });
         });
-    </script>
 
-    <script>
+
+
         function previewPAY() {
             const input = document.getElementById('pay_proof');
             const preview = document.getElementById('payproof');
@@ -2258,25 +2550,6 @@ document.getElementById('proofPreviewModal')?.addEventListener('hidden.bs.modal'
             document.getElementById('discard-image').style.display = 'none';
         }
 
-        // function previewLeft() {
-        //     const input = document.getElementById('fdoc');
-        //     const preview = document.getElementById('filePreview');
-        //     const file = input?.files[0];
-
-        //     if (!file) return;
-
-        //     preview.innerHTML = ''; // clear previous
-        //     const img = document.createElement('img');
-        //     img.classList.add('img-fluid', 'rounded');
-        //     img.style.maxWidth = '150px';
-
-        //     if (file.type.startsWith('image/')) {
-        //         img.src = URL.createObjectURL(file);
-        //         preview.appendChild(img);
-        //     } else if (file.type === 'application/pdf') {
-        //         preview.innerHTML = '<i class="la la-file-pdf text-danger" style="font-size: 60px;"></i><p>PDF Uploaded</p>';
-        //     }
-        // }
 
         // Reject Refund Button Toggle
         document.getElementById('rejectRefundBtn')?.addEventListener('click', function() {
@@ -2302,9 +2575,70 @@ document.getElementById('proofPreviewModal')?.addEventListener('hidden.bs.modal'
                     : '';
             }
         });
-    </script>
 
-    <script>
+
+
+        document.addEventListener('DOMContentLoaded', function () {
+
+    const input = document.getElementById('newProofFile');
+    if (!input) return;
+
+    input.addEventListener('change', function () {
+
+        const file = this.files[0];
+        if (!file) return;
+
+        // 2MB validation
+        if (file.size > 2 * 1024 * 1024) {
+            alert("File must be less than 2MB");
+            this.value = "";
+            return;
+        }
+
+        const fileURL = URL.createObjectURL(file);
+
+        // Single file only → clear previous chip
+        const container = document.getElementById('newProofChipContainer');
+        container.innerHTML = "";
+
+        createFileChip(file.name, fileURL);
+
+        this.value = "";
+    });
+
+});
+
+
+function createFileChip(fileName, fileURL) {
+
+    const container = document.getElementById('newProofChipContainer');
+
+    const chip = document.createElement('span');
+    chip.className = "btn btn-primary mr-2 p-2";
+    chip.style.cursor = "pointer";
+    chip.innerText = fileName;
+
+    chip.dataset.fileUrl = fileURL;
+    chip.dataset.fileName = fileName;
+
+    chip.onclick = function () {
+        openAttachmentModal(this.dataset.fileName, this.dataset.fileUrl);
+    };
+
+    container.appendChild(chip);
+}
+
+
+function openAttachmentModal(fileName, fileURL) {
+
+    document.getElementById('modalFileName').innerText = fileName;
+    document.getElementById('modalFilePreview').src = fileURL;
+    document.getElementById('modalDownload').href = fileURL;
+
+    var modal = new bootstrap.Modal(document.getElementById('attachmentModal'));
+modal.show();
+
+}
         // 1. Toggle Cards (Receipt Log, Refund Details, Remarks)
         function toggleCard(cardId, iconId) {
             const body = document.querySelector(`#${cardId} .card-body`);
@@ -2328,11 +2662,15 @@ document.getElementById('proofPreviewModal')?.addEventListener('hidden.bs.modal'
 
         // 2. Remove Existing Account Proof
         function removeAccImage() {
-            if (!confirm('Remove existing account proof?')) return;
-            document.getElementById('remove-acc-input').value = '1';
-            const container = document.querySelector('#current-acc-image')?.closest('div');
-            if (container) container.style.display = 'none';
-        }
+
+    if(!confirm("Remove account proof?")) return;
+
+    document.getElementById('remove-acc-input').value = "1";
+
+    const chip = document.querySelector('#ac_proof_chip');
+    if(chip) chip.innerHTML = '';
+
+}
 
         // 3. Preview New Account Proof
         function previewAccProof(event) {
@@ -2351,52 +2689,7 @@ document.getElementById('proofPreviewModal')?.addEventListener('hidden.bs.modal'
             }
         }
 
-        // 4. Preview Remarks File (fdoc)
-        // function previewLeft() {
-        //     const input = document.getElementById('fdoc');
-        //     const file = input?.files[0];
-        //     if (!file) return;
 
-        //     const frame = document.getElementById('frameLeft');
-        //     const pdfIcon = document.getElementById('pdfIcon');
-        //     const clearBtn = document.getElementById('clearImage');
-
-        //     if (file.type.startsWith('image/')) {
-        //         frame.src = URL.createObjectURL(file);
-        //         frame.style.display = 'block';
-        //         pdfIcon.style.display = 'none';
-        //     } else if (file.type === 'application/pdf') {
-        //         frame.style.display = 'none';
-        //         pdfIcon.style.display = 'block';
-        //     } else {
-        //         alert('Only JPG, PNG or PDF allowed.');
-        //         input.value = '';
-        //         return;
-        //     }
-
-        //     clearBtn.style.display = 'block';
-        // }
-
-        // function clearImage() {
-        //     document.getElementById('fdoc').value = '';
-        //     document.getElementById('frameLeft').src = '';
-        //     document.getElementById('frameLeft').style.display = 'none';
-        //     document.getElementById('pdfIcon').style.display = 'none';
-        //     document.getElementById('clearImage').style.display = 'none';
-        // }
-
-        // 5. Calculate Remaining Amount
-        // function calculateRemaining() {
-        //     const booking = parseFloat(document.querySelector('input[name="booking_amount"]').value) || 0;
-        //     const deduction = parseFloat(document.getElementById('deduction')?.value) || 0;
-        //     const remaining = booking - deduction;
-
-        //     const field = document.getElementById('remaining_amount');
-        //     if (field) {
-        //         field.value = remaining.toFixed(2);
-        //         field.style.color = remaining < 0 ? 'red' : 'inherit';
-        //     }
-        // }
         function calculateRemaining() {
         // सबसे पहले चेक करो कि जरूरी एलिमेंट्स मौजूद हैं या नहीं
         const bookingInput = document.querySelector('input[name="booking_amount"]');
@@ -2438,9 +2731,9 @@ document.getElementById('proofPreviewModal')?.addEventListener('hidden.bs.modal'
             calculateRemaining();
         }
     });
-    </script>
 
-    <script>
+
+
         // === Toggle Cards (Receipt Log, Refund Details, Remarks) ===
         function toggleCard(cardId, iconId) {
             const body = document.querySelector(`#${cardId} .card-body`);
@@ -2500,44 +2793,91 @@ document.getElementById('proofPreviewModal')?.addEventListener('hidden.bs.modal'
             }
         }
 
-        // === Remarks File Preview ===
-        // function previewLeft() {
-        //     const input = document.getElementById('fdoc');
-        //     const file = input?.files[0];
-        //     if (!file) return;
 
-        //     const frame = document.getElementById('frameLeft');
-        //     const pdfIcon = document.getElementById('pdfIcon');
-        //     const clearBtn = document.getElementById('clearImage');
-
-        //     if (file.type.startsWith('image/')) {
-        //         frame.src = URL.createObjectURL(file);
-        //         frame.style.display = 'block';
-        //         pdfIcon.style.display = 'none';
-        //     } else if (file.type === 'application/pdf') {
-        //         frame.style.display = 'none';
-        //         pdfIcon.style.display = 'block';
-        //     } else {
-        //         alert('Only JPG, PNG or PDF allowed.');
-        //         input.value = '';
-        //         return;
-        //     }
-
-        //     clearBtn.style.display = 'block';
-        // }
-
-        // function clearImage() {
-        //     document.getElementById('fdoc').value = '';
-        //     document.getElementById('frameLeft').src = '';
-        //     document.getElementById('frameLeft').style.display = 'none';
-        //     document.getElementById('pdfIcon').style.display = 'none';
-        //     document.getElementById('clearImage').style.display = 'none';
-        // }
-
-        // === Init ===
         document.addEventListener('DOMContentLoaded', function() {
             // Optional: disable form fields initially if needed
         });
-    </script>
+        // ────────────────────────────────────────────────
+// Fdoc Upload - Chip + Modal (same as show-invoiced / show.blade)
+// ────────────────────────────────────────────────
+let existingFdocUrl = "{{ $booking->fdoc ? asset($booking->fdoc) : '' }}";  // adjust path if needed
+let existingFdocName = "{{ $booking->fdoc ? basename($booking->fdoc) : '' }}";
 
-    @endsection
+function handleFdocAttachment(input) {
+    const previewDiv = document.getElementById('fdocProofPreview');
+    previewDiv.innerHTML = '';
+
+    if (input.files && input.files[0]) {
+        const file = input.files[0];
+
+        // Size + Type validation
+        if (file.size > 2 * 1024 * 1024) {
+            alert('File size exceeds 2MB!');
+            input.value = '';
+            return;
+        }
+        const validTypes = ['image/jpeg', 'image/png', 'application/pdf'];
+        if (!validTypes.includes(file.type)) {
+            alert('Only JPG, PNG, PDF allowed!');
+            input.value = '';
+            return;
+        }
+
+        const fileURL = URL.createObjectURL(file);
+
+        // Naya chip
+        previewDiv.innerHTML = `
+            <span class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2 px-3 py-2"
+                  style="cursor:pointer;"
+                  onclick="openFdocProofModal('${fileURL}', '${file.name.replace(/'/g, "\\'")}')">
+                <i class="la la-paperclip"></i>
+                <span class="fw-medium small">${file.name}</span>
+            </span>
+
+        `;
+
+        // Naya upload → existing delete flag
+        document.getElementById('delete_fdoc').value = '1';
+    }
+}
+
+function openFdocProofModal(url, name) {
+    document.getElementById('fdocProofModalLabel').innerText = name;
+    document.getElementById('fdocProofDownload').href = url;
+
+    const img = document.getElementById('fdocProofImg');
+    const iframe = document.getElementById('fdocProofIframe');
+
+    img.style.display = iframe.style.display = 'none';
+
+    if (name.toLowerCase().endsWith('.pdf')) {
+        iframe.src = url;
+        iframe.style.display = 'block';
+    } else {
+        img.src = url;
+        img.style.display = 'block';
+    }
+
+    $('#fdocProofModal').modal('show');
+}
+
+
+
+// Page Load: Existing fdoc ko chip mein dikhao
+document.addEventListener('DOMContentLoaded', function () {
+    if (existingFdocUrl && existingFdocName) {
+        const previewDiv = document.getElementById('fdocProofPreview');
+        previewDiv.innerHTML = `
+            <span class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2 px-3 py-2"
+                  style="cursor:pointer;"
+                  onclick="openFdocProofModal('${existingFdocUrl}', '${existingFdocName.replace(/'/g, "\\'")}')">
+                <i class="la la-paperclip"></i>
+                <span class="fw-medium small">${existingFdocName}</span>
+            </span>
+
+        `;
+    }
+});
+        </script>
+
+        @endsection

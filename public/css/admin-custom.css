@@ -1,0 +1,50 @@
+/* Force full-page background - Tabler ke body pe direct attack */
+html,
+body {
+    background: url("/images/my-bg.jpg") no-repeat center center fixed !important;
+    background-size: cover !important;
+    min-height: 100vh !important;
+}
+
+/* Tabler ke main wrappers ko transparent banao */
+.page,                /* Tabler main wrapper */
+.content,             /* Content area */
+.wrapper,             /* Sometimes used */
+main,
+.container-fluid,
+.page-wrapper {
+    background: transparent !important;
+}
+
+/* Cards aur tables ko semi-transparent white karo (text readable rahe) */
+.card,
+.card-body,
+.table-responsive,
+.table {
+    background-color: rgba(255, 255, 255, 0.92) !important;
+    border-radius: 0.5rem !important;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075) !important;
+}
+
+/* Navbar/Header ko semi-transparent */
+.navbar,
+.topbar,
+.header {
+    background-color: rgba(255, 255, 255, 0.88) !important;
+    backdrop-filter: blur(10px) !important; /* Glass effect */
+}
+
+/* Sidebar agar vertical layout mein ho (horizontal mein nahi dikhta) */
+.sidebar {
+    background-color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Koi bhi pattern/skin background force remove (extra safety) */
+body::before,
+body::after,
+[class*="bg-pattern"],
+[class*="background"],
+.background-pattern {
+    background: none !important;
+    display: none !important;
+}

@@ -2,11 +2,11 @@
 
 @section('header')
 <div class="container-fluid">
-    <h2>
+    {{-- <h2>
         <i class="la la-file-invoice-dollar text-primary"></i>
         Invoiced Booking Details
-        <small class="text-muted">#{{ $booking->sap_no ?? $booking->dms_no ?? $booking->id }}</small>
-    </h2>
+        < class="text-muted">#{{ $booking->sap_no ?? $booking->dms_no ?? $booking->id }}</>
+    </h2> --}}
 </div>
 @endsection
 
@@ -28,31 +28,29 @@
 
             <!-- 1. Payment Details -->
             <div class="card shadow-sm mb-4">
-                <div class="card-header bg-red text-black position-relative">
-                    <h5 class="mb-0">Payment Details</h5>
+                <div class="card-header bg-blue text-white position-relative">
+                    <h4 class="mb-0">Payment Details</h4>
                     <span class="toggle" onclick="toggleCard(this)">−</span>
                 </div>
                 <div class="card-body">
                     <div class="row g-3">
                         <div class="col-md-3">
-                            <label class="fw-bold small">Customer Type</label>
-                            <input type="text" class="form-control form-control-sm"
-                                value="{{ $booking->b_type ?? 'N/A' }}" readonly>
+                            <label class="fw-bold  ">Customer Type</label>
+                            <input type="text" class="form-control" value="{{ $booking->b_type ?? 'N/A' }}" readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold small">Customer Category</label>
-                            <input type="text" class="form-control form-control-sm"
-                                value="{{ $booking->b_cat ?? 'N/A' }}" readonly>
+                            <label class="fw-bold  ">Customer Category</label>
+                            <input type="text" class="form-control" value="{{ $booking->b_cat ?? 'N/A' }}" readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold small">Booking Date</label>
-                            <input type="text" class="form-control form-control-sm"
+                            <label class="fw-bold  ">Booking Date</label>
+                            <input type="text" class="form-control"
                                 value="{{ $booking->booking_date ? \Carbon\Carbon::parse($booking->booking_date)->format('d-M-Y') : 'N/A' }}"
                                 readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold small">Collection Type</label>
-                            <input type="text" class="form-control form-control-sm" value="{{ match((int)($booking->col_type ?? 0)) {
+                            <label class="fw-bold  ">Collection Type</label>
+                            <input type="text" class="form-control" value="{{ match((int)($booking->col_type ?? 0)) {
                                        1 => 'Receipt',
                                        2 => 'Field Collection (By Sales Team)',
                                        3 => 'Field Collection (By DSA)',
@@ -61,26 +59,26 @@
                                    } }}" readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold small">Collected By</label>
-                            <input type="text" class="form-control form-control-sm"
-                                value="{{ $data['collector_name'] ?? 'N/A' }}" readonly>
+                            <label class="fw-bold  ">Collected By</label>
+                            <input type="text" class="form-control" value="{{ $data['collector_name'] ?? 'N/A' }}"
+                                readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold small">{{ $booking->col_type == 4 ? 'Received Amount' : 'Booking
+                            <label class="fw-bold  ">{{ $booking->col_type == 4 ? 'Received Amount' : 'Booking
                                 Amount' }}</label>
-                            <input type="text" class="form-control form-control-sm text-end"
+                            <input type="text" class="form-control  "
                                 value="₹ {{ number_format($booking->booking_amount ?? 0) }}" readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold small">{{ $booking->col_type == 4 ? 'Voucher No.' : 'Receipt No.'
+                            <label class="fw-bold  ">{{ $booking->col_type == 4 ? 'Voucher No.' : 'Receipt No.'
                                 }}</label>
-                            <input type="text" class="form-control form-control-sm"
-                                value="{{ $booking->receipt_no ?? 'N/A' }}" readonly>
+                            <input type="text" class="form-control" value="{{ $booking->receipt_no ?? 'N/A' }}"
+                                readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold small">{{ $booking->col_type == 4 ? 'Voucher Date' : 'Receipt Date'
+                            <label class="fw-bold  ">{{ $booking->col_type == 4 ? 'Voucher Date' : 'Receipt Date'
                                 }}</label>
-                            <input type="text" class="form-control form-control-sm"
+                            <input type="text" class="form-control"
                                 value="{{ $booking->receipt_date ? \Carbon\Carbon::parse($booking->receipt_date)->format('d-M-Y') : 'N/A' }}"
                                 readonly>
                         </div>
@@ -90,21 +88,20 @@
 
             <!-- 2. Customer Details -->
             <div class="card shadow-sm mb-4">
-                <div class="card-header bg-black text-red position-relative">
-                    <h5 class="mb-0">Customer Details</h5>
+                <div class="card-header bg-blue text-white position-relative">
+                    <h4 class="mb-0">Customer Details</h4>
                     <span class="toggle" onclick="toggleCard(this)">−</span>
                 </div>
                 <div class="card-body">
                     <div class="row g-3">
                         <div class="col-md-4">
-                            <label class="fw-bold small">{{ $booking->b_cat != 'Firm' ? 'Customer Name' : 'Firm Name'
+                            <label class="fw-bold  ">{{ $booking->b_cat != 'Firm' ? 'Customer Name' : 'Firm Name'
                                 }}</label>
-                            <input type="text" class="form-control form-control-sm"
-                                value="{{ $booking->name ?? 'N/A' }}" readonly>
+                            <input type="text" class="form-control" value="{{ $booking->name ?? 'N/A' }}" readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold small">Care Of</label>
-                            <input type="text" class="form-control form-control-sm" value="{{ match((int)($booking->care_of_type ?? 0)) {
+                            <label class="fw-bold  ">Care Of</label>
+                            <input type="text" class="form-control" value="{{ match((int)($booking->care_of_type ?? 0)) {
                                        1 => 'Son of',
                                        2 => 'Daughter of',
                                        3 => 'Married',
@@ -114,46 +111,40 @@
                                    } }} : {{ $booking->care_of ?? '' }}" readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold small">Mobile</label>
-                            <input type="text" class="form-control form-control-sm"
+                            <label class="fw-bold  ">Mobile</label>
+                            <input type="text" class="form-control"
                                 value="{{ (auth()->id() == $booking->created_by || auth()->user()?->hasRole('Super Admin')) ? $booking->mobile : '*********' }}"
                                 readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold small">Alternate Mobile</label>
-                            <input type="text" class="form-control form-control-sm"
+                            <label class="fw-bold  ">Alternate Mobile</label>
+                            <input type="text" class="form-control"
                                 value="{{ (auth()->id() == $booking->created_by || auth()->user()?->hasRole('Super Admin')) ? ($booking->alt_mobile ?? 'N/A') : '*********' }}"
                                 readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold small">Gender</label>
-                            <input type="text" class="form-control form-control-sm"
-                                value="{{ $booking->gender ?? 'N/A' }}" readonly>
+                            <label class="fw-bold  ">Gender</label>
+                            <input type="text" class="form-control" value="{{ $booking->gender ?? 'N/A' }}" readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold small">Occupation</label>
-                            <input type="text" class="form-control form-control-sm" value="{{ $booking->occ ?? 'N/A' }}"
-                                readonly>
+                            <label class="fw-bold  ">Occupation</label>
+                            <input type="text" class="form-control" value="{{ $booking->occ ?? 'N/A' }}" readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold small">PAN No</label>
-                            <input type="text" class="form-control form-control-sm"
-                                value="{{ $booking->pan_no ?? 'N/A' }}" readonly>
+                            <label class="fw-bold  ">PAN No</label>
+                            <input type="text" class="form-control" value="{{ $booking->pan_no ?? 'N/A' }}" readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold small">Aadhaar No</label>
-                            <input type="text" class="form-control form-control-sm"
-                                value="{{ $booking->adhar_no ?? 'N/A' }}" readonly>
+                            <label class="fw-bold  ">Aadhaar No</label>
+                            <input type="text" class="form-control" value="{{ $booking->adhar_no ?? 'N/A' }}" readonly>
                         </div>
                         <div class="col-md-6">
-                            <label class="fw-bold small">Branch</label>
-                            <input type="text" class="form-control form-control-sm"
-                                value="{{ $data['branch'] ?? 'N/A' }}" readonly>
+                            <label class="fw-bold  ">Branch</label>
+                            <input type="text" class="form-control" value="{{ $data['branch'] ?? 'N/A' }}" readonly>
                         </div>
                         <div class="col-md-6">
-                            <label class="fw-bold small">Location</label>
-                            <input type="text" class="form-control form-control-sm"
-                                value="{{ $data['location'] ?? 'N/A' }}" readonly>
+                            <label class="fw-bold  ">Location</label>
+                            <input type="text" class="form-control" value="{{ $data['location'] ?? 'N/A' }}" readonly>
                         </div>
                     </div>
 
@@ -161,29 +152,24 @@
                     <h6 class="mt-4 mb-3">Referred By Details</h6>
                     <div class="row g-3">
                         <div class="col-md-4">
-                            <label class="small">Referred By (Customer Name)</label>
-                            <input type="text" class="form-control form-control-sm"
-                                value="{{ $booking->r_name ?? 'N/A' }}" readonly>
+                            <label class=" ">Referred By (Customer Name)</label>
+                            <input type="text" class="form-control" value="{{ $booking->r_name ?? 'N/A' }}" readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="small">Mobile No.</label>
-                            <input type="text" class="form-control form-control-sm"
-                                value="{{ $booking->r_mobile ?? 'N/A' }}" readonly>
+                            <label class=" ">Mobile No.</label>
+                            <input type="text" class="form-control" value="{{ $booking->r_mobile ?? 'N/A' }}" readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="small">Existing Model</label>
-                            <input type="text" class="form-control form-control-sm"
-                                value="{{ $booking->r_model ?? 'N/A' }}" readonly>
+                            <label class=" ">Existing Model</label>
+                            <input type="text" class="form-control" value="{{ $booking->r_model ?? 'N/A' }}" readonly>
                         </div>
                         <div class="col-md-2">
-                            <label class="small">Variant</label>
-                            <input type="text" class="form-control form-control-sm"
-                                value="{{ $booking->r_variant ?? 'N/A' }}" readonly>
+                            <label class=" ">Variant</label>
+                            <input type="text" class="form-control" value="{{ $booking->r_variant ?? 'N/A' }}" readonly>
                         </div>
                         <div class="col-md-2">
-                            <label class="small">Chassis / Regn. No.</label>
-                            <input type="text" class="form-control form-control-sm"
-                                value="{{ $booking->r_chassis ?? 'N/A' }}" readonly>
+                            <label class=" ">Chassis / Regn. No.</label>
+                            <input type="text" class="form-control" value="{{ $booking->r_chassis ?? 'N/A' }}" readonly>
                         </div>
                     </div>
                 </div>
@@ -191,70 +177,67 @@
 
             <!-- 3. Purchase Type Details -->
             <div class="card shadow-sm mb-4">
-                <div class="card-header bg-red text-black position-relative">
-                    <h5 class="mb-0">Purchase Type Details</h5>
+                <div class="card-header bg-blue text-white position-relative">
+                    <h4 class="mb-0">Purchase Type Details</h4>
                     <span class="toggle" onclick="toggleCard(this)">−</span>
                 </div>
                 <div class="card-body">
                     <div class="row g-3">
                         <div class="col-md-3">
-                            <label class="fw-bold small">Purchase Type</label>
-                            <input type="text" class="form-control form-control-sm"
-                                value="{{ $booking->buyer_type ?? 'N/A' }}" readonly>
+                            <label class="fw-bold  ">Purchase Type</label>
+                            <input type="text" class="form-control" value="{{ $booking->buyer_type ?? 'N/A' }}"
+                                readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold small">Brand (Make 1)</label>
-                            <input type="text" class="form-control form-control-sm"
-                                value="{{ $data['make1'] ?? 'N/A' }}" readonly>
+                            <label class="fw-bold  ">Brand (Make 1)</label>
+                            <input type="text" class="form-control" value="{{ $data['make1'] ?? 'N/A' }}" readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold small">Model & Variant 1</label>
-                            <input type="text" class="form-control form-control-sm"
-                                value="{{ $booking->vh1_detail ?? 'N/A' }}" readonly>
+                            <label class="fw-bold  ">Model & Variant 1</label>
+                            <input type="text" class="form-control" value="{{ $booking->vh1_detail ?? 'N/A' }}"
+                                readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold small">Brand (Make 2)</label>
-                            <input type="text" class="form-control form-control-sm"
-                                value="{{ $data['make2'] ?? 'N/A' }}" readonly>
+                            <label class="fw-bold  ">Brand (Make 2)</label>
+                            <input type="text" class="form-control" value="{{ $data['make2'] ?? 'N/A' }}" readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold small">Model & Variant 2</label>
-                            <input type="text" class="form-control form-control-sm"
-                                value="{{ $booking->vh2_detail ?? 'N/A' }}" readonly>
+                            <label class="fw-bold  ">Model & Variant 2</label>
+                            <input type="text" class="form-control" value="{{ $booking->vh2_detail ?? 'N/A' }}"
+                                readonly>
                         </div>
                         <div class="col-md-4">
-                            <label class="fw-bold small">Vehicle Registration No.</label>
-                            <input type="text" class="form-control form-control-sm"
-                                value="{{ $booking->registration_no ?? 'N/A' }}" readonly>
+                            <label class="fw-bold  ">Vehicle Registration No.</label>
+                            <input type="text" class="form-control" value="{{ $booking->registration_no ?? 'N/A' }}"
+                                readonly>
                         </div>
                         <div class="col-md-4">
-                            <label class="fw-bold small">Manufacturing Year</label>
-                            <input type="text" class="form-control form-control-sm"
-                                value="{{ $booking->make_year ?? 'N/A' }}" readonly>
+                            <label class="fw-bold  ">Manufacturing Year</label>
+                            <input type="text" class="form-control" value="{{ $booking->make_year ?? 'N/A' }}" readonly>
                         </div>
                         <div class="col-md-4">
-                            <label class="fw-bold small">Odometer Reading</label>
-                            <input type="text" class="form-control form-control-sm"
-                                value="{{ $booking->odo_reading ?? 'N/A' }}" readonly>
+                            <label class="fw-bold  ">Odometer Reading</label>
+                            <input type="text" class="form-control" value="{{ $booking->odo_reading ?? 'N/A' }}"
+                                readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold small">Used Vehicle Expected Price</label>
-                            <input type="text" class="form-control form-control-sm text-end"
+                            <label class="fw-bold  ">Used Vehicle Expected Price</label>
+                            <input type="text" class="form-control  "
                                 value="₹ {{ number_format($booking->expected_price ?? 0) }}" readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold small">Used Vehicle Offered Price</label>
-                            <input type="text" class="form-control form-control-sm text-end"
+                            <label class="fw-bold  ">Used Vehicle Offered Price</label>
+                            <input type="text" class="form-control  "
                                 value="₹ {{ number_format($booking->offered_price ?? 0) }}" readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold small">New Vehicle Exchange Bonus</label>
-                            <input type="text" class="form-control form-control-sm text-end"
+                            <label class="fw-bold  ">New Vehicle Exchange Bonus</label>
+                            <input type="text" class="form-control  "
                                 value="₹ {{ number_format($booking->exchange_bonus ?? 0) }}" readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold small">Price Gap</label>
-                            <input type="text" class="form-control form-control-sm text-end"
+                            <label class="fw-bold  ">Price Gap</label>
+                            <input type="text" class="form-control  "
                                 value="₹ {{ number_format(($booking->expected_price ?? 0) - (($booking->offered_price ?? 0) + ($booking->exchange_bonus ?? 0))) }}"
                                 readonly>
                         </div>
@@ -264,51 +247,46 @@
 
             <!-- 4. Vehicle Details -->
             <div class="card shadow-sm mb-4">
-                <div class="card-header bg-black text-red position-relative">
-                    <h5 class="mb-0">Vehicle Details</h5>
+                <div class="card-header bg-blue text-white position-relative">
+                    <h4 class="mb-0">Vehicle Details</h4>
                     <span class="toggle" onclick="toggleCard(this)">−</span>
                 </div>
                 <div class="card-body">
                     <div class="row g-3">
                         <div class="col-md-3">
-                            <label class="fw-bold small">Segment</label>
-                            <input type="text" class="form-control form-control-sm"
+                            <label class="fw-bold  ">Segment</label>
+                            <input type="text" class="form-control"
                                 value="{{ $data['segments'][$booking->segment_id]['name'] ?? 'N/A' }}" readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold small">Model</label>
-                            <input type="text" class="form-control form-control-sm"
-                                value="{{ $booking->model ?? 'N/A' }}" readonly>
+                            <label class="fw-bold  ">Model</label>
+                            <input type="text" class="form-control" value="{{ $booking->model ?? 'N/A' }}" readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold small">Variant</label>
-                            <input type="text" class="form-control form-control-sm"
-                                value="{{ $booking->variant ?? 'N/A' }}" readonly>
+                            <label class="fw-bold  ">Variant</label>
+                            <input type="text" class="form-control" value="{{ $booking->variant ?? 'N/A' }}" readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold small">Color</label>
-                            <input type="text" class="form-control form-control-sm"
-                                value="{{ $booking->color ?? 'N/A' }}" readonly>
+                            <label class="fw-bold  ">Color</label>
+                            <input type="text" class="form-control" value="{{ $booking->color ?? 'N/A' }}" readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold small">Seating</label>
-                            <input type="text" class="form-control form-control-sm"
-                                value="{{ $booking->seating ?? 'N/A' }}" readonly>
+                            <label class="fw-bold  ">Seating</label>
+                            <input type="text" class="form-control" value="{{ $booking->seating ?? 'N/A' }}" readonly>
                         </div>
                         <div class="col-md-6">
-                            <label class="fw-bold small">Accessories</label>
-                            <textarea class="form-control form-control-sm" rows="2"
+                            <label class="fw-bold  ">Accessories</label>
+                            <textarea class="form-control" rows="2"
                                 readonly>{{ $data['accessories'] ?? 'N/A' }}</textarea>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold small">Accessories Pack Amount</label>
-                            <input type="text" class="form-control form-control-sm text-end"
+                            <label class="fw-bold  ">Accessories Pack Amount</label>
+                            <input type="text" class="form-control  "
                                 value="₹ {{ number_format($booking->apack_amount ?? 0) }}" readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold small">Allotted Chassis Number</label>
-                            <input type="text" class="form-control form-control-sm"
-                                value="{{ $data['bchasis'] ?? 'N/A' }}" readonly>
+                            <label class="fw-bold  ">Allotted Chassis Number</label>
+                            <input type="text" class="form-control" value="{{ $data['bchasis'] ?? 'N/A' }}" readonly>
                         </div>
                     </div>
                 </div>
@@ -316,68 +294,61 @@
 
             <!-- 5. Booking Type & Source -->
             <div class="card shadow-sm mb-4">
-                <div class="card-header bg-red text-black position-relative">
-                    <h5 class="mb-0">Booking Type & Source</h5>
+                <div class="card-header bg-blue text-white position-relative">
+                    <h4 class="mb-0">Booking Type & Source</h4>
                     <span class="toggle" onclick="toggleCard(this)">−</span>
                 </div>
                 <div class="card-body">
                     <div class="row g-3">
                         <div class="col-md-3">
-                            <label class="fw-bold small">Booking Mode</label>
-                            <input type="text" class="form-control form-control-sm"
-                                value="{{ $booking->b_mode ?? 'N/A' }}" readonly>
+                            <label class="fw-bold  ">Booking Mode</label>
+                            <input type="text" class="form-control" value="{{ $booking->b_mode ?? 'N/A' }}" readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold small">Online Book Ref No.</label>
-                            <input type="text" class="form-control form-control-sm"
-                                value="{{ $booking->online_bk_ref_no ?? 'N/A' }}" readonly>
+                            <label class="fw-bold  ">Online Book Ref No.</label>
+                            <input type="text" class="form-control" value="{{ $booking->online_bk_ref_no ?? 'N/A' }}"
+                                readonly>
                         </div>
                         <div class="col-md-4">
-                            <label class="fw-bold small">Sales Consultant</label>
-                            <input type="text" class="form-control form-control-sm"
+                            <label class="fw-bold  ">Sales Consultant</label>
+                            <input type="text" class="form-control"
                                 value="{{ collect($data['saleconsultants'] ?? [])->firstWhere('id', $booking->consultant)['name'] ?? 'N/A' }}"
                                 readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold small">Booking Source</label>
-                            <input type="text" class="form-control form-control-sm"
-                                value="{{ $booking->b_source ?? 'N/A' }}" readonly>
+                            <label class="fw-bold  ">Booking Source</label>
+                            <input type="text" class="form-control" value="{{ $booking->b_source ?? 'N/A' }}" readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold small">Selected DSA</label>
-                            <input type="text" class="form-control form-control-sm" value="{{ $dsaname ?? 'N/A' }}"
-                                readonly>
+                            <label class="fw-bold  ">Selected DSA</label>
+                            <input type="text" class="form-control" value="{{ $dsaname ?? 'N/A' }}" readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold small">Delivery Date Type</label>
-                            <input type="text" class="form-control form-control-sm"
-                                value="{{ $booking->del_type ?? 'N/A' }}" readonly>
+                            <label class="fw-bold  ">Delivery Date Type</label>
+                            <input type="text" class="form-control" value="{{ $booking->del_type ?? 'N/A' }}" readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold small">Expected Delivery Date</label>
-                            <input type="text" class="form-control form-control-sm"
+                            <label class="fw-bold  ">Expected Delivery Date</label>
+                            <input type="text" class="form-control"
                                 value="{{ $booking->del_date ? \Carbon\Carbon::parse($booking->del_date)->format('d-M-Y') : 'N/A' }}"
                                 readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold small">CPD Date</label>
-                            <input type="text" class="form-control form-control-sm" value="{{ $booking->cpd ?? 'N/A' }}"
+                            <label class="fw-bold  ">CPD Date</label>
+                            <input type="text" class="form-control" value="{{ $booking->cpd ?? 'N/A' }}" readonly>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="fw-bold  ">Finance Mode</label>
+                            <input type="text" class="form-control" value="{{ $booking->fin_mode ?? 'N/A' }}" readonly>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="fw-bold  ">Financier</label>
+                            <input type="text" class="form-control" value="{{ $booking->financier ?? 'N/A' }}" readonly>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="fw-bold  ">Loan File Status</label>
+                            <input type="text" class="form-control" value="{{ $booking->loan_status ?? 'N/A' }}"
                                 readonly>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="fw-bold small">Finance Mode</label>
-                            <input type="text" class="form-control form-control-sm"
-                                value="{{ $booking->fin_mode ?? 'N/A' }}" readonly>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="fw-bold small">Financier</label>
-                            <input type="text" class="form-control form-control-sm"
-                                value="{{ $booking->financier ?? 'N/A' }}" readonly>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="fw-bold small">Loan File Status</label>
-                            <input type="text" class="form-control form-control-sm"
-                                value="{{ $booking->loan_status ?? 'N/A' }}" readonly>
                         </div>
                     </div>
                 </div>
@@ -385,59 +356,54 @@
 
             <!-- 6. OEM Booking & Invoice Info -->
             <div class="card shadow-sm mb-4">
-                <div class="card-header bg-black text-red position-relative">
-                    <h5 class="mb-0">OEM Booking & Invoice Info</h5>
+                <div class="card-header bg-blue text-white position-relative">
+                    <h4 class="mb-0">OEM Booking & Invoice Info</h4>
                     <span class="toggle" onclick="toggleCard(this)">−</span>
                 </div>
                 <div class="card-body">
                     <div class="row g-3">
                         <div class="col-md-3">
-                            <label class="fw-bold small">OEM Invoice Number</label>
-                            <input type="text" class="form-control form-control-sm"
-                                value="{{ $booking->inv_no ?? 'N/A' }}" readonly>
+                            <label class="fw-bold  ">OEM Invoice Number</label>
+                            <input type="text" class="form-control" value="{{ $booking->inv_no ?? 'N/A' }}" readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold small">OEM Invoice Date</label>
-                            <input type="text" class="form-control form-control-sm"
+                            <label class="fw-bold  ">OEM Invoice Date</label>
+                            <input type="text" class="form-control"
                                 value="{{ $booking->inv_date ? \Carbon\Carbon::parse($booking->inv_date)->format('d-M-Y') : 'N/A' }}"
                                 readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold small">Dealer Invoice Number</label>
-                            <input type="text" class="form-control form-control-sm"
-                                value="{{ $booking->dealer_inv_no ?? 'N/A' }}" readonly>
+                            <label class="fw-bold  ">Dealer Invoice Number</label>
+                            <input type="text" class="form-control" value="{{ $booking->dealer_inv_no ?? 'N/A' }}"
+                                readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold small">Dealer Invoice Date</label>
-                            <input type="text" class="form-control form-control-sm"
+                            <label class="fw-bold  ">Dealer Invoice Date</label>
+                            <input type="text" class="form-control"
                                 value="{{ $booking->dealer_inv_date ? \Carbon\Carbon::parse($booking->dealer_inv_date)->format('d-M-Y') : 'N/A' }}"
                                 readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold small">SAP Booking No.</label>
-                            <input type="text" class="form-control form-control-sm"
-                                value="{{ $booking->sap_no ?? 'N/A' }}" readonly>
+                            <label class="fw-bold  ">SAP Booking No.</label>
+                            <input type="text" class="form-control" value="{{ $booking->sap_no ?? 'N/A' }}" readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold small">Sales Force Booking Number (DMS No)</label>
-                            <input type="text" class="form-control form-control-sm"
-                                value="{{ $booking->dms_no ?? 'N/A' }}" readonly>
+                            <label class="fw-bold  ">Sales Force Booking Number (DMS No)</label>
+                            <input type="text" class="form-control" value="{{ $booking->dms_no ?? 'N/A' }}" readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold small">DMS OTF No.</label>
-                            <input type="text" class="form-control form-control-sm"
-                                value="{{ $booking->dms_otf ?? 'N/A' }}" readonly>
+                            <label class="fw-bold  ">DMS OTF No.</label>
+                            <input type="text" class="form-control" value="{{ $booking->dms_otf ?? 'N/A' }}" readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold small">DMS OTF Date</label>
-                            <input type="text" class="form-control form-control-sm"
+                            <label class="fw-bold  ">DMS OTF Date</label>
+                            <input type="text" class="form-control"
                                 value="{{ $booking->otf_date ? \Carbon\Carbon::parse($booking->otf_date)->format('d-M-Y') : 'N/A' }}"
                                 readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold small">DMS SO No.</label>
-                            <input type="text" class="form-control form-control-sm"
-                                value="{{ $booking->dms_so ?? 'N/A' }}" readonly>
+                            <label class="fw-bold  ">DMS SO No.</label>
+                            <input type="text" class="form-control" value="{{ $booking->dms_so ?? 'N/A' }}" readonly>
                         </div>
                     </div>
                 </div>
@@ -445,44 +411,43 @@
 
             <!-- 7. Insurance Data -->
             <div class="card shadow-sm mb-4">
-                <div class="card-header bg-red text-black position-relative">
-                    <h5 class="mb-0">Insurance Data</h5>
+                <div class="card-header bg-blue text-white position-relative">
+                    <h4 class="mb-0">Insurance Data</h4>
                     <span class="toggle" onclick="toggleCard(this)">−</span>
                 </div>
                 <div class="card-body">
                     <div class="row g-3">
                         <div class="col-md-3">
-                            <label class="fw-bold small">Insurance Source</label>
-                            <input type="text" class="form-control form-control-sm"
+                            <label class="fw-bold  ">Insurance Source</label>
+                            <input type="text" class="form-control"
                                 value="{{ $insurance && $insurance->source ? collect(['1' => 'By Dealer (OEM Portal)', '2' => 'By Dealer (Agency)', '3' => 'By Owner (Self)'])->get($insurance->source, 'N/A') : 'N/A' }}"
                                 readonly>
                         </div>
                         <div class="col-md-4">
-                            <label class="fw-bold small">Insurance Company</label>
-                            <input type="text" class="form-control form-control-sm"
+                            <label class="fw-bold  ">Insurance Company</label>
+                            <input type="text" class="form-control"
                                 value="{{ $insurance && $insurance->insurer ? collect($data['insurances'] ?? [])->firstWhere('id', $insurance->insurer)['name'] ?? 'N/A' : 'N/A' }}"
                                 readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold small">Insurance Short Name</label>
-                            <input type="text" class="form-control form-control-sm"
+                            <label class="fw-bold  ">Insurance Short Name</label>
+                            <input type="text" class="form-control"
                                 value="{{ $insurance && $insurance->insurer ? collect($data['insurances'] ?? [])->firstWhere('id', $insurance->insurer)['short_name'] ?? 'N/A' : 'N/A' }}"
                                 readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold small">Policy No.</label>
-                            <input type="text" class="form-control form-control-sm"
-                                value="{{ $insurance?->pol_no ?? 'N/A' }}" readonly>
+                            <label class="fw-bold  ">Policy No.</label>
+                            <input type="text" class="form-control" value="{{ $insurance?->pol_no ?? 'N/A' }}" readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold small">Policy Date</label>
-                            <input type="text" class="form-control form-control-sm"
+                            <label class="fw-bold  ">Policy Date</label>
+                            <input type="text" class="form-control"
                                 value="{{ $insurance?->pol_date ? \Carbon\Carbon::parse($insurance->pol_date)->format('d-M-Y') : 'N/A' }}"
                                 readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold small">Policy Type</label>
-                            <input type="text" class="form-control form-control-sm" value="{{ match((int)($insurance?->pol_type ?? 0)) {
+                            <label class="fw-bold  ">Policy Type</label>
+                            <input type="text" class="form-control" value="{{ match((int)($insurance?->pol_type ?? 0)) {
                                        1 => 'Normal',
                                        2 => 'Nil Dep',
                                        3 => 'Nil Dep + Cons.',
@@ -496,72 +461,69 @@
 
             <!-- 8. RTO Data -->
             <div class="card shadow-sm mb-4">
-                <div class="card-header bg-black text-red position-relative">
-                    <h5 class="mb-0">RTO Data</h5>
+                <div class="card-header bg-blue text-white position-relative">
+                    <h4 class="mb-0">RTO Data</h4>
                     <span class="toggle" onclick="toggleCard(this)">−</span>
                 </div>
                 <div class="card-body">
                     <div class="row g-3">
                         <div class="col-md-3">
-                            <label class="fw-bold small">Trade Used</label>
-                            <input type="text" class="form-control form-control-sm"
+                            <label class="fw-bold  ">Trade Used</label>
+                            <input type="text" class="form-control"
                                 value="{{ $rto ? ($data['trade_used_map'][$rto->trade_used ?? ''] ?? 'N/A') : 'N/A' }}"
                                 readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold small">Sale Type</label>
-                            <input type="text" class="form-control form-control-sm"
+                            <label class="fw-bold  ">Sale Type</label>
+                            <input type="text" class="form-control"
                                 value="{{ $rto ? ($data['sale_type_map'][$rto->sale_type ?? ''] ?? 'N/A') : 'N/A' }}"
                                 readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold small">Permit</label>
-                            <input type="text" class="form-control form-control-sm"
+                            <label class="fw-bold  ">Permit</label>
+                            <input type="text" class="form-control"
                                 value="{{ $rto ? ($data['permit_map'][$rto->permit ?? ''] ?? 'N/A') : 'N/A' }}"
                                 readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold small">Body Type</label>
-                            <input type="text" class="form-control form-control-sm"
+                            <label class="fw-bold  ">Body Type</label>
+                            <input type="text" class="form-control"
                                 value="{{ $rto ? ($data['body_type_map'][$rto->body_type ?? ''] ?? 'N/A') : 'N/A' }}"
                                 readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold small">Registration Type</label>
-                            <input type="text" class="form-control form-control-sm"
+                            <label class="fw-bold  ">Registration Type</label>
+                            <input type="text" class="form-control"
                                 value="{{ $rto ? ($data['registration_type_map'][$rto->rgn_type ?? ''] ?? 'N/A') : 'N/A' }}"
                                 readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold small">Registration No. Type</label>
-                            <input type="text" class="form-control form-control-sm"
+                            <label class="fw-bold  ">Registration No. Type</label>
+                            <input type="text" class="form-control"
                                 value="{{ $rto ? ($data['reg_no_type_map'][$rto->rgn_no_type ?? ''] ?? 'N/A') : 'N/A' }}"
                                 readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold small">TRC Number</label>
-                            <input type="text" class="form-control form-control-sm" value="{{ $rto?->trc_no ?? 'N/A' }}"
+                            <label class="fw-bold  ">TRC Number</label>
+                            <input type="text" class="form-control" value="{{ $rto?->trc_no ?? 'N/A' }}" readonly>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="fw-bold  ">TRC Payment Bank Ref No.</label>
+                            <input type="text" class="form-control" value="{{ $rto?->trc_payment_no ?? 'N/A' }}"
                                 readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold small">TRC Payment Bank Ref No.</label>
-                            <input type="text" class="form-control form-control-sm"
-                                value="{{ $rto?->trc_payment_no ?? 'N/A' }}" readonly>
+                            <label class="fw-bold  ">Application No.</label>
+                            <input type="text" class="form-control" value="{{ $rto?->app_no ?? 'N/A' }}" readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold small">Application No.</label>
-                            <input type="text" class="form-control form-control-sm" value="{{ $rto?->app_no ?? 'N/A' }}"
-                                readonly>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="fw-bold small">Tax Payment Bank Ref No.</label>
-                            <input type="text" class="form-control form-control-sm"
+                            <label class="fw-bold  ">Tax Payment Bank Ref No.</label>
+                            <input type="text" class="form-control"
                                 value="{{ $rto?->tax_payment_bank_ref_no ?? 'N/A' }}" readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold small">Vehicle Registration No.</label>
-                            <input type="text" class="form-control form-control-sm"
-                                value="{{ $rto?->vh_rgn_no ?? 'N/A' }}" readonly>
+                            <label class="fw-bold  ">Vehicle Registration No.</label>
+                            <input type="text" class="form-control" value="{{ $rto?->vh_rgn_no ?? 'N/A' }}" readonly>
                         </div>
                     </div>
                 </div>
@@ -569,25 +531,23 @@
 
             <!-- 9. Financier Payment / Delivery Order Details -->
             <div class="card shadow-sm mb-4">
-                <div class="card-header bg-red text-black position-relative">
-                    <h5 class="mb-0">Financier Payment / Delivery Order Details</h5>
+                <div class="card-header bg-blue text-white position-relative">
+                    <h4 class="mb-0">Financier Payment / Delivery Order Details</h4>
                     <span class="toggle" onclick="toggleCard(this)">−</span>
                 </div>
                 <div class="card-body">
                     <div class="row g-3">
                         <div class="col-md-4">
-                            <label class="fw-bold small">Customer Name</label>
-                            <input type="text" class="form-control form-control-sm"
-                                value="{{ $booking->name ?? 'N/A' }}" readonly>
+                            <label class="fw-bold  ">Customer Name</label>
+                            <input type="text" class="form-control" value="{{ $booking->name ?? 'N/A' }}" readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold small">Fin Mode (Original)</label>
-                            <input type="text" class="form-control form-control-sm"
-                                value="{{ $booking->fin_mode ?? 'N/A' }}" readonly>
+                            <label class="fw-bold  ">Fin Mode (Primary)</label>
+                            <input type="text" class="form-control" value="{{ $booking->fin_mode ?? 'N/A' }}" readonly>
                         </div>
                         <div class="col-md-4">
-                            <label class="fw-bold small">Financier</label>
-                            <input type="text" class="form-control form-control-sm"
+                            <label class="fw-bold  ">Financier</label>
+                            <input type="text" class="form-control"
                                 value="{{ collect($data['financiers'] ?? [])->firstWhere('id', $booking->financier)['name'] ?? 'N/A' }}"
                                 readonly>
                         </div>
@@ -597,52 +557,50 @@
                     <h6 class="mt-4 mb-3">Processed Finance Details</h6>
                     <div class="row g-3">
                         <div class="col-md-3">
-                            <label class="small">Finance Mode</label>
-                            <input type="text" class="form-control form-control-sm"
-                                value="{{ $finance->fin_mode ?? 'N/A' }}" readonly>
+                            <label class=" ">Finance Mode</label>
+                            <input type="text" class="form-control" value="{{ $finance->fin_mode ?? 'N/A' }}" readonly>
                         </div>
                         <div class="col-md-4">
-                            <label class="small">Financier</label>
-                            <input type="text" class="form-control form-control-sm"
+                            <label class=" ">Financier</label>
+                            <input type="text" class="form-control"
                                 value="{{ $finance->financier ? collect($data['financiers'] ?? [])->firstWhere('id', $finance->financier)['name'] ?? 'N/A' : 'N/A' }}"
                                 readonly>
                         </div>
                         <div class="col-md-2">
-                            <label class="small">Short Name</label>
-                            <input type="text" class="form-control form-control-sm"
+                            <label class=" ">Short Name</label>
+                            <input type="text" class="form-control"
                                 value="{{ $finance->financier ? collect($data['financiers'] ?? [])->firstWhere('id', $finance->financier)['short_name'] ?? 'N/A' : 'N/A' }}"
                                 readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="small">Loan Status</label>
-                            <input type="text" class="form-control form-control-sm"
-                                value="{{ $finance->loan_status ?? 'N/A' }}" readonly>
+                            <label class=" ">Loan Status</label>
+                            <input type="text" class="form-control" value="{{ $finance->loan_status ?? 'N/A' }}"
+                                readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="small">Loan Amount</label>
-                            <input type="text" class="form-control form-control-sm text-end"
+                            <label class=" ">Loan Amount</label>
+                            <input type="text" class="form-control  "
                                 value="₹ {{ number_format($finance->loan_amount ?? 0) }}" readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="small">Margin Money</label>
-                            <input type="text" class="form-control form-control-sm text-end"
+                            <label class=" ">Margin Money</label>
+                            <input type="text" class="form-control  "
                                 value="₹ {{ number_format($finance->margin ?? 0) }}" readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="small">File Charge</label>
-                            <input type="text" class="form-control form-control-sm text-end"
+                            <label class=" ">File Charge</label>
+                            <input type="text" class="form-control  "
                                 value="₹ {{ number_format($finance->file_charge ?? 0) }}" readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="small">Net Payment Amount</label>
-                            <input type="text" class="form-control form-control-sm text-end fw-bold"
+                            <label class=" ">Net Payment Amount</label>
+                            <input type="text" class="form-control   fw-bold"
                                 value="₹ {{ number_format(($finance->loan_amount ?? 0) + ($finance->margin ?? 0) - ($finance->file_charge ?? 0)) }}"
                                 readonly>
                         </div>
-                        <div class="col-md-6">
-                            <label class="small">Remarks</label>
-                            <textarea class="form-control form-control-sm" rows="2"
-                                readonly>{{ $finance->remark ?? 'N/A' }}</textarea>
+                        <div class="col-md-4">
+                            <label class=" ">Remarks</label>
+                            <textarea class="form-control" rows="2" readonly>{{ $finance->remark ?? 'N/A' }}</textarea>
                         </div>
                     </div>
                     @endif
@@ -651,8 +609,8 @@
 
             <!-- 10. Delivery Photographs -->
             <div class="card shadow-sm mb-4">
-                <div class="card-header bg-black text-red position-relative">
-                    <h5 class="mb-0">Delivery Photographs</h5>
+                <div class="card-header bg-blue text-white position-relative">
+                    <h4 class="mb-0">Delivery Photographs</h4>
                     <span class="toggle" onclick="toggleCard(this)">−</span>
                 </div>
                 <div class="card-body">
@@ -682,21 +640,21 @@
 
                         @foreach($photos as $key => $label)
                         <div class="col-md-3 text-center mb-3">
-                            <strong class="d-block mb-1 small">{{ $label }}</strong>
+                            <strong class="d-block mb-1  ">{{ $label }}</strong>
                             @if($media = $delivery->getFirstMedia($key))
                             <a href="{{ $media->getUrl() }}" target="_blank">
                                 <img src="{{ $media->getUrl('thumb') ?? $media->getUrl() }}" alt="{{ $label }}"
                                     style="max-width:160px; max-height:120px; object-fit:cover; border:1px solid #ccc;">
                             </a>
                             @else
-                            <div class="bg-light p-3 border small">No photo</div>
+                            <div class="bg-light p-3 border  ">No photo</div>
                             @endif
                         </div>
                         @endforeach
                     </div>
 
                     <div class="mt-3">
-                        <label class="fw-bold small">Chassis No. Verified</label>
+                        <label class="fw-bold  ">Chassis No. Verified</label>
                         <div>
                             <input type="checkbox" disabled {{ $delivery->verification == 1 ? 'checked' : '' }}>
                             <label>{{ $delivery->verification == 1 ? 'Verified' : 'Not Verified' }}</label>
@@ -704,7 +662,7 @@
                     </div>
 
                     <div class="mt-3">
-                        <label class="fw-bold small">Remarks</label>
+                        <label class="fw-bold  ">Remarks</label>
                         <textarea class="form-control" rows="3" readonly>{{ $delivery->remarks ?? 'N/A' }}</textarea>
                     </div>
                     @else
@@ -715,8 +673,8 @@
 
             <!-- 11. Booking Journey (Remarks) -->
             <div class="card shadow-sm mb-4">
-                <div class="card-header bg-red text-black position-relative">
-                    <h5 class="mb-0">Booking Journey (Remarks)</h5>
+                <div class="card-header bg-blue text-white position-relative">
+                    <h4 class="mb-0">Booking Journey (Remarks)</h4>
                     <span class="toggle" onclick="toggleCard(this)">−</span>
                 </div>
                 <div class="card-body">
@@ -759,8 +717,8 @@
 
             <!-- 12. Add Remarks -->
             <div class="card shadow-sm mb-4">
-                <div class="card-header bg-black text-red position-relative">
-                    <h5 class="mb-0">Add Remarks</h5>
+                <div class="card-header bg-blue text-white position-relative">
+                    <h4 class="mb-0">Add Remarks</h4>
                     <span class="toggle" onclick="toggleCard(this)">−</span>
                 </div>
                 <div class="card-body">
@@ -768,15 +726,25 @@
                         @csrf
                         <input type="hidden" name="id" value="{{ $booking->id }}">
                         <div class="row g-3">
-                            <div class="col-md-10">
-                                <label class="fw-bold small">Remarks <span class="text-danger">*</span></label>
+                            <div class="col-md-9">
+                                <label class="fw-bold  ">Remarks <span class="text-danger">*</span></label>
                                 <input type="text" name="remark" class="form-control" required>
                             </div>
-                            <div class="col-md-2">
-                                <label class="fw-bold small">Attachment</label>
+                            {{-- <div class="col-md-2">
+                                <label class="fw-bold  ">Attachment</label>
                                 <input type="file" name="fdoc" accept="image/*,.pdf" class="form-control">
+                            </div> --}}
+                            <div class="col-md-3">
+                                <label class="fw-bold">Attachment</label>
+
+                                <input type="file" name="fdoc" id="attachmentInput" accept="image/*,.pdf"
+                                    class="form-control" onchange="handleAttachment(this)">
+
+                                <!-- Chip Preview Area -->
+                                <div id="attachmentPreview" class="mt-3"></div>
                             </div>
-                            <div class="col-12 text-end mt-3">
+
+                            <div class="col-12 mt-3">
                                 <button type="submit" class="btn btn-success">Add Remark</button>
                             </div>
                         </div>
@@ -793,9 +761,82 @@
         </div>
     </div>
 </div>
+<div class="modal fade" id="attachmentModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalFileName"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body text-center">
+                <iframe id="modalFilePreview" style="width:100%; height:500px;" frameborder="0">
+                </iframe>
+            </div>
+
+            <div class="modal-footer">
+                <a id="modalDownload" class="btn btn-success" download>
+                    Download
+                </a>
+
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    Close
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
 
 @push('after_scripts')
 <script>
+    function handleAttachment(input) {
+    const previewDiv = document.getElementById('attachmentPreview');
+    previewDiv.innerHTML = '';
+
+    if (input.files && input.files[0]) {
+        const file = input.files[0];
+        const fileURL = URL.createObjectURL(file);
+
+        previewDiv.innerHTML = `
+            <span class="btn btn-primary"
+                  style="cursor:pointer"
+                  onclick="openAttachmentModal('${fileURL}', '${file.name}')">
+                📎 ${file.name}
+            </span>
+        `;
+    }
+}
+
+function openAttachmentModal(url, name) {
+
+    document.getElementById('modalFileName').innerText = name;
+    document.getElementById('modalDownload').href = url;
+
+    const previewFrame = document.getElementById('modalFilePreview');
+
+    if (name.toLowerCase().endsWith('.pdf')) {
+        // Direct PDF preview without PDF.js conflict
+        previewFrame.src = url;
+    } else {
+        // Image preview
+        previewFrame.src = url;
+    }
+
+    $('#attachmentModal').modal({
+        backdrop: false,
+        keyboard: true
+    }).modal('show');
+}
+
+
+
+
+
+
+
     function toggleCard(el) {
     const card = el.closest('.card');
     card.classList.toggle('collapsed');
@@ -830,7 +871,7 @@ document.querySelectorAll('.card:not(:first-child)').forEach(card => card.classL
         color: white;
         border-radius: 50%;
         text-align: center;
-        line-height: 32px;
+        line-height: 28px;
         font-size: 1.4rem;
         cursor: pointer;
     }
@@ -842,6 +883,10 @@ document.querySelectorAll('.card:not(:first-child)').forEach(card => card.classL
     .card-header {
         position: relative;
         padding-right: 60px !important;
+    }
+
+    .modal-backdrop {
+        display: none !important;
     }
 </style>
 @endpush

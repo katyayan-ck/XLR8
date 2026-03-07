@@ -1,13 +1,7 @@
 @extends(backpack_view('blank'))
 
 @section('header')
-<section class="container-fluid">
-    <h2>
-        <i class="la la-truck text-success"></i> Live Order Report
-        <small class="d-none d-md-inline">Vehicle Live Orders</small>
-    </h2>
-</section>
-@endsection
+
 
 @section('content')
 <div class="row">
@@ -15,39 +9,47 @@
         <div class="card">
 
             {{-- HEADER --}}
-            {{-- <div
+            <div
                 class="card-header bg-gradient-success d-flex justify-content-between align-items-center flex-wrap gap-3">
                 <h3 class="card-title mb-0 fw-bold text-black text-nowrap">
                     Live Order Report Dashboard
                 </h3>
-            </div> --}}
+            </div>
 
             {{-- BODY --}}
             <div class="card-body p-0 bg-light">
 
                 {{-- TOOLBAR --}}
-                <div
-                    class="d-flex justify-content-between align-items-center flex-wrap gap-3 p-3 border-bottom bg-white">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 p-3 border-bottom bg-white"
+                    style="border-radius: 15px">
                     <div class="d-flex align-items-center gap-2 flex-wrap">
                         <input type="text" id="quickFilter" class="form-control" style="width: 360px; min-width: 260px;"
-                            placeholder="Quick search in all columns...">
+                            placeholder="Smart Search...">
                         <button id="resetAll" class="btn btn-outline-danger btn-sm">
                             Reset
                         </button>
                     </div>
 
                     <div class="d-flex gap-2 flex-wrap">
-                        <button id="exportCsv" class="btn btn-success btn-sm">
-                            <i class="la la-file-excel-o"></i> Excel
+                        <button id="exportCsv" class="btn btn-sm text-nowrap d-flex align-items-center gap-2">
+
+                            <img src="{{ asset('images/export-excel.png') }}" alt="Excel"
+                                style="height:30px; width:auto;">
+
+                            {{-- <span>Excel</span> --}}
                         </button>
-                        <button id="exportPdf" class="btn btn-danger btn-sm">
-                            <i class="la la-file-pdf-o"></i> PDF
+
+                        <button id="exportPdf" class="btn btn-sm text-nowrap d-flex align-items-center gap-2">
+
+                            <img src="{{ asset('images/export-pdf.png') }}" alt="PDF" style="height:30px; width:auto;">
+
+                            {{-- <span>PDF</span> --}}
                         </button>
                     </div>
                 </div>
 
                 {{-- GRID --}}
-                <div id="myGrid" class="ag-theme-quartz" style="height: calc(100vh - 260px); width: 100%;"></div>
+                <div id="myGrid" class="ag-theme-quartz" style="height: calc(110vh - 260px); width: 100%;"></div>
             </div>
 
             @if(session('info'))
@@ -62,6 +64,24 @@
 
 @push('after_styles')
 <link rel="stylesheet" href="https://unpkg.com/ag-grid-community/styles/ag-theme-quartz.css">
+<style>
+    /* Center header text */
+    .ag-theme-quartz .center-header .ag-header-cell-label {
+        justify-content: center !important;
+    }
+
+    /* Center group headers (future safe) */
+    .ag-theme-quartz .ag-header-group-cell-label {
+        justify-content: center !important;
+    }
+
+    .ag-header-cell-label,
+    .ag-header-group-cell-label {
+        font-weight: 700 !important;
+        justify-content: center !important;
+        text-align: center !important;
+    }
+</style>
 @endpush
 
 @push('after_scripts')
@@ -88,18 +108,35 @@
     }));
 
     const gridOptions = {
-        columnDefs,
-        rowData: gridConfig.data || [],
-        pagination: true,
-        paginationPageSize: 50,
-        paginationPageSizeSelector: [20, 50, 100, 200],
-        animateRows: true,
-        defaultColDef: {
-            sortable: true,
-            filter: true,
-            resizable: true,
-        },
-    };
+    columnDefs,
+    rowData: gridConfig.data || [],
+    pagination: true,
+    paginationPageSize: 50,
+    rowHeight: 30,
+    paginationPageSizeSelector: [20, 50, 100, 200],
+    animateRows: true,
+
+    defaultColDef: {
+        sortable: true,
+        filter: true,
+        resizable: true,
+        headerClass: 'center-header',
+        cellStyle: { textAlign: 'center' }
+    },
+
+    onGridReady: params => {
+        gridApi = params.api;
+
+        // 🔥 Auto resize columns after load
+        setTimeout(() => {
+            const allColumnIds = [];
+            gridApi.getAllDisplayedColumns().forEach(column => {
+                allColumnIds.push(column.getColId());
+            });
+            gridApi.autoSizeColumns(allColumnIds);
+        }, 300);
+    }
+};
 
     document.addEventListener('DOMContentLoaded', () => {
         const gridDiv = document.querySelector('#myGrid');
@@ -119,46 +156,61 @@
 
         // Excel Export
         document.getElementById('exportCsv')?.addEventListener('click', () => {
-            const rows = [];
-            const exportColumns = columnDefs;
 
-            gridApi.forEachNodeAfterFilterAndSort(node => {
-                const row = {};
-                exportColumns.forEach(col => {
-                    row[col.headerName] = node.data[col.field] ?? '';
-                });
-                rows.push(row);
-            });
+    const visibleColumns = gridApi.getAllDisplayedColumns()
+        .map(c => c.getColDef());
 
-            const worksheet = XLSX.utils.json_to_sheet(rows);
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, 'Live Orders');
-            XLSX.writeFile(workbook, 'live-orders-' + new Date().toISOString().slice(0,10) + '.xlsx');
+    const rows = [];
+
+    gridApi.forEachNodeAfterFilterAndSort(node => {
+        const row = {};
+        visibleColumns.forEach(col => {
+            row[col.headerName] = node.data[col.field] ?? '';
         });
+        rows.push(row);
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Live Orders');
+    XLSX.writeFile(workbook, 'live-orders-' + new Date().toISOString().slice(0,10) + '.xlsx');
+});
 
         // PDF Export
         document.getElementById('exportPdf')?.addEventListener('click', () => {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF('l', 'pt', 'a4');
 
-            const exportColumns = columnDefs.map(col => ({ header: col.headerName, dataKey: col.field }));
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('l', 'pt', 'a4');
 
-            const rows = [];
-            gridApi.forEachNodeAfterFilterAndSort(node => {
-                rows.push(node.data);
-            });
+    const visibleColumns = gridApi.getAllDisplayedColumns()
+        .map(c => c.getColDef());
 
-            doc.text('Live Order Report', 40, 30);
-            doc.autoTable({
-                columns: exportColumns,
-                body: rows,
-                startY: 50,
-                styles: { fontSize: 8 },
-                headStyles: { fillColor: [40, 167, 69] },
-            });
+    const cols = visibleColumns.map(col => ({
+        header: col.headerName,
+        dataKey: col.field
+    }));
 
-            doc.save('live-orders.pdf');
+    const rows = [];
+    gridApi.forEachNodeAfterFilterAndSort(node => {
+        const r = {};
+        visibleColumns.forEach(col => {
+            r[col.field] = node.data[col.field] ?? '';
         });
+        rows.push(r);
+    });
+
+    doc.text('Live Order Report', 40, 30);
+
+    doc.autoTable({
+        columns: cols,
+        body: rows,
+        startY: 50,
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [40, 167, 69] }
+    });
+
+    doc.save('live-orders.pdf');
+});
     });
 </script>
 @endpush

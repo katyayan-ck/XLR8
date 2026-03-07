@@ -1,82 +1,188 @@
 @extends(backpack_view('blank'))
 
-@section('title', 'Edit DMS - Booking #' . $booking->id)
+@section('title', 'Delivery Data - Booking #' . $booking->id)
 
 @push('after_styles')
-<link rel="stylesheet" href="{{ asset('plugins/select2/dist/css/select2.min.css') }}">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-
 <style>
     .required-mark {
         color: #dc3545;
         margin-left: 4px;
     }
-    .is-valid {
-        border-color: #28a745 !important;
-        box-shadow: 0 0 4px rgba(40,167,69,.4) !important;
+
+    .form-group.readonly-field {
+        margin-bottom: 1.25rem;
     }
-    .is-invalid {
-        border-color: #dc3545 !important;
-        box-shadow: 0 0 4px rgba(220,53,69,.4) !important;
+
+    .readonly-label {
+        font-weight: 500;
+        color: #495057;
+        margin-bottom: 0.35rem;
+        display: block;
+    }
+
+    .readonly-value {
+        padding: 0.375rem 0.75rem;
+        background-color: #f8f9fa;
+        border: 1px solid #ced4da;
+        border-radius: 0.25rem;
+        min-height: 38px;
+        display: flex;
+        align-items: center;
+    }
+
+    .readonly-value.text-danger {
+        font-weight: 600;
+    }
+
+    .preview-thumb {
+        width: 32px;
+        height: 32px;
+        object-fit: cover;
+        border-radius: 4px;
+        margin-right: 8px;
+    }
+
+    .file-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 12px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        background: #f8f9fa;
+    }
+
+    .icon-btn {
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        font-size: 1rem;
+    }
+
+    .icon-btn.text-danger {
+        color: #dc3545;
     }
 </style>
 @endpush
 
 @section('content')
 
-<form id="dms-form" method="POST" action="{{ route('dms.update', $booking->id) }}">
-    @csrf
-    @method('PUT')
+<!-- Booking Information Card (Same style as DMS Edit) -->
+<div class="card card-body shadow-sm mb-4">
+    <h2 class="mb-3">Booking & Vehicle Information (Read-only)</h2>
 
     <div class="row">
 
-        <div class="col-md-4 form-group">
-            <label>
-                DMS Booking No.
-                <span class="required-mark">*</span>
-            </label>
-            <input type="text" name="dms_no" id="dms_no" class="form-control"
-                   value="{{ old('dms_no', $booking->dms_no) }}" required>
+        <div class="col-md-3 form-group readonly-field">
+            <label class="readonly-label">Booking Date</label>
+            <div class="readonly-value">
+                {{ $booking->booking_date ? \Carbon\Carbon::parse($booking->booking_date)->format('d-m-Y') : '—' }}
+            </div>
         </div>
 
-        <div class="col-md-4 form-group">
-            <label>
-                DMS OTF No.
-                <span class="required-mark">*</span>
-            </label>
-            <input type="text" name="dms_otf" id="dms_otf" class="form-control"
-                   value="{{ old('dms_otf', $booking->dms_otf) }}" required>
+        <div class="col-md-3 form-group readonly-field">
+            <label class="readonly-label">Customer Name</label>
+            <div class="readonly-value">
+                {{ $booking->name ?? '—' }}
+            </div>
         </div>
 
-        <div class="col-md-4 form-group">
-            <label>
-                DMS OTF Date
-                <span class="required-mark">*</span>
-            </label>
-            <input type="text" name="otf_date" id="otf_date" class="form-control flatpickr-date"
-                   value="{{ old('otf_date', $booking->otf_date ? \Carbon\Carbon::parse($booking->otf_date)->format('d-m-Y') : '') }}"
-                   required>
-            <input type="hidden" name="hidden_otf_date" id="hidden_otf_date"
-                   value="{{ old('hidden_otf_date', $booking->otf_date ? $booking->otf_date : '') }}">
+        <div class="col-md-3 form-group readonly-field">
+            <label class="readonly-label">Branch</label>
+            <div class="readonly-value">
+                {{ $data['branch'] ?? '—' }}
+            </div>
         </div>
 
-        @if($booking->order == 2)
-        <div class="col-md-4 form-group">
-            <label>
-                DMS SO No.
-                <span class="required-mark">*</span>
-            </label>
-            <input type="text" name="dms_so" id="dms_so" class="form-control"
-                   value="{{ old('dms_so', $booking->dms_so) }}" required>
-        </div>
-        @endif
-
-        <div class="col-12 mt-4">
-            <button type="submit" class="btn btn-primary btn-lg">
-                <i class="la la-save"></i> Save Order Details
-            </button>
+        <div class="col-md-3 form-group readonly-field">
+            <label class="readonly-label">Location</label>
+            <div class="readonly-value">
+                {{ $data['location'] ?? '—' }}
+            </div>
         </div>
 
+        <div class="col-md-4 form-group readonly-field">
+            <label class="readonly-label">Model</label>
+            <div class="readonly-value">
+                {{ $booking->model ?? '—' }}
+            </div>
+        </div>
+
+        <div class="col-md-4 form-group readonly-field">
+            <label class="readonly-label">Variant</label>
+            <div class="readonly-value">
+                {{ $booking->variant ?? '—' }}
+            </div>
+        </div>
+
+        <div class="col-md-4 form-group readonly-field">
+            <label class="readonly-label">Color</label>
+            <div class="readonly-value">
+                {{ $booking->color ?? '—' }}
+            </div>
+        </div>
+
+    </div>
+</div>
+
+
+<!-- Pending DMS Form Card -->
+<form id="dms-form" method="POST" action="{{ route('dms.update', $booking->id) }}">
+    @csrf
+    @method('PUT')
+    <div class="card card-body shadow-sm">
+        <h2 class="mb-3">Pending DMS</h2>
+        <div class="row">
+
+            <div class="col-md-4 form-group">
+                <label>
+                    DMS Booking No.
+                    <span class="required-mark">*</span>
+                </label>
+                <input type="text" name="dms_no" id="dms_no" class="form-control"
+                    value="{{ old('dms_no', $booking->dms_no) }}" required>
+            </div>
+
+            <div class="col-md-4 form-group">
+                <label>
+                    DMS OTF No.
+                    <span class="required-mark">*</span>
+                </label>
+                <input type="text" name="dms_otf" id="dms_otf" class="form-control"
+                    value="{{ old('dms_otf', $booking->dms_otf) }}" required>
+            </div>
+
+            <div class="col-md-4 form-group">
+                <label>
+                    DMS OTF Date
+                    <span class="required-mark">*</span>
+                </label>
+                <input type="text" name="otf_date" id="otf_date" class="form-control flatpickr-date"
+                    value="{{ old('otf_date', $booking->otf_date ? \Carbon\Carbon::parse($booking->otf_date)->format('d-m-Y') : '') }}"
+                    required>
+                <input type="hidden" name="hidden_otf_date" id="hidden_otf_date"
+                    value="{{ old('hidden_otf_date', $booking->otf_date ? $booking->otf_date : '') }}">
+            </div>
+
+            @if($data['is_bev_or_personal'])
+            <div class="col-md-4 form-group">
+                <label>
+                    DMS SO No.
+                    @if($data['so_required'])<span class="required-mark">*</span>@endif
+                </label>
+                <input type="text" name="dms_so" id="dms_so" class="form-control"
+                    value="{{ old('dms_so', $booking->dms_so) }}" {{ $data['so_required'] ? 'required' : '' }}>
+            </div>
+            @endif
+
+            <div class="col-12 mt-4">
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="la la-save"></i> Save Order Details
+                </button>
+            </div>
+
+        </div>
     </div>
 </form>
 
@@ -88,9 +194,8 @@
 <script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.19.5/dist/jquery.validate.min.js"></script>
 
 <script>
-$(document).ready(function () {
-
-    // ── Date picker ───────────────────────────────────────
+    $(document).ready(function () {
+    // Date picker
     $("#otf_date").flatpickr({
         dateFormat: "d-m-Y",
         maxDate: "today",
@@ -101,20 +206,20 @@ $(document).ready(function () {
         }
     });
 
-    // ── Input masks (same as your previous file) ──────────
+    // Input masks
     $('#dms_no').mask('B-00000000', { placeholder: 'B-12345678' });
     $('#dms_otf').mask('OTF00A000000', { placeholder: 'OTF00A123456' });
 
-    @if($booking->order == 2)
-    $('#dms_so').mask('0000000000', { placeholder: '0111763881' });
+    @if($data['is_bev_or_personal'])
+        $('#dms_so').mask('0000000000', { placeholder: '0111763881' });
     @endif
 
-    // Force uppercase for DMS fields
+    // Force uppercase
     $('#dms_no, #dms_otf').on('input', function() {
         $(this).val($(this).val().toUpperCase());
     });
 
-    // ── jQuery Validation ─────────────────────────────────
+    // Validation rules (same as before)
     $.validator.addMethod("dmsFormat", function(value) {
         return this.optional(this.element) || /^B-\d{8}$/.test(value);
     }, "Format: B- followed by 8 digits");
@@ -131,27 +236,16 @@ $(document).ready(function () {
 
     $('#dms-form').validate({
         rules: {
-            dms_no: {
-                required: true,
-                dmsFormat: true
-            },
-            dms_otf: {
-                required: true,
-                otfFormat: true
-            },
-            otf_date: {
-                required: true
-            },
-            @if($booking->order == 2)
-            dms_so: {
-                required: true,
-                soFormat: true
-            }
+            dms_no: { required: true, dmsFormat: true },
+            dms_otf: { required: true, otfFormat: true },
+            otf_date: { required: true },
+            @if($data['so_required'])
+            dms_so: { required: true, soFormat: true }
             @endif
         },
         messages: {
             dms_no: {
-                required: "DMS No. is required",
+                required: "DMS Booking No. is required",
                 dmsFormat: "Invalid format (B-12345678)"
             },
             dms_otf: {
@@ -159,10 +253,10 @@ $(document).ready(function () {
                 otfFormat: "Invalid format (OTF00A123456)"
             },
             otf_date: "OTF Date is required",
-            @if($booking->order == 2)
+            @if($data['so_required'])
             dms_so: {
-                required: "DMS SO is required",
-                soFormat: "Must be 10 digits"
+                required: "DMS SO Number is mandatory for this booking",
+                soFormat: "Must be exactly 10 digits"
             }
             @endif
         },

@@ -2,12 +2,12 @@
 @extends(backpack_view('blank'))
 
 @section('header')
-    <section class="container-fluid">
-        <h2>
-            <i class="la la-check-circle text-success"></i> Delivered Bookings
-            <small class="d-none d-md-inline">Completed Deliveries</small>
-        </h2>
-    </section>
+<section class="container-fluid">
+    <h2>
+        <i class="la la-check-circle text-success"></i> Delivered Bookings
+        <small class="d-none d-md-inline">Completed Deliveries</small>
+    </h2>
+</section>
 @endsection
 
 @section('content')
@@ -43,7 +43,7 @@
                     {{-- LEFT CONTROLS --}}
                     <div class="d-flex align-items-center gap-2 flex-wrap">
                         <input type="text" id="quickFilter" class="form-control w-100 w-md-auto"
-                            style="width:360px; min-width:260px;" placeholder="Quick search...">
+                            style="width:360px; min-width:260px;" placeholder="Smart Search...">
                         <button id="resetAll" class="btn btn-outline-danger btn-sm text-nowrap">
                             Reset
                         </button>
@@ -60,7 +60,7 @@
                 </div>
 
                 {{-- GRID --}}
-                <div id="myGrid" class="ag-theme-quartz" style="height: calc(100vh - 260px); width:100%;"></div>
+                <div id="myGrid" class="ag-theme-quartz" style="height: calc(110vh - 260px); width:100%;"></div>
             </div>
         </div>
     </div>
@@ -68,12 +68,12 @@
 @endsection
 
 @push('after_scripts')
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/ag-grid/31.0.1/ag-grid-community.min.js"></script>
-    <script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ag-grid/31.0.1/ag-grid-community.min.js"></script>
+<script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
             const columnDefs = [
                 { headerName: '#', field: 'DT_RowIndex', width: 80, pinned: 'left' },
                 { headerName: 'Booking No.', field: 'booking_no', filter: true },
@@ -186,5 +186,5 @@
             // Reload on filter change
             document.getElementById('status_filter')?.addEventListener('change', loadData);
         });
-    </script>
+</script>
 @endpush

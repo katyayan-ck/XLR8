@@ -13,48 +13,23 @@
     }
 
     /* Group Header Colors – exact match from photo */
-    .group-vehicle-info {
-        background-color: #FFCCCB !important;
-    }
 
-    /* pink */
-    .group-booking {
-        background-color: #A6F1A6 !important;
-    }
-
-    /* light green */
-    .group-pending {
-        background-color: #DDA0DD !important;
-    }
-
-    /* lavender/purple */
-
-    .ag-header-cell-label {
-        font-weight: bold !important;
+    .ag-header-cell-label,
+    .ag-header-group-cell-label {
+        font-weight: 700 !important;
         font-size: 13px;
         justify-content: center !important;
+        text-align: center !important;
     }
 
-    .ag-cell {
-        font-size: 13px !important;
-        padding: 6px 8px;
-    }
-
-    .text-right {
-        text-align: right !important;
+    .text-center {
+        text-align: center !important;
     }
 </style>
 @endpush
 
 @section('header')
-<section class="container-fluid">
-    <h2>
-        <i class="la la-exclamation-triangle text-warning"></i>
-        Pending Actions Report
-        <small class="d-none d-md-inline">Bookings Pending Tasks</small>
-    </h2>
-</section>
-@endsection
+
 
 @section('content')
 <div class="row">
@@ -62,28 +37,43 @@
         <div class="card">
 
             {{-- HEADER --}}
+            <div
+                class="card-header bg-gradient-success d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <h3 class="card-title mb-0 fw-bold text-black text-nowrap">
+                    Pending Actions Report Dashboard
+                </h3>
+            </div>
 
 
             {{-- TOOLBAR --}}
-            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 p-3 border-bottom bg-white">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 p-3 border-bottom bg-white"
+                style="border-radius: 15px">
                 <div class="d-flex align-items-center gap-2 flex-wrap">
                     <input type="text" id="quickFilter" class="form-control" style="width:360px; min-width:260px;"
-                        placeholder="Quick search...">
+                        placeholder="Smart Search...">
                     <button id="resetAll" class="btn btn-outline-danger btn-sm">Reset</button>
                 </div>
 
                 <div class="d-flex gap-2 flex-wrap">
-                    <button id="exportExcel" class="btn btn-success btn-sm">
-                        <i class="la la-file-excel-o"></i> Excel
+                    <button id="exportExcel" class="btn btn-sm text-nowrap d-flex align-items-center gap-2">
+
+                        <img src="{{ asset('images/export-excel.png') }}" alt="Excel" style="height:30px; width:auto;">
+
+                        {{-- <span>Excel</span> --}}
                     </button>
-                    <button id="exportPdf" class="btn btn-danger btn-sm">
-                        <i class="la la-file-pdf-o"></i> PDF
+
+                    <button id="exportPdf" class="btn btn-sm text-nowrap d-flex align-items-center gap-2">
+
+                        <img src="{{ asset('images/export-pdf.png') }}" alt="PDF" style="height:30px; width:auto;">
+
+                        {{-- <span>PDF</span> --}}
                     </button>
+
                 </div>
             </div>
 
             {{-- GRID --}}
-            <div id="myGrid" class="ag-theme-quartz" style="height: calc(100vh - 220px); width:100%;"></div>
+            <div id="myGrid" class="ag-theme-quartz" style="height: calc(110vh - 220px); width:100%;"></div>
         </div>
 
         @if(session('info'))
@@ -103,7 +93,6 @@
 
 <script>
     const gridConfig = @json($gridConfig ?? []);
-
     let gridApi;
 
     const columnDefs = (gridConfig.columns || []).map(col => {
@@ -112,19 +101,37 @@
         else if (col.headerName === 'Bookings') headerClass = 'group-booking';
         else if (col.headerName === 'PENDING ACTIONS') headerClass = 'group-pending';
 
-        return {
+        const isSnoColumn = col.field === 'sno' || col.headerName?.toLowerCase().includes('s.no');
+
+        const columnDef = {
             headerName: col.headerName,
-            field: col.field,
-            children: col.children ? col.children.map(child => ({
-                ...child,
-                cellClass: child.cellClass || 'text-right'
-            })) : null,
-            headerClass: headerClass || '',
-            sortable: true,
-            filter: true,
+            headerClass: headerClass || 'text-center',
+            width: col.width || (col.children ? 180 : 80),  // S.No. ke liye chhota width
+            pinned: col.pinned || (isSnoColumn ? 'left' : false),
+            cellClass: col.cellClass || (isSnoColumn ? 'text-center fw-bold' : 'text-center'),
+            sortable: col.sortable !== false && !isSnoColumn,   // S.No. pe sort band
+            filter: col.filter !== false && !isSnoColumn,       // S.No. pe filter band
             resizable: true,
-            width: col.width || 150,
         };
+
+        // Sirf real columns mein field add karo (group headers mein nahi)
+        if (col.field) {
+            columnDef.field = col.field;
+        }
+
+        if (col.children) {
+            columnDef.children = col.children.map(child => ({
+                headerName: child.headerName,
+                field: child.field,
+                width: child.width || 110,
+                cellClass: child.cellClass || 'text-center',
+                sortable: true,
+                filter: true,
+                resizable: true,
+            }));
+        }
+
+        return columnDef;
     });
 
     const gridOptions = {
@@ -132,19 +139,37 @@
         rowData: gridConfig.data || [],
         pagination: true,
         paginationPageSize: 20,
-        rowHeight:30,
         paginationPageSizeSelector: [10, 20, 50, 100],
+        rowHeight: 32,
         animateRows: true,
+
         defaultColDef: {
             sortable: true,
             filter: true,
             resizable: true,
+            headerClass: 'text-center',
+            cellStyle: { textAlign: 'center' },
+            minWidth: 80,
         },
+
         overlayNoRowsTemplate: '<span class="ag-overlay-no-rows-center">No pending actions data available</span>',
+
+        onGridReady: params => {
+            gridApi = params.api;
+
+            // Auto-size sab columns
+            setTimeout(() => {
+                const allColumnIds = [];
+                gridApi.getColumns().forEach(col => allColumnIds.push(col.getColId()));
+                gridApi.autoSizeColumns(allColumnIds);
+            }, 400);
+        }
     };
 
     document.addEventListener('DOMContentLoaded', () => {
         const gridDiv = document.querySelector('#myGrid');
+        if (!gridDiv) return;
+
         gridApi = agGrid.createGrid(gridDiv, gridOptions);
 
         // Quick Filter
@@ -152,64 +177,42 @@
             gridApi.setGridOption('quickFilterText', e.target.value);
         });
 
-        // Reset – full reset with filter model clear
+        // Reset
         document.getElementById('resetAll')?.addEventListener('click', () => {
             document.getElementById('quickFilter').value = '';
             gridApi.setGridOption('quickFilterText', '');
-            gridApi.setFilterModel(null); // ← Yeh important line add ki – ab reset perfect kaam karega
+            gridApi.setFilterModel(null);
         });
 
-        // Excel Export – Full data (no filter applied)
+        // Excel Export (full data)
         document.getElementById('exportExcel')?.addEventListener('click', () => {
-    // Step 1: Collect leaf columns in visual left-to-right order
-    const headers = [];
-    const fields = [];
-
-    function collectLeaves(cols) {
-        cols.forEach(col => {
-            if (col.children) {
-                collectLeaves(col.children);
-            } else if (col.field) { // only real data columns
-                headers.push(col.headerName);
-                fields.push(col.field);
+            const allColumns = [];
+            function collectLeaves(cols) {
+                cols.forEach(col => {
+                    if (col.children) collectLeaves(col.children);
+                    else if (col.field) allColumns.push({ header: col.headerName, field: col.field });
+                });
             }
+            collectLeaves(columnDefs);
+
+            const headers = allColumns.map(c => c.header);
+            const rows = [headers];
+
+            gridApi.forEachNode(node => {
+                if (node.group) return;
+                const row = allColumns.map(c => node.data?.[c.field] ?? '');
+                rows.push(row);
+            });
+
+            const worksheet = XLSX.utils.aoa_to_sheet(rows);
+            worksheet['!cols'] = headers.map(h => ({ wch: Math.max(12, h.length + 4) }));
+
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Pending Actions');
+            XLSX.writeFile(workbook, `Pending_Actions_${new Date().toISOString().slice(0,10)}.xlsx`);
         });
-    }
 
-    collectLeaves(columnDefs);
-
-    // Step 2: Build rows – ALL data (ignoring filters/sorts as you want full export)
-    const rows = [headers]; // first row = headers
-
-    gridApi.forEachNode(node => {
-        if (node.group) return; // skip group rows if any row-grouping is active
-
-        const row = fields.map(field => node.data?.[field] ?? '');
-        rows.push(row);
-    });
-
-    // Step 3: Create sheet from array of arrays (aoa)
-    const worksheet = XLSX.utils.aoa_to_sheet(rows);
-
-    // Optional: better column widths
-    const colWidths = headers.map((header, i) => {
-        let maxWidth = header.length;
-        rows.slice(1).forEach(r => {
-            const val = String(r[i] || '');
-            if (val.length > maxWidth) maxWidth = val.length;
-        });
-        return { wch: Math.min(Math.max(maxWidth + 3, 8), 70) };
-    });
-    worksheet['!cols'] = colWidths;
-
-    // Step 4: Export
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Pending Actions');
-    const today = new Date().toISOString().split('T')[0];
-    XLSX.writeFile(workbook, `Pending_Actions_Report_${today}.xlsx`);
-});
-
-        // PDF Export – same as before
+        // PDF Export (full data)
         document.getElementById('exportPdf')?.addEventListener('click', () => {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
@@ -218,29 +221,32 @@
             doc.text('Pending Actions Report', 40, 40);
 
             const exportColumns = [];
-            columnDefs.forEach(col => {
-                if (col.children) {
-                    col.children.forEach(c => exportColumns.push({ header: c.headerName, dataKey: c.field }));
-                } else {
-                    exportColumns.push({ header: col.headerName, dataKey: col.field });
-                }
-            });
+            const fieldOrder = [];
+
+            function flatten(cols) {
+                cols.forEach(col => {
+                    if (col.children) flatten(col.children);
+                    else if (col.field) {
+                        exportColumns.push(col.headerName);
+                        fieldOrder.push(col.field);
+                    }
+                });
+            }
+            flatten(columnDefs);
 
             const body = [];
-            gridApi.forEachNode(node => {  // Full data for PDF too
-                const row = {};
-                exportColumns.forEach(c => {
-                    row[c.dataKey] = node.data[c.dataKey] ?? '';
-                });
+            gridApi.forEachNode(node => {
+                if (node.group) return;
+                const row = fieldOrder.map(f => node.data?.[f] ?? '');
                 body.push(row);
             });
 
             doc.autoTable({
-                columns: exportColumns,
-                body: body,
+                head: [exportColumns],
+                body,
                 startY: 60,
-                styles: { fontSize: 8, cellPadding: 4, overflow: 'linebreak' },
-                headStyles: { fillColor: [255, 255, 0] },
+                styles: { fontSize: 8, cellPadding: 4, overflow: 'linebreak', halign: 'center' },
+                headStyles: { fillColor: [255, 193, 7], textColor: 0 },
                 alternateRowStyles: { fillColor: [245, 245, 245] },
                 margin: { top: 60, left: 30, right: 30 },
             });

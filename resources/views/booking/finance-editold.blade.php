@@ -42,11 +42,11 @@
                                        value="{{ $booking->model ?? 'N/A' }} / {{ $booking->variant ?? 'N/A' }}" readonly>
                             </div>
                             <div class="col-sm-3">
-                                <label class="form-label">Finance Mode (Original)</label>
+                                <label class="form-label">Finance Mode (Primary)</label>
                                 <input type="text" class="form-control" value="{{ $booking->fin_mode ?? 'N/A' }}" readonly>
                             </div>
                             <div class="col-sm-3">
-                                <label class="form-label">Financier (Original)</label>
+                                <label class="form-label">Financier (Primary)</label>
                                 <input type="text" class="form-control"
                                        value="{{ collect($data['financiers'] ?? [])->firstWhere('id', $booking->financier)['name'] ?? 'N/A' }}"
                                        readonly>

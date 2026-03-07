@@ -1,95 +1,90 @@
-@extends(backpack_view('blank'))   <!-- Yeh line sabse important change -->
+@extends(backpack_view('blank'))
+<!-- Yeh line sabse important change -->
 
 @section('title', 'Payout Details')
 
 @push('head')
-    <link rel="stylesheet" href="{{ asset('plugins/select2/dist/css/select2.min.css') }}">
-    <style>
-        .readonly-field {
-            background-color: #f8f9fa;
-            border: 1px solid #ced4da;
-            padding: 0.375rem 0.75rem;
-            border-radius: 0.25rem;
-            color: #495057;
-            pointer-events: none;
-            height: 38px;
-        }
+<link rel="stylesheet" href="{{ asset('plugins/select2/dist/css/select2.min.css') }}">
+<style>
+    .readonly-field {
+        background-color: #f8f9fa;
+        border: 1px solid #ced4da;
+        padding: 0.375rem 0.75rem;
+        border-radius: 0.25rem;
+        color: #495057;
+        pointer-events: none;
+        height: 38px;
+    }
 
-        .photo-preview {
-            margin-top: 8px;
-        }
+    .photo-preview {
+        margin-top: 8px;
+    }
 
-        .photo-preview img {
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            padding: 5px;
-        }
+    .photo-preview img {
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 5px;
+    }
 
-        /* Custom readonly style for frozen fields */
-        .field-frozen {
-            background-color: #f8f9fa !important;
-            pointer-events: none !important;
-            color: #6c757d !important;
-        }
-    </style>
+    /* Custom readonly style for frozen fields */
+    .field-frozen {
+        background-color: #f8f9fa !important;
+        pointer-events: none !important;
+        color: #6c757d !important;
+    }
+</style>
 @endpush
 
 @section('content')
 
-    <div class="container-fluid">
-        <!-- Page Header (Backpack friendly) -->
-        <div class="page-header">
-            <div class="row align-items-end">
-                <div class="col-lg-6">
-                    <div class="page-header-title">
-                        <i class="ik ik-car bg-blue"></i>
-                        <div class="d-inline">
-                            <h5>Payout Details</h5>
-                            <small>Edit payout information for this booking</small>
-                        </div>
+
+<!-- Page Header (Backpack friendly) -->
+
+<div class="row align-items-end">
+    <div class="col-lg-10">
+    </div>
+    <div class="col-lg-2">
+        <nav class="breadcrumb-container" aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ backpack_url('dashboard') }}"><i class="ik ik-home"></i>
+                        Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ backpack_url('finance') }}">Finance</a></li>
+                <li class="breadcrumb-item active">Payout Edit</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+
+{{-- CUSTOMER DETAILS CARD - TOP MOST --}}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+
+            <h2 style="margin-top: 12px;margin-left: 15px;">Customer Details</h2>
+
+            <div class="card-body">
+                <div class="row">
+                    <!-- Customer Name -->
+                    <div class="col-sm-3 form-group">
+                        <label>Customer Name</label>
+                        <input type="text" class="form-control readonly-field" value="{{ $booking->name ?? 'N/A' }}"
+                            readonly>
                     </div>
-                </div>
-                <div class="col-lg-6">
-                    <nav class="breadcrumb-container" aria-label="breadcrumb">
-                        <ol class="breadcrumb">
-                            <li class="breadcrumb-item"><a href="{{ backpack_url('dashboard') }}"><i class="ik ik-home"></i> Dashboard</a></li>
-                            <li class="breadcrumb-item"><a href="{{ backpack_url('finance') }}">Finance</a></li>
-                            <li class="breadcrumb-item active">Payout Edit</li>
-                        </ol>
-                    </nav>
-                </div>
-            </div>
-        </div>
 
-        {{-- CUSTOMER DETAILS CARD - TOP MOST --}}
-    <div class="row mt-4">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5>Customer Details</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <!-- Customer Name -->
-                        <div class="col-sm-3 form-group">
-                            <label>Customer Name</label>
-                            <input type="text" class="form-control readonly-field"
-                                value="{{ $booking->name ?? 'N/A' }}" readonly>
-                        </div>
+                    <!-- Model -->
+                    <div class="col-sm-3 form-group">
+                        <label>Model</label>
+                        <input type="text" class="form-control readonly-field" value="{{ $booking->model ?? 'N/A' }}"
+                            readonly>
+                    </div>
 
-                        <!-- Model -->
-                        <div class="col-sm-3 form-group">
-                            <label>Model</label>
-                            <input type="text" class="form-control readonly-field" value="{{ $booking->model ?? 'N/A' }}"
-                                readonly>
-                        </div>
-
-                        <!-- Variant -->
-                        <div class="col-sm-3 form-group">
-                            <label>Variant</label>
-                            <input type="text" class="form-control readonly-field" value="{{ $booking->variant ?? 'N/A' }}"
-                                readonly>
-                        </div>
+                    <!-- Variant -->
+                    <div class="col-sm-3 form-group">
+                        <label>Variant</label>
+                        <input type="text" class="form-control readonly-field" value="{{ $booking->variant ?? 'N/A' }}"
+                            readonly>
+                    </div>
 
                     <!-- Invoice Date -->
                     <div class="col-sm-3 form-group">
@@ -98,473 +93,531 @@
                             value="{{ $booking->inv_date ? \Carbon\Carbon::parse($booking->inv_date)->format('d-m-Y') : ($booking->dealer_inv_date ? \Carbon\Carbon::parse($booking->dealer_inv_date)->format('d-m-Y') : 'N/A') }}"
                             readonly>
                     </div>
+                </div>
+
+                <div class="row mt-3">
+                    <!-- Address -->
+                    <div class="col-sm-3 form-group">
+                        <label>Address</label>
+                        <input type="text" class="form-control readonly-field" value="N/A" readonly>
                     </div>
 
-                    <div class="row mt-3">
-                        <!-- Address -->
-                        <div class="col-sm-3 form-group">
-                            <label>Address</label>
-                            <input type="text" class="form-control readonly-field" value="N/A" readonly>
-                        </div>
-
-                        <!-- City -->
-                        <div class="col-sm-3 form-group">
-                            <label>City</label>
-                            <input type="text" class="form-control readonly-field" value="N/A" readonly>
-                        </div>
-
-                        <!-- Tehsil -->
-                        <div class="col-sm-3 form-group">
-                            <label>Tehsil</label>
-                            <input type="text" class="form-control readonly-field" value="N/A" readonly>
-                        </div>
-
-                        <!-- District -->
-                        <div class="col-sm-3 form-group">
-                            <label>District</label>
-                            <input type="text" class="form-control readonly-field" value="N/A" readonly>
-                        </div>
+                    <!-- City -->
+                    <div class="col-sm-3 form-group">
+                        <label>City</label>
+                        <input type="text" class="form-control readonly-field" value="N/A" readonly>
                     </div>
 
-                    <div class="row mt-3">
-                        <!-- Pin Code -->
-                        <div class="col-sm-3 form-group">
-                            <label>Pin Code</label>
-                            <input type="text" class="form-control readonly-field" value="N/A" readonly>
-                        </div>
+                    <!-- Tehsil -->
+                    <div class="col-sm-3 form-group">
+                        <label>Tehsil</label>
+                        <input type="text" class="form-control readonly-field" value="N/A" readonly>
+                    </div>
+
+                    <!-- District -->
+                    <div class="col-sm-3 form-group">
+                        <label>District</label>
+                        <input type="text" class="form-control readonly-field" value="N/A" readonly>
+                    </div>
+                </div>
+
+                <div class="row mt-3">
+                    <!-- Pin Code -->
+                    <div class="col-sm-3 form-group">
+                        <label>Pin Code</label>
+                        <input type="text" class="form-control readonly-field" value="N/A" readonly>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- READONLY FINANCE DETAILS -->
-    <div class="card mt-4">
-        <div class="card-header">
-            <h5>Finance Details (Read-Only)</h5>
-        </div>
-        <div class="card-body">
-            <div class="row">
-                @php
-                $iTypes = [
-                1 => 'Financier Payment',
-                2 => 'Delivery Order',
-                3 => 'Sanction Letter',
-                4 => 'Mail Communication',
-                5 => 'Whatsapp Communication'
-                ];
-                @endphp
-                <!-- FINANCE BASIC DETAILS - READ ONLY -->
+<!-- READONLY FINANCE DETAILS -->
+<div class="card mt-4">
 
-                    <div class="col-sm-3 form-group">
-                        <label>Finance Mode</label>
-                        <input type="text" class="form-control readonly-field" value="{{ $finance->fin_mode ?? 'N/A' }}" readonly>
-                    </div>
+    <h2 style="margin-top: 12px;margin-left: 15px;">Finance Details (Read-Only)</h2>
 
-                    <div class="col-sm-3 form-group">
-                        <label>Loan Status</label>
-                        <input type="text" class="form-control readonly-field" value="{{ $finance->loan_status ?? 'N/A' }}" readonly>
-                    </div>
+    <div class="card-body">
+        <div class="row">
+            @php
+            $iTypes = [
+            1 => 'Financier Payment',
+            2 => 'Delivery Order',
+            3 => 'Sanction Letter',
+            4 => 'Mail Communication',
+            5 => 'Whatsapp Communication'
+            ];
+            @endphp
+            <!-- FINANCE BASIC DETAILS - READ ONLY -->
 
-                    <div class="col-sm-3 form-group">
-                        <label>Financier</label>
-                        <input type="text" class="form-control readonly-field"
-                            value="{{ collect($data['financiers'] ?? [])->firstWhere('id', $finance->financier)['name'] ?? 'N/A' }}"
-                            readonly>
-                    </div>
+            <div class="col-sm-3 form-group">
+                <label>Finance Mode</label>
+                <input type="text" class="form-control readonly-field" value="{{ $finance->fin_mode ?? 'N/A' }}"
+                    readonly>
+            </div>
 
-                    <div class="col-sm-3 form-group">
-                        <label>Short Name</label>
-                        <input type="text" class="form-control readonly-field"
-                            value="{{ collect($data['financiers'] ?? [])->firstWhere('id', $finance->financier)['short_name'] ?? 'N/A' }}"
-                            readonly>
-                    </div>
+            <div class="col-sm-3 form-group">
+                <label>Loan Status</label>
+                <input type="text" class="form-control readonly-field" value="{{ $finance->loan_status ?? 'N/A' }}"
+                    readonly>
+            </div>
+
+            <div class="col-sm-3 form-group">
+                <label>Financier</label>
+                <input type="text" class="form-control readonly-field"
+                    value="{{ collect($data['financiers'] ?? [])->firstWhere('id', $finance->financier)['name'] ?? 'N/A' }}"
+                    readonly>
+            </div>
+
+            <div class="col-sm-3 form-group">
+                <label>Short Name</label>
+                <input type="text" class="form-control readonly-field"
+                    value="{{ collect($data['financiers'] ?? [])->firstWhere('id', $finance->financier)['short_name'] ?? 'N/A' }}"
+                    readonly>
+            </div>
 
 
 
-                    <div class="col-sm-3 form-group">
-                        <label>Case Status</label>
-                        <input type="text" class="form-control readonly-field" value="{{
+            <div class="col-sm-3 form-group">
+                <label>Case Status</label>
+                <input type="text" class="form-control readonly-field" value="{{
                                    $finance->case_status == 1 ? 'In-Process' :
                                    ($finance->case_status == 2 ? 'In House Finance Done' :
                                    ($finance->case_status == 3 ? 'Case Lost' : 'N/A'))
                                }}" readonly>
-                    </div>
+            </div>
 
-                    <div class="col-sm-3 form-group">
-                        <label>Verification Status</label>
-                        <input type="text" class="form-control readonly-field" value="{{
+            <div class="col-sm-3 form-group">
+                <label>Verification Status</label>
+                <input type="text" class="form-control readonly-field" value="{{
                                    ($finance->verification_status ?? 1) == 2 ? 'Verified (Match)' :
                                    (($finance->verification_status ?? 1) == 3 ? 'Verified (Mismatch)' : 'Not Verified')
                                }}" readonly>
+            </div>
+
+            <hr>
+            <div class="col-sm-3 form-group">
+                <label>Instrument Type</label>
+                <input type="text" class="form-control readonly-field"
+                    value="{{ $iTypes[$finance->instrument_type ?? ''] ?? 'N/A' }}" readonly>
+            </div>
+
+            @if($finance->instrument_type == 2 && $finance->delivery_order_no)
+            <div class="col-sm-3 form-group">
+                <label>Delivery Order No.</label>
+                <input type="text" class="form-control readonly-field" value="{{ $finance->delivery_order_no }}"
+                    readonly>
+            </div>
+            @endif
+
+            @if($finance->instrument_type == 1 && $finance->receipt_no)
+            <div class="col-sm-3 form-group">
+                <label>Receipt No.</label>
+                <input type="text" class="form-control readonly-field" value="{{ $finance->receipt_no }}" readonly>
+            </div>
+            @endif
+
+            <div class="col-sm-3 form-group">
+                <label>Loan Amount (Dealer Entry)</label>
+                <input type="text" class="form-control readonly-field"
+                    value="₹{{ number_format($finance->loan_amount ?? 0, 2) }}" readonly>
+            </div>
+
+            <div class="col-sm-3 form-group">
+                <label>Margin Money</label>
+                <input type="text" class="form-control readonly-field"
+                    value="₹{{ number_format($finance->margin ?? 0, 2) }}" readonly>
+            </div>
+
+            <div class="col-sm-3 form-group">
+                <label>File Charge</label>
+                <input type="text" class="form-control readonly-field"
+                    value="₹{{ number_format($finance->file_charge ?? 0, 2) }}" readonly>
+            </div>
+
+            <div class="col-sm-3 form-group">
+                <label>Net Payment Amount</label>
+                <input type="text" class="form-control readonly-field"
+                    value="₹{{ number_format(($finance->loan_amount ?? 0) + ($finance->margin ?? 0) - ($finance->file_charge ?? 0), 2) }}"
+                    readonly>
+            </div>
+
+
+            {{-- <div class="col-sm-3 form-group">
+                <label>Instrument Proof</label>
+                @php
+                $media = $finance->getFirstMedia('instrument_proof');
+                $url = $media ? $media->getUrl() : null;
+                @endphp
+                @if ($media)
+                <div class="photo-preview">
+                    <a href="{{ $url }}" target="_blank">
+                        @if(str_contains($media->mime_type, 'pdf'))
+                        <img src="{{ asset('images/pdf-icon.png') }}" alt="PDF" class="img-fluid" width="100">
+                        @else
+                        <img src="{{ $url }}" alt="Instrument Proof" class="img-fluid" width="150"
+                            onerror="this.src='{{ asset('images/placeholder.jpg') }}'">
+                        @endif
+                    </a>
+                    <br>
+                    <small class="text-muted"><a href="{{ $url }}" target="_blank">Open in new
+                            tab</a></small>
+                </div>
+                @else
+                <p class="text-muted">No attachment uploaded.</p>
+                @endif
+            </div> --}}
+            <div class="col-sm-3 form-group">
+                <label>Instrument Proof</label>
+
+                @php
+                $media = $finance->getFirstMedia('instrument_proof');
+                $url = $media ? $media->getUrl() : null;
+                $fileName = $media ? basename($url) : null;
+                @endphp
+
+                @if ($media)
+                <div class="mt-2">
+                    <span class="btn btn-primary instrument-chip" style="cursor:pointer" data-url="{{ $url }}"
+                        data-name="{{ $fileName }}">
+                        📎 {{ $fileName }}
+                    </span>
+                </div>
+                @else
+                <p class="text-muted">No attachment uploaded.</p>
+                @endif
+            </div>
+
+            <div class="col-sm-12 form-group d-flex align-items-end justify-content-end">
+                <a href="{{ route('finance.retailedit', $booking->id) }}?from=payout" class="btn btn-primary btn-sm"
+                    title="Edit Finance Details">
+                    <i class="ik ik-edit mr-1"></i> Edit Finance Details
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="col-md-12 mt-4">
+    <div class="card">
+
+        <h2 style="margin-top: 12px;margin-left: 15px;">{{ __('Payout Details') }}</h2>
+
+
+        <div class="card-body">
+            <form id="payoutForm" method="POST" action="{{ route('payout.update', $booking->id) }}"
+                enctype="multipart/form-data">
+                @csrf
+                <!-- FIXED: Manual _method field -->
+                <input type="hidden" name="_method" value="PUT">
+                <input type="hidden" name="booking_id" value="{{ $booking->id }}">
+
+                {{-- ROW 1 --}}
+                <div class="row">
+                    <div class="col-sm-3 form-group">
+                        <label>Payout Category <span class="text-danger">*</span></label>
+                        <select name="payout_category" id="payout_category" class="form-control form-select" required>
+                            <option value="1" {{ old('payout_category', $finance->payout_category ?? 1) == 1 ?
+                                'selected' : '' }}>Payout</option>
+                            <option value="2" {{ old('payout_category', $finance->payout_category ?? 1) == 2 ?
+                                'selected' : '' }}>No Payout</option>
+                            <option value="4" {{ old('payout_category', $finance->payout_category ?? 1) == 4 ?
+                                'selected' : '' }}>Cash</option>
+                        </select>
                     </div>
+
+                    <!-- NO PAYOUT REASON (Hidden by default) -->
+                    <div class="col-sm-3 form-group" id="no_payout_reason_wrapper" style="display:none;">
+                        <label>No Payout Reason <span class="text-danger">*</span></label>
+                        <select name="no_payout_reason" id="no_payout_reason" class="form-control" required>
+                            <option value="">-- Select Reason --</option>
+                            <option value="1" {{ old('no_payout_reason', $finance->no_payout_reason ?? '') ==
+                                '1' ? 'selected' : '' }}>
+                                Low Interest Rate
+                            </option>
+                            <option value="2" {{ old('no_payout_reason', $finance->no_payout_reason ?? '') ==
+                                '2' ? 'selected' : '' }}>
+                                Low Tenure Funding
+                            </option>
+                            <option value="3" {{ old('no_payout_reason', $finance->no_payout_reason ?? '') ==
+                                '3' ? 'selected' : '' }}>
+                                Nil Payout Model
+                            </option>
+                            <option value="4" {{ old('no_payout_reason', $finance->no_payout_reason ?? '') ==
+                                '4' ? 'selected' : '' }}>
+                                Out Of Territory
+                            </option>
+                            <option value="5" {{ old('no_payout_reason', $finance->no_payout_reason ?? '') ==
+                                '5' ? 'selected' : '' }}>
+                                Financier Sourcing
+                            </option>
+                            <option value="6" {{ old('no_payout_reason', $finance->no_payout_reason ?? '') ==
+                                '6' ? 'selected' : '' }}>
+                                Other
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="col-sm-3 form-group">
+                        <label>DO Number <span class="text-danger">*</span></label>
+                        <input type="text" name="do_number" id="do_number" class="form-control"
+                            value="{{ old('do_number', $finance->instrument_ref_no ?? '') }}" placeholder="e.g. DO12345"
+                            required>
+                        <!-- HIDDEN FIELD TO SEND DIFFERENCE -->
+                        <input type="hidden" name="difference_no_gst" id="hidden_difference_no_gst" value="">
+                    </div>
+
+                    <div class="col-sm-3 form-group">
+                        <label>Loan Amount (Dealer Entry) <span class="text-danger">*</span></label>
+                        <input type="number" name="loan_amount" id="loan_amount" class="form-control calc-input"
+                            value="{{ old('loan_amount', $finance->loan_amount ?? 0) }}" step="1" min="0" required>
+                    </div>
+                </div>
+
+                {{-- ROW 2 --}}
+                <div class="row">
+                    <div class="col-sm-3 form-group">
+                        <label>Expected Payout % <span class="text-danger">*</span></label>
+                        <input type="number" name="expected_payout_pct" id="exp_payout_pct"
+                            class="form-control calc-input"
+                            value="{{ old('expected_payout_pct', $finance->expected_payout_pct ?? '') }}" step="0.0001"
+                            min="0" placeholder="e.g. 1.5" required>
+                    </div>
+
+                    <div class="col-sm-3 form-group">
+                        <label>GST Rate</label>
+                        <input type="text" id="gst_pct" class="form-control readonly-field " value="18%" readonly
+                            style="font-weight: bold; background-color: #e9ecef !important; cursor: not-allowed;">
+
+                    </div>
+
+                    <div class="col-sm-3 form-group">
+                        <label>GST Included in Payout<span class="text-danger">*</span></label>
+                        <select name="gst_included" id="gst_included" class="form-control form-select calc-input"
+                            required>
+                            <option value="0" {{ old('gst_included', $finance->gst_included) == 0 ? 'selected'
+                                : '' }}>0 %</option>
+                            <option value="0.5" {{ old('gst_included', $finance->gst_included) == 0.5 ?
+                                'selected' : '' }}>50 %</option>
+                            <option value="1" {{ old('gst_included', $finance->gst_included) == 1 ? 'selected'
+                                : '' }}>100 %</option>
+                        </select>
+                    </div>
+
+                    <div class="col-sm-3 form-group">
+                        <label>Expected Payout % without GST</label>
+                        <input type="text" id="exp_payout_pct_no_gst" class="form-control readonly-field" readonly>
+                    </div>
+                </div>
+
+                {{-- ROW 3 --}}
+                <div class="row">
+                    <div class="col-sm-3 form-group">
+                        <label>Expected Payout Amount without GST</label>
+                        <input type="text" id="exp_payout_amt_no_gst" class="form-control readonly-field" readonly>
+                    </div>
+
+                    <div class="col-sm-3 form-group">
+                        <label>GST Amount</label>
+                        <input type="text" id="gst_amount" class="form-control readonly-field" readonly>
+                    </div>
+
+                    <div class="col-sm-3 form-group">
+                        <label>Suggested Invoice Amount</label>
+                        <input type="text" id="suggested_invoice_amt" class="form-control readonly-field" readonly>
+                    </div>
+
+                    <div class="col-sm-3 form-group">
+                        <label>Loan Amount (Fin Payout Sheet)</label>
+                        <input type="text" class="form-control readonly-field"
+                            value="₹{{ number_format($finance->fin_loan_amount ?? 0, 2) }}" readonly>
+                    </div>
+                </div>
 
                 <hr>
-                <div class="col-sm-3 form-group">
-                    <label>Instrument Type</label>
-                    <input type="text" class="form-control readonly-field"
-                        value="{{ $iTypes[$finance->instrument_type ?? ''] ?? 'N/A' }}" readonly>
-                </div>
 
-                @if($finance->instrument_type == 2 && $finance->delivery_order_no)
-                <div class="col-sm-3 form-group">
-                    <label>Delivery Order No.</label>
-                    <input type="text" class="form-control readonly-field" value="{{ $finance->delivery_order_no }}"
-                        readonly>
-                </div>
-                @endif
-
-                @if($finance->instrument_type == 1 && $finance->receipt_no)
-                <div class="col-sm-3 form-group">
-                    <label>Receipt No.</label>
-                    <input type="text" class="form-control readonly-field" value="{{ $finance->receipt_no }}" readonly>
-                </div>
-                @endif
-
-                <div class="col-sm-3 form-group">
-                    <label>Loan Amount (Dealer Entry)</label>
-                    <input type="text" class="form-control readonly-field"
-                        value="₹{{ number_format($finance->loan_amount ?? 0, 2) }}" readonly>
-                </div>
-
-                <div class="col-sm-3 form-group">
-                    <label>Margin Money</label>
-                    <input type="text" class="form-control readonly-field"
-                        value="₹{{ number_format($finance->margin ?? 0, 2) }}" readonly>
-                </div>
-
-                <div class="col-sm-3 form-group">
-                    <label>File Charge</label>
-                    <input type="text" class="form-control readonly-field"
-                        value="₹{{ number_format($finance->file_charge ?? 0, 2) }}" readonly>
-                </div>
-
-                <div class="col-sm-3 form-group">
-                    <label>Net Payment Amount</label>
-                    <input type="text" class="form-control readonly-field"
-                        value="₹{{ number_format(($finance->loan_amount ?? 0) + ($finance->margin ?? 0) - ($finance->file_charge ?? 0), 2) }}"
-                        readonly>
-                </div>
-
-
-                <div class="col-sm-3 form-group">
-                    <label>Instrument Proof</label>
-                    @php
-                    $media = $finance->getFirstMedia('instrument_proof');
-                    $url = $media ? $media->getUrl() : null;
-                    @endphp
-                    @if ($media)
-                    <div class="photo-preview">
-                        <a href="{{ $url }}" target="_blank">
-                            @if(str_contains($media->mime_type, 'pdf'))
-                            <img src="{{ asset('images/pdf-icon.png') }}" alt="PDF" class="img-fluid" width="100">
-                            @else
-                            <img src="{{ $url }}" alt="Instrument Proof" class="img-fluid" width="150"
-                                onerror="this.src='{{ asset('images/placeholder.jpg') }}'">
-                            @endif
-                        </a>
-                        <br>
-                        <small class="text-muted"><a href="{{ $url }}" target="_blank">Open in new
-                                tab</a></small>
+                {{-- INVOICE 1 --}}
+                <h6 class="mt-3 mb-2">1<sup>st</sup> Invoice</h6>
+                <div class="row">
+                    <div class="col-sm-3 form-group">
+                        <label>1<sup>st</sup> Invoice No. <span class="text-danger">*</span></label>
+                        <input type="text" name="inv1_no" id="inv1_no" class="form-control"
+                            value="{{ old('inv1_no', $finance->inv1_no ?? '') }}" required>
                     </div>
-                    @else
-                    <p class="text-muted">No attachment uploaded.</p>
-                    @endif
+
+                    <div class="col-sm-3 form-group">
+                        <label>1<sup>st</sup> Invoice in Name of <span class="text-danger">*</span></label>
+                        <input type="text" name="inv1_name" id="inv1_name" class="form-control"
+                            value="{{ old('inv1_name', $finance->inv1_name ?? '') }}" required>
+                    </div>
+
+                    <div class="col-sm-3 form-group">
+                        <label>1<sup>st</sup> Financier Provisioning <small>with GST</small> <span
+                                class="text-danger">*</span></label>
+                        <input type="number" name="inv1_prov_gst" id="inv1_prov_gst" class="form-control calc-input"
+                            step="0.01" min="0" value="{{ old('inv1_prov_gst', $finance->inv1_prov_gst ?? '') }}"
+                            placeholder="0.00" required>
+                    </div>
                 </div>
 
-                <div class="col-sm-12 form-group d-flex align-items-end justify-content-end">
-                    <a href="{{ route('finance.retailedit', $booking->id) }}?from=payout" class="btn btn-primary btn-sm"
-                        title="Edit Finance Details">
-                        <i class="ik ik-edit mr-1"></i> Edit Finance Details
-                    </a>
+                {{-- INVOICE 2 --}}
+                <h6 class="mt-4 mb-2">2<sup>nd</sup> Invoice</h6>
+                <div class="row">
+                    <div class="col-sm-3 form-group">
+                        <label>2<sup>nd</sup> Invoice No. </label>
+                        <input type="text" name="inv2_no" id="inv2_no" class="form-control"
+                            value="{{ old('inv2_no', $finance->inv2_no ?? '') }}">
+                    </div>
+
+                    <div class="col-sm-3 form-group">
+                        <label>2<sup>nd</sup> Invoice in Name of </label>
+                        <input type="text" name="inv2_name" id="inv2_name" class="form-control"
+                            value="{{ old('inv2_name', $finance->inv2_name ?? '') }}">
+                    </div>
+
+                    <div class="col-sm-3 form-group">
+                        <label>2<sup>nd</sup> Financier Provisioning <small>with GST</small></label>
+                        <input type="number" name="inv2_prov_gst" id="inv2_prov_gst" class="form-control calc-input"
+                            step="0.01" min="0" value="{{ old('inv2_prov_gst', $finance->inv2_prov_gst ?? '') }}"
+                            placeholder="0.00">
+                    </div>
+                </div>
+
+                {{-- TOTAL PROVISIONING --}}
+                <hr>
+                <div class="row">
+                    <div class="col-sm-3 form-group">
+                        <label>Total Provisioning (with GST)</label>
+                        <input type="text" id="total_prov_gst" class="form-control readonly-field" readonly>
+                    </div>
+
+                    <div class="col-sm-3 form-group">
+                        <label>Total Provisioning (without GST)</label>
+                        <input type="text" id="total_prov_no_gst" class="form-control readonly-field" readonly>
+                    </div>
+
+                    <div class="col-sm-3 form-group">
+                        <label>Consideration (without GST) <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text">₹</span>
+                            </div>
+                            <input type="number" name="consideration_no_gst" id="consideration_no_gst"
+                                class="form-control calc-input text-right" step="0.01" min="0"
+                                value="{{ old('consideration_no_gst', $finance->consideration_no_gst ?? '0.00') }}"
+                                placeholder="0.00" required>
+                        </div>
+                        <small class="form-text text-muted">Enter amount in rupees (up to 2 decimals
+                            allowed)</small>
+                    </div>
+
+                    <div class="col-sm-3 form-group">
+                        <label>Difference (without GST)</label>
+                        <input type="text" id="difference_no_gst" class="form-control readonly-field" readonly>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-sm-3 form-group">
+                        <label>Provisioning % (without GST)</label>
+                        <input type="text" id="prov_pct_no_gst" class="form-control readonly-field" readonly>
+                    </div>
+                </div>
+
+                <!-- REMARKS (Always visible & required) -->
+                <div class="col-sm-12 form-group mt-3">
+                    <label>Remarks <span class="text-danger">*</span></label>
+                    <textarea name="payout_remarks" id="payout_remarks" class="form-control" rows="3" required
+                        placeholder="Enter payout remarks...">{{ old('payout_remarks', $finance->payout_remarks ?? '') }}</textarea>
+                </div>
+
+                <div class="col-sm-12 text-right mt-3">
+                    <button type="submit" class="btn btn-success">Save Payout</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+
+    <div class="card mt-4">
+        <div class="card-header">
+            <h2>{{ __('Booking Journey (Remarks)') }}</h2>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-sm-12 table-responsive">
+                    <table id="tasks_history" class="table table-striped table-bordered table-hover" width="100%">
+                        <thead>
+                            <tr>
+                                <th width="10%">{{ __('DateTime') }}</th>
+                                <th width="20%">{{ __('Done By') }}</th>
+                                <th>{{ __('Details') }}</th>
+                                <th width="10%">{{ __('Image') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($comm['status'] as $row)
+                            <tr>
+                                <td>{{ $row['timestamp'] }}</td>
+                                <td>{{ $row['actor'] }}</td>
+                                <td>{{ $row['details'] }} : {{ $row['action'] }}</td>
+                                <td>
+                                    @if ($row['image'] == false)
+                                    {{ __('-None-') }}
+                                    @else
+                                    <a href="{{ $row['image'] }}" target="_BLANK">
+                                        <img src="{{ $row['image'] }}" class="img-fluid" width="100" />
+                                    </a>
+                                    @endif
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
     </div>
+</div>
 
-    <div class="row mt-4">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">{{ __('Payout Details') }}</h5>
-                </div>
 
-                <div class="card-body">
-                    <form id="payoutForm" method="POST" action="{{ route('payout.update', $booking->id) }}"
-                        enctype="multipart/form-data">
-                        @csrf
-                        <!-- FIXED: Manual _method field -->
-                        <input type="hidden" name="_method" value="PUT">
-                        <input type="hidden" name="booking_id" value="{{ $booking->id }}">
+</div>
+{{-- ===================== ATTACHMENT MODAL ===================== --}}
+<div class="modal fade" id="attachmentModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
 
-                        {{-- ROW 1 --}}
-                        <div class="row">
-                            <div class="col-sm-3 form-group">
-                                <label>Payout Category <span class="text-danger">*</span></label>
-                                <select name="payout_category" id="payout_category" class="form-control" required>
-                                    <option value="1" {{ old('payout_category', $finance->payout_category ?? 1) == 1 ?
-                                        'selected' : '' }}>Payout</option>
-                                    <option value="2" {{ old('payout_category', $finance->payout_category ?? 1) == 2 ?
-                                        'selected' : '' }}>No Payout</option>
-                                    <option value="4" {{ old('payout_category', $finance->payout_category ?? 1) == 4 ?
-                                        'selected' : '' }}>Cash</option>
-                                </select>
-                            </div>
-
-                            <!-- NO PAYOUT REASON (Hidden by default) -->
-                            <div class="col-sm-3 form-group" id="no_payout_reason_wrapper" style="display:none;">
-                                <label>No Payout Reason <span class="text-danger">*</span></label>
-                                <select name="no_payout_reason" id="no_payout_reason" class="form-control" required>
-                                    <option value="">-- Select Reason --</option>
-                                    <option value="1" {{ old('no_payout_reason', $finance->no_payout_reason ?? '') == '1' ? 'selected' : '' }}>
-                                        Low Interest Rate
-                                    </option>
-                                    <option value="2" {{ old('no_payout_reason', $finance->no_payout_reason ?? '') == '2' ? 'selected' : '' }}>
-                                        Low Tenure Funding
-                                    </option>
-                                    <option value="3" {{ old('no_payout_reason', $finance->no_payout_reason ?? '') == '3' ? 'selected' : '' }}>
-                                        Nil Payout Model
-                                    </option>
-                                    <option value="4" {{ old('no_payout_reason', $finance->no_payout_reason ?? '') == '4' ? 'selected' : '' }}>
-                                        Out Of Territory
-                                    </option>
-                                    <option value="5" {{ old('no_payout_reason', $finance->no_payout_reason ?? '') == '5' ? 'selected' : '' }}>
-                                        Financier Sourcing
-                                    </option>
-                                    <option value="6" {{ old('no_payout_reason', $finance->no_payout_reason ?? '') == '6' ? 'selected' : '' }}>
-                                        Other
-                                    </option>
-                                </select>
-                            </div>
-
-                            <div class="col-sm-3 form-group">
-                                <label>DO Number <span class="text-danger">*</span></label>
-                                <input type="text" name="do_number" id="do_number" class="form-control"
-                                    value="{{ old('do_number', $finance->instrument_ref_no ?? '') }}"
-                                    placeholder="e.g. DO12345" required>
-                                    <!-- HIDDEN FIELD TO SEND DIFFERENCE -->
-                                    <input type="hidden" name="difference_no_gst" id="hidden_difference_no_gst" value="">
-                            </div>
-
-                            <div class="col-sm-3 form-group">
-                                <label>Loan Amount (Dealer Entry) <span class="text-danger">*</span></label>
-                                <input type="number" name="loan_amount" id="loan_amount" class="form-control calc-input"
-                                    value="{{ old('loan_amount', $finance->loan_amount ?? 0) }}" step="1" min="0"
-                                    required>
-                            </div>
-                        </div>
-
-                        {{-- ROW 2 --}}
-                        <div class="row">
-                            <div class="col-sm-3 form-group">
-                                <label>Expected Payout % <small>(e.g. 1.5 = 1.5%)</small> <span
-                                        class="text-danger">*</span></label>
-                                <input type="number" name="expected_payout_pct" id="exp_payout_pct"
-                                    class="form-control calc-input"
-                                    value="{{ old('expected_payout_pct', $finance->expected_payout_pct ?? '') }}"
-                                    step="0.0001" min="0" placeholder="e.g. 1.5" required>
-                            </div>
-
-                            <div class="col-sm-3 form-group">
-                                <label>GST %</label>
-                                <input type="number" id="gst_pct" class="form-control" value="18" readonly>
-                            </div>
-
-                            <div class="col-sm-3 form-group">
-                                <label>GST Included in Payout<span class="text-danger">*</span></label>
-                                <select name="gst_included" id="gst_included" class="form-control calc-input" required>
-                                    <option value="0" {{ old('gst_included', $finance->gst_included) == 0 ? 'selected'
-                                        : '' }}>0 %</option>
-                                    <option value="0.5" {{ old('gst_included', $finance->gst_included) == 0.5 ?
-                                        'selected' : '' }}>50 %</option>
-                                    <option value="1" {{ old('gst_included', $finance->gst_included) == 1 ? 'selected'
-                                        : '' }}>100 %</option>
-                                </select>
-                            </div>
-
-                            <div class="col-sm-3 form-group">
-                                <label>Expected Payout % without GST</label>
-                                <input type="text" id="exp_payout_pct_no_gst" class="form-control readonly-field"
-                                    readonly>
-                            </div>
-                        </div>
-
-                        {{-- ROW 3 --}}
-                        <div class="row">
-                            <div class="col-sm-3 form-group">
-                                <label>Expected Payout Amount without GST</label>
-                                <input type="text" id="exp_payout_amt_no_gst" class="form-control readonly-field"
-                                    readonly>
-                            </div>
-
-                            <div class="col-sm-3 form-group">
-                                <label>GST Amount</label>
-                                <input type="text" id="gst_amount" class="form-control readonly-field" readonly>
-                            </div>
-
-                            <div class="col-sm-3 form-group">
-                                <label>Suggested Invoice Amount</label>
-                                <input type="text" id="suggested_invoice_amt" class="form-control readonly-field"
-                                    readonly>
-                            </div>
-
-                            <div class="col-sm-3 form-group">
-                                <label>Loan Amount (Fin Payout Sheet)</label>
-                                <input type="text" class="form-control readonly-field"
-                                    value="₹{{ number_format($finance->fin_loan_amount ?? 0, 2) }}" readonly>
-                            </div>
-                        </div>
-
-                        <hr>
-
-                        {{-- INVOICE 1 --}}
-                        <h6 class="mt-3 mb-2">1<sup>st</sup> Invoice</h6>
-                        <div class="row">
-                            <div class="col-sm-3 form-group">
-                                <label>1<sup>st</sup> Invoice No. <span class="text-danger">*</span></label>
-                                <input type="text" name="inv1_no" id="inv1_no" class="form-control"
-                                    value="{{ old('inv1_no', $finance->inv1_no ?? '') }}" required>
-                            </div>
-
-                            <div class="col-sm-3 form-group">
-                                <label>1<sup>st</sup> Invoice in Name of <span class="text-danger">*</span></label>
-                                <input type="text" name="inv1_name" id="inv1_name" class="form-control"
-                                    value="{{ old('inv1_name', $finance->inv1_name ?? '') }}" required>
-                            </div>
-
-                            <div class="col-sm-3 form-group">
-                                <label>1<sup>st</sup> Financier Provisioning <small>with GST</small> <span
-                                        class="text-danger">*</span></label>
-                                <input type="number" name="inv1_prov_gst" id="inv1_prov_gst"
-                                    class="form-control calc-input" step="0.01" min="0"
-                                    value="{{ old('inv1_prov_gst', $finance->inv1_prov_gst ?? '') }}"
-                                    placeholder="0.00" required>
-                            </div>
-                        </div>
-
-                        {{-- INVOICE 2 --}}
-                        <h6 class="mt-4 mb-2">2<sup>nd</sup> Invoice</h6>
-                        <div class="row">
-                            <div class="col-sm-3 form-group">
-                                <label>2<sup>nd</sup> Invoice No. </label>
-                                <input type="text" name="inv2_no" id="inv2_no" class="form-control"
-                                    value="{{ old('inv2_no', $finance->inv2_no ?? '') }}">
-                            </div>
-
-                            <div class="col-sm-3 form-group">
-                                <label>2<sup>nd</sup> Invoice in Name of </label>
-                                <input type="text" name="inv2_name" id="inv2_name" class="form-control"
-                                    value="{{ old('inv2_name', $finance->inv2_name ?? '') }}">
-                            </div>
-
-                            <div class="col-sm-3 form-group">
-                                <label>2<sup>nd</sup> Financier Provisioning <small>with GST</small></label>
-                                <input type="number" name="inv2_prov_gst" id="inv2_prov_gst"
-                                    class="form-control calc-input" step="0.01" min="0"
-                                    value="{{ old('inv2_prov_gst', $finance->inv2_prov_gst ?? '') }}"
-                                    placeholder="0.00">
-                            </div>
-                        </div>
-
-                        {{-- TOTAL PROVISIONING --}}
-                        <hr>
-                        <div class="row">
-                            <div class="col-sm-3 form-group">
-                                <label>Total Provisioning (with GST)</label>
-                                <input type="text" id="total_prov_gst" class="form-control readonly-field" readonly>
-                            </div>
-
-                            <div class="col-sm-3 form-group">
-                                <label>Total Provisioning (without GST)</label>
-                                <input type="text" id="total_prov_no_gst" class="form-control readonly-field" readonly>
-                            </div>
-
-                            <div class="col-sm-3 form-group">
-                                <label>Consideration (without GST)</label>
-                                <input type="number" name="consideration_no_gst" id="consideration_no_gst"
-                                    class="form-control calc-input" step="0.01" min="0"
-                                    value="{{ old('consideration_no_gst', $finance->consideration_no_gst ?? '') }}"
-                                    placeholder="0.00">
-                            </div>
-
-                            <div class="col-sm-3 form-group">
-                                <label>Difference (without GST)</label>
-                                <input type="text" id="difference_no_gst" class="form-control readonly-field" readonly>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-sm-3 form-group">
-                                <label>Provisioning % (without GST)</label>
-                                <input type="text" id="prov_pct_no_gst" class="form-control readonly-field" readonly>
-                            </div>
-                        </div>
-
-                        <!-- REMARKS (Always visible & required) -->
-                        <div class="col-sm-12 form-group mt-3">
-                            <label>Remarks <span class="text-danger">*</span></label>
-                            <textarea name="payout_remarks" id="payout_remarks" class="form-control" rows="3" required
-                                placeholder="Enter payout remarks...">{{ old('payout_remarks', $finance->payout_remarks ?? '') }}</textarea>
-                        </div>
-
-                        <div class="col-sm-12 text-right mt-3">
-                            <button type="submit" class="btn btn-success">Save Payout</button>
-                        </div>
-                    </form>
-                </div>
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalFileName">File Preview</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
 
-
-
-            <div class="card">
-                <div class="card-header">
-                    <h3>{{ __('Booking Journey(Remarks)') }}</h3>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-sm-12 table-responsive">
-                            <table id="tasks_history" class="table table-striped table-bordered table-hover"
-                                width="100%">
-                                <thead>
-                                    <tr>
-                                        <th width="10%">{{ __('DateTime') }}</th>
-                                        <th width="20%">{{ __('Done By') }}</th>
-                                        <th>{{ __('Details') }}</th>
-                                        <th width="10%">{{ __('Image') }}</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach ($comm['status'] as $row)
-                                    <tr>
-                                        <td>{{ $row['timestamp'] }}</td>
-                                        <td>{{ $row['actor'] }}</td>
-                                        <td>{{ $row['details'] }} : {{ $row['action'] }}</td>
-                                        <td>
-                                            @if ($row['image'] == false)
-                                            {{ __('-None-') }}
-                                            @else
-                                            <a href="{{ $row['image'] }}" target="_BLANK">
-                                                <img src="{{ $row['image'] }}" class="img-fluid" width="100" />
-                                            </a>
-                                            @endif
-                                        </td>
-                                    </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
+            <div class="modal-body text-center">
+                <iframe id="modalFilePreview" style="width:100%; height:70vh;" frameborder="0">
+                </iframe>
             </div>
+
+            <div class="modal-footer">
+                <a id="modalDownload" class="btn btn-success" download>
+                    <i class="la la-download"></i> Download
+                </a>
+
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    Close
+                </button>
+            </div>
+
         </div>
     </div>
-
-    </div>
+</div>
 
 @endsection
 
 @push('after_scripts')
-    <script>
+<script>
     const GST_RATE = 0.18;
     const CURRENCY = '₹';
     const $ = (id) => document.getElementById(id);
@@ -659,7 +712,7 @@
     // Re-format input fields
     el.inv1_prov_gst.value = fmtSpecial(M);
     el.inv2_prov_gst.value = fmtSpecial(P);
-    el.consideration_no_gst.value = fmtSpecial(S);
+    // el.consideration_no_gst.value = fmtSpecial(S);
     }
 
     const triggerCalc = () => setTimeout(calculateLive, 50);
@@ -718,5 +771,20 @@
         calculateLive();
         togglePayoutMode();
     });
+    document.addEventListener('click', function (e) {
+
+    const chip = e.target.closest('.instrument-chip');
+    if (!chip) return;
+
+    const url = chip.getAttribute('data-url');
+    const name = chip.getAttribute('data-name');
+
+    document.getElementById('modalFileName').innerText = name;
+    document.getElementById('modalDownload').setAttribute('href', url);
+    document.getElementById('modalFilePreview').setAttribute('src', url);
+
+    const modal = new bootstrap.Modal(document.getElementById('attachmentModal'));
+    modal.show();
+});
 </script>
 @endpush

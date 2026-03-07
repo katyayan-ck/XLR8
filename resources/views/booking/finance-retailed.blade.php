@@ -46,7 +46,7 @@
                     {{-- LEFT --}}
                     <div class="d-flex align-items-center gap-2 flex-wrap">
                         <input type="text" id="quickFilter" class="form-control" style="width:340px;"
-                            placeholder="Quick search...">
+                            placeholder="Smart Search...">
                         <button id="resetAll" class="btn btn-sm btn-outline-danger">Reset</button>
                     </div>
 
@@ -62,7 +62,7 @@
                 </div>
 
                 {{-- GRID --}}
-                <div id="myGrid" class="ag-theme-quartz" style="height: calc(100vh - 260px); width:100%;"></div>
+                <div id="myGrid" class="ag-theme-quartz" style="height: calc(110vh - 260px); width:100%;"></div>
 
             </div>
         </div>

@@ -1,285 +1,353 @@
 @extends(backpack_view('blank'))
 
-@section('header')
-<section class="container-fluid">
-    <h2>
-        <i class="la la-shield text-warning"></i> Edit Insurance
-        <small>Booking #{{ $booking->id }} — {{ $booking->name ?? 'N/A' }}</small>
-    </h2>
-</section>
-@endsection
+@section('title', 'Edit Insurance - Booking #' . $booking->id)
+
+@push('after_styles')
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
+<style>
+    .required-mark {
+        color: #dc3545;
+        margin-left: 4px;
+    }
+
+    .is-valid {
+        border-color: #28a745 !important;
+        box-shadow: 0 0 4px rgba(40, 167, 69, .4) !important;
+    }
+
+    .is-invalid {
+        border-color: #dc3545 !important;
+        box-shadow: 0 0 4px rgba(220, 53, 69, .4) !important;
+    }
+
+    .form-group.readonly-field {
+        margin-bottom: 1.25rem;
+    }
+
+    .readonly-label {
+        font-weight: 500;
+        color: #495057;
+        margin-bottom: 0.35rem;
+        display: block;
+    }
+
+    .readonly-value {
+        padding: 0.375rem 0.75rem;
+        background-color: #f8f9fa;
+        border: 1px solid #ced4da;
+        border-radius: 0.25rem;
+        min-height: 38px;
+        display: flex;
+        align-items: center;
+    }
+
+    .readonly-value.text-danger {
+        font-weight: 600;
+    }
+
+    .modal-backdrop {
+        z-index: 1040 !important;
+    }
+
+    .modal {
+        z-index: 1060 !important;
+    }
+
+    .modal-dialog {
+        z-index: 1070 !important;
+    }
+</style>
+@endpush
 
 @section('content')
-<div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header bg-gradient-warning d-flex justify-content-between align-items-center">
-                <h3 class="card-title mb-0 fw-bold text-dark">
-                    Insurance Details — Booking #{{ $booking->id }}
-                </h3>
-                <a href="{{ url()->previous() }}" class="btn btn-dark btn-sm">
-                    <i class="la la-arrow-left"></i> Back
-                </a>
+
+<div class="container-fluid">
+
+    @include(backpack_view('inc.alerts'))
+
+    <!-- Invoice Details Card - Top (View Only) -->
+<div class="card card-body shadow-sm mb-4">
+    <h2 class="mb-3"><i class="la la-file-invoice text-primary"></i> Invoice Details (Pending Insurance / RTO)</h2>
+    <div class="row">
+
+        <div class="col-md-3 form-group readonly-field">
+            <label class="readonly-label">XB No.</label>
+            <div class="readonly-value">
+                {{ $booking->sap_no ?? $booking->dms_no ?? $booking->id ?? '—' }}
             </div>
+        </div>
 
-            <div class="card-body">
-                @include(backpack_view('inc.alerts'))
-                <!-- or your custom alerts -->
+        <div class="col-md-3 form-group readonly-field">
+            <label class="readonly-label">Booking Date</label>
+            <div class="readonly-value">
+                {{ $booking->booking_date ? \Carbon\Carbon::parse($booking->booking_date)->format('d M Y') : '—' }}
+            </div>
+        </div>
 
+        <div class="col-md-3 form-group readonly-field">
+            <label class="readonly-label">DMS OTF No.</label>
+            <div class="readonly-value">
+                {{ $booking->dms_otf ?? '—' }}
+            </div>
+        </div>
 
-                <!-- ──────────────────────────────────────────────── -->
-                <!--       Booking Information (View Only) Card         -->
-                <!--       सबसे ऊपर - context के लिए महत्वपूर्ण        -->
-                <!-- ──────────────────────────────────────────────── -->
-                <div class="card mb-4 shadow-sm border-0">
-                    <div class="card-header bg-gradient-light text-dark d-flex align-items-center">
-                        <i class="la la-info-circle me-2 text-primary fs-4"></i>
-                        <h5 class="mb-0 fw-semibold">
-                            Booking Information (View Only) #{{ $booking->id }}
-                        </h5>
-                    </div>
+        <div class="col-md-3 form-group readonly-field">
+            <label class="readonly-label">Customer Name</label>
+            <div class="readonly-value">
+                {{ $booking->name ?? '—' }}
+                @if($booking->care_of)
+                <small class="text-muted d-block mt-1">(C/o: {{ $booking->care_of }})</small>
+                @endif
+            </div>
+        </div>
 
-                    <div class="card-body p-4">
-                        <dl class="row g-4 mb-0">
-                            <!-- Row 1: Basic Info -->
-                            <div class="col-12">
-                                <div class="row g-4 border-bottom pb-3 mb-3">
-                                    <div class="col-md-3 col-sm-6">
-                                        <dt class="text-muted small fw-medium mb-1">Booking Date</dt>
-                                        <dd class="fs-5 fw-semibold mb-0 text-dark">
-                                            {{ $booking->booking_date
-                                            ? \Carbon\Carbon::parse($booking->booking_date)->format('d M Y')
-                                            : '<span class="text-muted">—</span>' }}
-                                        </dd>
-                                    </div>
+        <div class="col-md-3 form-group readonly-field">
+            <label class="readonly-label">Branch</label>
+            <div class="readonly-value">
+                {{ $data['branch'] ?? '—' }}
+            </div>
+        </div>
 
-                                    <div class="col-md-3 col-sm-6">
-                                        <dt class="text-muted small fw-medium mb-1">Customer Name</dt>
-                                        <dd class="fs-5 fw-semibold mb-0 text-dark">
-                                            {{ $booking->name ?? '<span class="text-muted">—</span>' }}
-                                        </dd>
-                                    </div>
+        <div class="col-md-3 form-group readonly-field">
+            <label class="readonly-label">Location</label>
+            <div class="readonly-value">
+                @if($booking->location_id)
+                    {{ $booking->location?->name ?? '—' }}
+                @else
+                    {{ $booking->location_other ?: '—' }}
+                @endif
+            </div>
+        </div>
 
-                                    <div class="col-md-3 col-sm-6">
-                                        <dt class="text-muted small fw-medium mb-1">Branch</dt>
-                                        <dd class="fs-5 fw-semibold mb-0 text-dark">
-                                            {{ $booking->branch
-                                            ? ($booking->branch->name ?? $booking->branch->abbr ?? '—')
-                                            : '<span class="text-muted">—</span>' }}
-                                        </dd>
-                                    </div>
+        <div class="col-md-4 form-group readonly-field">
+            <label class="readonly-label">Model</label>
+            <div class="readonly-value">
+                {{ $booking->model ?? '—' }}
+            </div>
+        </div>
 
-                                    <div class="col-md-3 col-sm-6">
-                                        <dt class="text-muted small fw-medium mb-1">Location</dt>
-                                        <dd class="fs-5 fw-semibold mb-0 text-dark">
-                                            @if($booking->location_id)
-                                            {{ $booking->location?->name ?? '<span class="text-muted">—</span>' }}
-                                            @else
-                                            {{ $booking->location_other ?: '<span class="text-muted">—</span>' }}
-                                            @endif
-                                        </dd>
-                                    </div>
-                                </div>
-                            </div>
+        <div class="col-md-4 form-group readonly-field">
+            <label class="readonly-label">Variant</label>
+            <div class="readonly-value">
+                {{ $booking->variant ?? '—' }}
+            </div>
+        </div>
 
-                            <!-- Row 2: Vehicle Details -->
-                            <div class="col-12">
-                                <div class="row g-4 border-bottom pb-3 mb-3">
-                                    <div class="col-md-3 col-sm-6">
-                                        <dt class="text-muted small fw-medium mb-1">
-                                            <i class="la la-car-side me-1 text-primary"></i> Model
-                                        </dt>
-                                        <dd class="fs-5 fw-semibold mb-0 text-dark">
-                                            {{ $booking->model ?? '<span class="text-muted">—</span>' }}
-                                        </dd>
-                                    </div>
+        <div class="col-md-4 form-group readonly-field">
+            <label class="readonly-label">Color</label>
+            <div class="readonly-value">
+                {{ $booking->color ?? '—' }}
+            </div>
+        </div>
 
-                                    <div class="col-md-3 col-sm-6">
-                                        <dt class="text-muted small fw-medium mb-1">
-                                            <i class="la la-cogs me-1 text-primary"></i> Variant
-                                        </dt>
-                                        <dd class="fs-5 fw-semibold mb-0 text-dark">
-                                            {{ $booking->variant ?? '<span class="text-muted">—</span>' }}
-                                        </dd>
-                                    </div>
+        <div class="col-md-3 form-group readonly-field">
+            <label class="readonly-label">Chassis No.</label>
+            <div class="readonly-value">
+                {{ $booking->chassis_no ?? $booking->chasis_no ?? '—' }}
+            </div>
+        </div>
 
-                                    <div class="col-md-3 col-sm-6">
-                                        <dt class="text-muted small fw-medium mb-1">
-                                            <i class="la la-palette me-1 text-primary"></i> Color
-                                        </dt>
-                                        <dd class="fs-5 fw-semibold mb-0 text-dark">
-                                            {{ $booking->color ?? '<span class="text-muted">—</span>' }}
-                                        </dd>
-                                    </div>
+        <div class="col-md-3 form-group readonly-field">
+            <label class="readonly-label">Invoice No.</label>
+            <div class="readonly-value">
+                {{ $booking->inv_no ?? $booking->dms_invoice_number ?? '—' }}
+            </div>
+        </div>
 
-                                    <div class="col-md-3 col-sm-6">
-                                        <dt class="text-muted small fw-medium mb-1">
-                                            <i class="la la-key me-1 text-primary"></i> Chassis No.
-                                        </dt>
-                                        <dd class="fs-5 fw-semibold mb-0 text-dark">
-                                            {{ $booking->chassis_no ?? $booking->chasis_no ?? '<span
-                                                class="text-muted">—</span>' }}
-                                        </dd>
-                                    </div>
-                                </div>
-                            </div>
+        <div class="col-md-3 form-group readonly-field">
+            <label class="readonly-label">Invoice Date</label>
+            <div class="readonly-value">
+                {{ $booking->inv_date ? \Carbon\Carbon::parse($booking->inv_date)->format('d M Y') : '—' }}
+            </div>
+        </div>
 
-                            <!-- Row 3: Invoice Details (Extra fields as requested) -->
-                            <div class="col-12">
-                                <div class="row g-4">
-                                    <div class="col-md-4 col-sm-6">
-                                        <dt class="text-muted small fw-medium mb-1">
-                                            <i class="la la-file-invoice me-1 text-primary"></i> Invoice Number
-                                        </dt>
-                                        <dd class="fs-5 fw-semibold mb-0 text-dark">
-                                            {{ $booking->inv_no ?? $booking->dms_invoice_number ?? '<span
-                                                class="text-muted">—</span>' }}
-                                        </dd>
-                                    </div>
+    </div>
+</div>
 
-                                    <div class="col-md-4 col-sm-6">
-                                        <dt class="text-muted small fw-medium mb-1">
-                                            <i class="la la-calendar-check me-1 text-primary"></i> Invoice Date
-                                        </dt>
-                                        <dd class="fs-5 fw-semibold mb-0 text-dark">
-                                            {{ $booking->inv_date
-                                            ? \Carbon\Carbon::parse($booking->inv_date)->format('d M Y')
-                                            : '<span class="text-muted">—</span>' }}
-                                        </dd>
-                                    </div>
+    <!-- Insurance Edit Form Card -->
+    <div class="card card-body shadow-sm mb-4">
+        <h2 class="mb-3">Insurance Details</h2>
 
-                                    <!-- अगर Dealer Invoice भी दिखाना हो तो यहाँ तीसरा column जोड़ सकते हैं -->
-                                    <!-- <div class="col-md-4 col-sm-6">
-                                <dt class="text-muted small fw-medium mb-1">Dealer Invoice No.</dt>
-                                <dd class="fs-5 fw-semibold mb-0 text-dark">
-                                    {{ $booking->dealer_inv_no ?? '<span class="text-muted">—</span>' }}
-                                </dd>
-                            </div> -->
-                                </div>
-                            </div>
-                        </dl>
-                    </div>
+        <form method="POST" action="{{ route('booking.insurance.update', $booking->id) }}"
+            enctype="multipart/form-data">
+            @csrf
+            @method('PUT')
+            <input type="hidden" name="booking_id" value="{{ $booking->id }}">
+
+            <div class="row g-3">
+
+                <div class="col-md-4">
+                    <label class="form-label">
+                        Insurance Source
+                        <span class="required-mark">*</span>
+                    </label>
+                    <select name="insurance_category" class="form-control form-select" required>
+                        <option value="">Select Source</option>
+                        <option value="1" {{ old('insurance_category', $insurance?->source ?? '') == 1 ? 'selected' : ''
+                            }}>
+                            By Dealer (OEM Portal)
+                        </option>
+                        <option value="2" {{ old('insurance_category', $insurance?->source ?? '') == 2 ? 'selected' : ''
+                            }}>
+                            By Dealer (Agency)
+                        </option>
+                        <option value="3" {{ old('insurance_category', $insurance?->source ?? '') == 3 ? 'selected' : ''
+                            }}>
+                            By Owner (Self)
+                        </option>
+                    </select>
+                    @error('insurance_category') <span class="text-danger small">{{ $message }}</span> @enderror
                 </div>
 
-                <form method="POST" action="{{ route('booking.insurance.update', $booking->id) }}"
-                    enctype="multipart/form-data" class="row g-3">
-                    @csrf
-                    @method('PUT')
+                <div class="col-md-4">
+                    <label class="form-label">
+                        Insurance Company
+                        <span class="required-mark">*</span>
+                    </label>
+                    <select name="insurance_company" id="insurance_company" class="form-control form-select" required>
+                        <option value="">Select Company</option>
+                        @foreach ($data['insurances'] ?? [] as $ins)
+                        <option value="{{ $ins['id'] }}" data-short="{{ $ins['short_name'] ?? '' }}" {{
+                            old('insurance_company', $insurance?->insurer ?? '') == $ins['id'] ? 'selected' : '' }}>
+                            {{ $ins['name'] ?? 'N/A' }}
+                        </option>
+                        @endforeach
+                    </select>
+                    @error('insurance_company') <span class="text-danger small">{{ $message }}</span> @enderror
+                </div>
 
-                    <input type="hidden" name="booking_id" value="{{ $booking->id }}">
+                <div class="col-md-4">
+                    <label class="form-label">Short Name</label>
+                    <input type="text" id="insurance_short_name" class="form-control" readonly>
+                </div>
 
-                    <!-- Row 1 -->
-                    <div class="col-md-4">
-                        <label class="form-label">Insurance Source <span class="text-danger">*</span></label>
-                        <select name="insurance_category" class="form-control">
-                            <option value="">Select Source</option>
-                            <option value="1" {{ old('insurance_category', $insurance?->source ?? '') == 1 ? 'selected'
-                                : '' }}>By Dealer (OEM Portal)</option>
-                            <option value="2" {{ old('insurance_category', $insurance?->source ?? '') == 2 ? 'selected'
-                                : '' }}>By Dealer (Agency)</option>
-                            <option value="3" {{ old('insurance_category', $insurance?->source ?? '') == 3 ? 'selected'
-                                : '' }}>By Owner (Self)</option>
-                        </select>
-                        @error('insurance_category') <span class="text-danger small">{{ $message }}</span> @enderror
-                    </div>
+                <div class="col-md-4">
+                    <label class="form-label">
+                        Policy No.
+                        <span class="required-mark">*</span>
+                    </label>
+                    <input type="text" name="policy_no" class="form-control text-uppercase"
+                        value="{{ old('policy_no', $insurance?->pol_no ?? '') }}" maxlength="25" required>
+                    @error('policy_no') <span class="text-danger small">{{ $message }}</span> @enderror
+                </div>
 
-                    <div class="col-md-4">
-                        <label class="form-label">Insurance Company <span class="text-danger">*</span></label>
-                        <select name="insurance_company" id="insurance_company" class="form-control">
-                            <option value="">Select Company</option>
-                            @foreach ($data['insurances'] ?? [] as $ins)
-                            <option value="{{ $ins['id'] }}" data-short="{{ $ins['short_name'] ?? '' }}" {{
-                                old('insurance_company', $insurance?->insurer ?? '') == $ins['id'] ? 'selected' : '' }}>
-                                {{ $ins['name'] ?? 'N/A' }}
-                            </option>
-                            @endforeach
-                        </select>
-                        @error('insurance_company') <span class="text-danger small">{{ $message }}</span> @enderror
-                    </div>
+                <div class="col-md-4">
+                    <label class="form-label">
+                        Policy Date
+                        <span class="required-mark">*</span>
+                    </label>
+                    <input type="text" name="policy_date" id="policy_date" class="form-control flatpickr"
+                        value="{{ old('policy_date', $insurance?->pol_date ? \Carbon\Carbon::parse($insurance->pol_date)->format('d-M-Y') : '') }}"
+                        required>
+                    <input type="hidden" name="hidden_policy_date" id="hidden_policy_date"
+                        value="{{ old('hidden_policy_date', $insurance?->pol_date ?? '') }}">
+                    @error('hidden_policy_date') <span class="text-danger small">{{ $message }}</span> @enderror
+                </div>
 
-                    <div class="col-md-4">
-                        <label class="form-label">Short Name</label>
-                        <input type="text" id="insurance_short_name" class="form-control" readonly>
-                    </div>
+                <div class="col-md-4">
+                    <label class="form-label">
+                        Policy Type
+                        <span class="required-mark">*</span>
+                    </label>
+                    <select name="policy_type" class="form-control form-select" required>
+                        <option value="">Select Type</option>
+                        <option value="1" {{ old('policy_type', $insurance?->pol_type ?? '') == 1 ? 'selected' : ''
+                            }}>Normal</option>
+                        <option value="2" {{ old('policy_type', $insurance?->pol_type ?? '') == 2 ? 'selected' : ''
+                            }}>Nil Dep</option>
+                        <option value="3" {{ old('policy_type', $insurance?->pol_type ?? '') == 3 ? 'selected' : ''
+                            }}>Nil Dep + Cons.</option>
+                        <option value="4" {{ old('policy_type', $insurance?->pol_type ?? '') == 4 ? 'selected' : ''
+                            }}>Nil Dep + Cons. + Extra Add-On</option>
+                    </select>
+                    @error('policy_type') <span class="text-danger small">{{ $message }}</span> @enderror
+                </div>
 
-                    <!-- Row 2 -->
-                    <div class="col-md-4">
-                        <label class="form-label">Policy No. <span class="text-danger">*</span></label>
-                        <input type="text" name="policy_no" class="form-control text-uppercase"
-                            value="{{ old('policy_no', $insurance?->pol_no ?? '') }}" maxlength="25">
-                        @error('policy_no') <span class="text-danger small">{{ $message }}</span> @enderror
-                    </div>
+                {{-- <div class="col-md-6">
+                    <label class="form-label">
+                        Policy Copy
+                        <span class="required-mark">*</span>
+                    </label>
+                    <input type="file" name="policy_copy" class="form-control" accept=".pdf" required>
+                    @error('policy_copy') <span class="text-danger small">{{ $message }}</span> @enderror
 
-                    <div class="col-md-4">
-                        <label class="form-label">Policy Date <span class="text-danger">*</span></label>
-                        <input type="text" name="policy_date" id="policy_date" class="form-control flatpickr"
-                            value="{{ old('policy_date', $insurance?->pol_date ? Carbon::parse($insurance->pol_date)->format('d-M-Y') : '') }}">
-                        <!-- This hidden field MUST exist -->
-                        <input type="hidden" name="hidden_policy_date" id="hidden_policy_date"
-                            value="{{ old('hidden_policy_date', $insurance?->pol_date ?? '') }}">
-                        @error('hidden_policy_date') <span class="text-danger small">{{ $message }}</span> @enderror
-                    </div>
-
-                    <div class="col-md-4">
-                        <label class="form-label">Policy Type <span class="text-danger">*</span></label>
-                        <select name="policy_type" class="form-control">
-                            <option value="">Select Type</option>
-                            <option value="1" {{ old('policy_type', $insurance?->pol_type ?? '') == 1 ? 'selected' : ''
-                                }}>Normal</option>
-                            <option value="2" {{ old('policy_type', $insurance?->pol_type ?? '') == 2 ? 'selected' : ''
-                                }}>Nil Dep</option>
-                            <option value="3" {{ old('policy_type', $insurance?->pol_type ?? '') == 3 ? 'selected' : ''
-                                }}>Nil Dep + Cons.</option>
-                            <option value="4" {{ old('policy_type', $insurance?->pol_type ?? '') == 4 ? 'selected' : ''
-                                }}>Nil Dep + Cons. + Extra Add-On</option>
-                        </select>
-                        @error('policy_type') <span class="text-danger small">{{ $message }}</span> @enderror
-                    </div>
-
-                    <!-- File Upload -->
-                    <div class="col-md-6">
-                        <label class="form-label">Policy Copy <span class="text-danger">*</span></label>
-                        <input type="file" name="policy_copy" class="form-control" accept=".pdf">
-                        @error('policy_copy') <span class="text-danger small">{{ $message }}</span> @enderror
-
-                        @if ($insurance && $insurance->hasMedia('policy_copy'))
-                        <div class="mt-2">
-                            @php $media = $insurance->getFirstMedia('policy_copy'); @endphp
-                            <a href="{{ $media->getUrl() }}" target="_blank" class="btn btn-sm btn-info">
-                                <i class="la la-file-pdf"></i> View Current Policy
-                            </a>
-                        </div>
-                        @endif
-                    </div>
-
-                    <div class="col-12 mt-4">
-                        <button type="submit" class="btn btn-success px-5 py-2">
-                            <i class="la la-save"></i> Save Insurance
-                        </button>
-                        <a href="{{ route('booking.pending-insurance') }}" class="btn btn-secondary px-5 py-2 ms-3">
-                            Cancel
+                    @if ($insurance && $insurance->hasMedia('policy_copy'))
+                    <div class="mt-2">
+                        @php $media = $insurance->getFirstMedia('policy_copy'); @endphp
+                        <a href="{{ $media->getUrl() }}" target="_blank" class="btn btn-sm btn-info">
+                            <i class="la la-file-pdf"></i> View Current Policy
                         </a>
                     </div>
-                </form>
+                    @endif
+                </div> --}}
+                <div class="col-md-3">
+                    <label class="form-label">
+                        Policy Copy
+                        <span class="required-mark">*</span>
+                    </label>
+                    <input type="file" name="policy_copy" id="policyCopyInput" class="form-control" accept=".pdf"
+                        required>
+                    @error('policy_copy') <span class="text-danger small d-block mt-1">{{ $message }}</span> @enderror
+
+                    <!-- Chip Preview Area (same style as show-invoiced) -->
+                    <div id="policyCopyPreview" class="mt-3"></div>
+
+                    <!-- Existing file link (keep for already uploaded file) -->
+                    @if ($insurance && $insurance->hasMedia('policy_copy'))
+                    <div class="mt-2">
+                        @php $media = $insurance->getFirstMedia('policy_copy'); @endphp
+                        <a href="{{ $media->getUrl() }}" target="_blank" class="btn btn-sm btn-info">
+                            <i class="la la-file-pdf"></i> View Current Policy
+                        </a>
+                    </div>
+                    @endif
+                </div>
+
+                <div class="col-12 mt-4 text-center">
+                    <button type="submit" class="btn btn-success btn-lg px-5">
+                        <i class="la la-save"></i> Save Insurance
+                    </button>
+                    <a href="{{ route('booking.pending-insurance') }}" class="btn btn-secondary btn-lg px-5 ms-3">
+                        Cancel
+                    </a>
+                </div>
+
+            </div>
+        </form>
+    </div>
+
+</div>
+<!-- Preview Modal for Policy Copy -->
+<div class="modal fade" id="policyCopyModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="policyModalFileName"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <iframe id="policyModalPreview" style="width:100%; height:500px;" frameborder="0"></iframe>
+            </div>
+            <div class="modal-footer">
+                <a id="policyModalDownload" class="btn btn-success" download>Download</a>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
 </div>
-@endsection
 
-@push('after_styles')
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-@endpush
+@endsection
 
 @push('after_scripts')
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+
     flatpickr('#policy_date', {
         dateFormat: "d-M-Y",
         maxDate: "today",
-        onChange: function(selectedDates, dateStr, instance) {
-            // Fill hidden field in Y-m-d format
+        onChange: function(selectedDates) {
             const hidden = document.getElementById('hidden_policy_date');
             if (selectedDates[0] && hidden) {
                 hidden.value = flatpickr.formatDate(selectedDates[0], 'Y-m-d');
@@ -287,15 +355,10 @@
         }
     });
 
-    // Optional: trigger change on load if there's a default value
-    const policyDateInput = document.getElementById('policy_date');
-    if (policyDateInput && policyDateInput.value) {
-        policyDateInput.dispatchEvent(new Event('change'));
-    }
-
-    // Short name auto-fill (if you still have it)
+    // Short name auto-fill
     const companySelect = document.getElementById('insurance_company');
     const shortInput = document.getElementById('insurance_short_name');
+
     if (companySelect && shortInput) {
         companySelect.addEventListener('change', function() {
             const opt = this.options[this.selectedIndex];
@@ -303,6 +366,44 @@
         });
         companySelect.dispatchEvent(new Event('change'));
     }
+
+    // 🔥 IMPORTANT FIX — YAHI ADD KARO
+    $('#policyCopyModal').on('show.bs.modal', function () {
+        $(this).appendTo('body');
+    });
+
 });
+
+function handlePolicyCopy(input) {
+        const previewDiv = document.getElementById('policyCopyPreview');
+        previewDiv.innerHTML = '';
+
+        if (input.files && input.files[0]) {
+            const file = input.files[0];
+            const fileURL = URL.createObjectURL(file);
+
+            previewDiv.innerHTML = `
+                <span class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2 px-3 py-2"
+                      style="cursor: pointer;"
+                      onclick="openPolicyModal('${fileURL}', '${file.name.replace(/'/g, "\\'")}')">
+                    <i class="la la-paperclip"></i>
+                    <span class="fw-medium small">${file.name}</span>
+                </span>
+            `;
+        }
+    }
+
+    function openPolicyModal(url, name) {
+    document.getElementById('policyModalFileName').innerText = name;
+    document.getElementById('policyModalDownload').href = url;
+    document.getElementById('policyModalPreview').src = url;
+
+    $('#policyCopyModal').modal('show');
+}
+
+    // Attach handler
+    document.getElementById('policyCopyInput')?.addEventListener('change', function() {
+        handlePolicyCopy(this);
+    });
 </script>
 @endpush

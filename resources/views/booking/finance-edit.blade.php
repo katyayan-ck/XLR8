@@ -1,263 +1,339 @@
 @extends(backpack_view('blank'))
 
 @section('header')
-    <section class="container-fluid">
-        <h2>
-            <i class="la la-money-check text-primary"></i>
-            Edit Finance Details
-            <small class="d-none d-md-inline">Update Finance & Loan Information</small>
-        </h2>
-    </section>
+<section class="container-fluid">
+    {{-- <h2>
+        <i class="la la-money-check text-primary"></i>
+        Edit Finance Details
+        <small class="d-none d-md-inline">Update Finance & Loan Information</small>
+    </h2> --}}
+</section>
 @endsection
 
 @section('content')
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
+<div class="row">
+    <div class="col-12">
 
-                <div class="card-header bg-gradient-primary d-flex justify-content-between align-items-center">
-                    <h3 class="card-title mb-0 fw-bold text-black">
-                        Finance Details Edit
-                    </h3>
+
+        {{-- <div class="card-header bg-gradient-primary d-flex justify-content-between align-items-center">
+            <h3 class="card-title mb-0 fw-bold text-black">
+                Finance Details Edit
+            </h3>
+        </div> --}}
+
+        <div class="card-body">
+
+            <!-- Read-only Booking Info -->
+            <div class="card bg-light border-0 shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h2 class="mb-0">Booking & Customer Information (Read-only)</h2>
                 </div>
-
                 <div class="card-body">
-
-                    <!-- Read-only Booking Info -->
-                    <div class="card bg-light border-0 shadow-sm mb-4">
-                        <div class="card-header bg-white">
-                            <h5 class="mb-0">Booking & Customer Information (Read-only)</h5>
+                    <div class="row g-3">
+                        <div class="col-sm-3">
+                            <label class="form-label">Customer Name</label>
+                            <input type="text" class="form-control" value="{{ $booking->name ?? 'N/A' }}" readonly>
                         </div>
-                        <div class="card-body">
-                            <div class="row g-3">
-                                <div class="col-sm-3">
-                                    <label class="form-label">Customer Name</label>
-                                    <input type="text" class="form-control" value="{{ $booking->name ?? 'N/A' }}" readonly>
-                                </div>
-                                <div class="col-sm-3">
-                                    <label class="form-label">Model / Variant</label>
-                                    <input type="text" class="form-control"
-                                           value="{{ $booking->model ?? 'N/A' }} / {{ $booking->variant ?? 'N/A' }}" readonly>
-                                </div>
-                                <div class="col-sm-3">
-                                    <label class="form-label">Finance Mode (Original)</label>
-                                    <input type="text" class="form-control" value="{{ $booking->fin_mode ?? 'N/A' }}" readonly>
-                                </div>
-                                <div class="col-sm-3">
-                                    <label class="form-label">Financier (Original)</label>
-                                    <input type="text" class="form-control"
-                                           value="{{ collect($data['financiers'] ?? [])->firstWhere('id', $booking->financier)['name'] ?? 'N/A' }}"
-                                           readonly>
-                                </div>
+                        <div class="col-sm-3">
+                            <label class="form-label">Model / Variant</label>
+                            <input type="text" class="form-control"
+                                value="{{ $booking->model ?? 'N/A' }} / {{ $booking->variant ?? 'N/A' }}" readonly>
+                        </div>
+                        <div class="col-sm-3">
+                            <label class="form-label">Finance Mode (Primary)</label>
+                            <input type="text" class="form-control" value="{{ $booking->fin_mode ?? 'N/A' }}" readonly>
+                        </div>
+                        <div class="col-sm-3">
+                            <label class="form-label">Financier (Primary)</label>
+                            <input type="text" class="form-control"
+                                value="{{ collect($data['financiers'] ?? [])->firstWhere('id', $booking->financier)['name'] ?? 'N/A' }}"
+                                readonly>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Form -->
+            <form id="financeForm" method="POST" action="{{ route('finance.update', $booking->id) }}"
+                enctype="multipart/form-data">
+                @csrf
+                @method('PUT')
+                <input type="hidden" name="bid" value="{{ $booking->id }}">
+
+                <div class="card shadow-sm">
+                    <div class="card-header bg-white">
+                        <h2 class="mb-0">Finance & Loan Details</h2>
+                    </div>
+
+                    <div class="card-body">
+                        <div class="row g-3">
+
+                            <!-- Finance Mode -->
+                            <div class="col-sm-3">
+                                <label class="form-label">Finance Mode <span class="text-danger">*</span></label>
+                                <select name="fin_mode" id="fin_mode" class="form-control select2" required>
+                                    <option value="">-- Select --</option>
+                                    <option value="In-house" {{ old('fin_mode', $finance->fin_mode ?? '') == 'In-house'
+                                        ? 'selected' : '' }}>In-house</option>
+                                    <option value="Cash" {{ old('fin_mode', $finance->fin_mode ?? '') == 'Cash' ?
+                                        'selected' : '' }}>Cash</option>
+                                    <option value="Customer Self" {{ old('fin_mode', $finance->fin_mode ?? '') ==
+                                        'Customer Self' ? 'selected' : '' }}>Customer Self</option>
+                                    <option value="Yet To Decide" {{ old('fin_mode', $finance->fin_mode ?? '') == 'Yet
+                                        To Decide' ? 'selected' : '' }}>Yet To Decide</option>
+                                    <option value="Purchase Plan Cancelled" {{ old('fin_mode', $finance->fin_mode ?? '')
+                                        == 'Purchase Plan Cancelled' ? 'selected' : '' }}>Purchase Plan Cancelled
+                                    </option>
+                                </select>
+                                @error('fin_mode') <span class="text-danger small">{{ $message }}</span> @enderror
                             </div>
+
+                            <!-- Loan Status -->
+                            <div class="col-sm-3">
+                                <label class="form-label">Loan Status <span class="text-danger">*</span></label>
+                                <select name="loan_status" id="loan_status_box" class="form-control form-select"
+                                    required>
+                                    <option value="Pending" {{ old('loan_status', $finance->loan_status ?? '') ==
+                                        'Pending' ? 'selected' : '' }}>Pending</option>
+                                    <option value="Complete" {{ old('loan_status', $finance->loan_status ?? '') ==
+                                        'Complete' ? 'selected' : '' }}>Complete</option>
+                                </select>
+                                @error('loan_status') <span class="text-danger small">{{ $message }}</span> @enderror
+                            </div>
+
+                            <!-- Financier -->
+                            <div class="col-sm-3" id="financier_wrapper">
+                                <label class="form-label">Financier <span class="text-danger">*</span></label>
+                                <select name="financier" id="financier_select" class="form-control select2">
+                                    <option value="">-- Select Financier --</option>
+                                    @foreach($data['financiers'] ?? [] as $fin)
+                                    <option value="{{ $fin['id'] }}" data-short="{{ $fin['short_name'] ?? '' }}" {{
+                                        old('financier', $finance->financier ?? '') == $fin['id'] ? 'selected' : '' }}>
+                                        {{ $fin['name'] }}
+                                    </option>
+                                    @endforeach
+                                </select>
+                                @error('financier') <span class="text-danger small">{{ $message }}</span> @enderror
+                            </div>
+
+                            <!-- Short Name -->
+                            <div class="col-sm-3" id="financier_short_wrapper">
+                                <label class="form-label">Short Name</label>
+                                <input type="text" class="form-control" id="financier_short_name" readonly
+                                    value="{{ $finance && $finance->financier ? collect($data['financiers'] ?? [])->firstWhere('id', $finance->financier)['short_name'] ?? '' : '' }}">
+
+
+
+                            </div>
+
+                            <!-- Case Status -->
+                            <div class="col-sm-3">
+                                <label class="form-label">Case Status <span class="text-danger">*</span></label>
+                                <select name="case_status" id="case_status" class="form-control form-select" required>
+                                    <option value="1" {{ old('case_status', $finance->case_status ?? 1) == 1 ?
+                                        'selected' : '' }}>In-Process</option>
+                                    <option value="2" {{ old('case_status', $finance->case_status ?? 1) == 2 ?
+                                        'selected' : '' }}>In House Finance Done</option>
+                                    <option value="3" id="case_lost_option" {{ old('case_status', $finance->case_status
+                                        ?? 1) == 3 ? 'selected' : '' }}>Case Lost</option>
+                                </select>
+                                @error('case_status') <span class="text-danger small">{{ $message }}</span> @enderror
+                            </div>
+
+                            <!-- Verification Status -->
+                            <div class="col-sm-3">
+                                <label class="form-label">Verification Status</label>
+                                <input type="text" id="verification_status_display" class="form-control" readonly
+                                    value="Please select Finance Mode">
+                                <input type="hidden" name="verification_status" id="verification_status_hidden"
+                                    value="1">
+                                <input type="hidden" name="payout_eligible" id="payout_hidden" value="0">
+                            </div>
+
+                            <!-- Case Lost Reason -->
+                            <div class="col-sm-6" id="case_lost_reason_wrapper" style="display:none;">
+                                <label class="form-label">Case Lost Reason</label>
+                                <input type="text" class="form-control" id="case_lost_reason_display" readonly>
+                                <input type="hidden" name="case_lost_reason" id="case_lost_reason_hidden" value="">
+                            </div>
+
+                            <!-- Instrument Type -->
+                            <div class="col-sm-3 finance-field" id="instrument_type_wrapper" style="display:none;">
+                                <label class="form-label">Instrument Type</label>
+                                <select name="instrument_type" id="instrument_type" class="form-control">
+                                    <option value="">-- Select --</option>
+                                    <option value="1" {{ old('instrument_type', $finance->instrument_type ?? '') == 1 ?
+                                        'selected' : '' }}>Financier Payment</option>
+                                    <option value="2" {{ old('instrument_type', $finance->instrument_type ?? '') == 2 ?
+                                        'selected' : '' }}>Delivery Order</option>
+                                    <option value="3" {{ old('instrument_type', $finance->instrument_type ?? '') == 3 ?
+                                        'selected' : '' }}>Sanction Letter</option>
+                                    <option value="4" {{ old('instrument_type', $finance->instrument_type ?? '') == 4 ?
+                                        'selected' : '' }}>Mail Communication</option>
+                                    <option value="5" {{ old('instrument_type', $finance->instrument_type ?? '') == 5 ?
+                                        'selected' : '' }}>Whatsapp Communication</option>
+                                </select>
+                            </div>
+
+                            <!-- Ref No -->
+                            <div class="col-sm-3 finance-field" id="instrument_ref_no_wrapper" style="display:none;">
+                                <label class="form-label" id="instrument_ref_label">Reference No.</label>
+                                <input type="text" class="form-control" name="instrument_ref_no" id="instrument_ref_no"
+                                    value="{{ old('instrument_ref_no', $finance->instrument_ref_no ?? '') }}">
+                            </div>
+
+                            <!-- Instrument Proof -->
+                            <div class="col-sm-6 finance-field" id="instrument_proof_wrapper" style="display:none;">
+                                <label class="form-label">Instrument Proof</label>
+                                <input type="file" class="form-control" name="instrument_proof" id="instrument_proof"
+                                    accept="image/jpeg,image/png,application/pdf"
+                                    onchange="previewInstrumentProof(this)">
+                                @if($finance && $finance->getFirstMediaUrl('instrument_proof'))
+                                <div class="current-file-info mt-2">
+                                    Current: <a href="{{ $finance->getFirstMediaUrl('instrument_proof') }}"
+                                        target="_blank">
+                                        {{ basename($finance->getFirstMediaUrl('instrument_proof')) }}
+                                    </a>
+                                </div>
+                                @endif
+                                <div id="instrument_preview_container" class="mt-2 position-relative">
+                                    <img id="instrumentImg" src="" width="150"
+                                        style="display:none; border:1px solid #ddd;">
+                                    <iframe id="instrumentPdf" width="150" height="150" style="display:none;"></iframe>
+                                    <button type="button" id="instrumentClear" class="btn btn-danger btn-sm"
+                                        style="position:absolute; top:-8px; right:-8px; display:none;"
+                                        onclick="clearInstrumentProof()">X</button>
+                                </div>
+                                <small>Max 2 MB (JPG, PNG, PDF)</small>
+                            </div>
+
+                            <!-- Loan Fields -->
+                            <div class="col-sm-3 finance-field" id="loan_amount_wrapper" style="display:none;">
+                                <label class="form-label">Loan Amount</label>
+                                <input type="number" name="loan_amount" id="loan_amount" class="form-control calc-field"
+                                    value="{{ old('loan_amount', $finance->loan_amount ?? '') }}">
+                            </div>
+
+                            <div class="col-sm-3 finance-field" id="margin_money_wrapper" style="display:none;">
+                                <label class="form-label">Margin Money (by Financier)</label>
+                                <input type="number" name="margin_money" id="margin_money"
+                                    class="form-control calc-field"
+                                    value="{{ old('margin_money', $finance->margin ?? '') }}">
+                            </div>
+
+                            <div class="col-sm-3 finance-field" id="file_charge_wrapper" style="display:none;">
+                                <label class="form-label">File Charge (deducted)</label>
+                                <input type="number" name="file_charge" id="file_charge" class="form-control calc-field"
+                                    value="{{ old('file_charge', $finance->file_charge ?? '') }}">
+                            </div>
+
+                            <div class="col-sm-3 finance-field" id="payment_amount_wrapper" style="display:none;">
+                                <label class="form-label">Payment Amount</label>
+                                <input type="text" id="payment_amount" class="form-control" readonly>
+                            </div>
+
+                            <!-- Remark -->
+                            <div class="col-sm-12">
+                                <label class="form-label">Remark <span class="text-danger">*</span></label>
+                                <textarea name="remark" class="form-control" rows="4"
+                                    required>{{ old('remark', '') }}</textarea>
+                                @error('remark') <span class="text-danger small">{{ $message }}</span> @enderror
+                            </div>
+
                         </div>
                     </div>
 
-                    <!-- Main Form -->
-                    <form id="financeForm" method="POST" action="{{ route('finance.update', $booking->id) }}" enctype="multipart/form-data">
-                        @csrf
-                        @method('PUT')
-                        <input type="hidden" name="bid" value="{{ $booking->id }}">
-
-                        <div class="card shadow-sm">
-                            <div class="card-header bg-white">
-                                <h5 class="mb-0">Finance & Loan Details</h5>
-                            </div>
-
-                            <div class="card-body">
-                                <div class="row g-3">
-
-                                    <!-- Finance Mode -->
-                                    <div class="col-sm-3">
-                                        <label class="form-label">Finance Mode <span class="text-danger">*</span></label>
-                                        <select name="fin_mode" id="fin_mode" class="form-control select2" required>
-                                            <option value="">-- Select --</option>
-                                            <option value="In-house" {{ old('fin_mode', $finance->fin_mode ?? '') == 'In-house' ? 'selected' : '' }}>In-house</option>
-                                            <option value="Cash" {{ old('fin_mode', $finance->fin_mode ?? '') == 'Cash' ? 'selected' : '' }}>Cash</option>
-                                            <option value="Customer Self" {{ old('fin_mode', $finance->fin_mode ?? '') == 'Customer Self' ? 'selected' : '' }}>Customer Self</option>
-                                            <option value="Yet To Decide" {{ old('fin_mode', $finance->fin_mode ?? '') == 'Yet To Decide' ? 'selected' : '' }}>Yet To Decide</option>
-                                            <option value="Purchase Plan Cancelled" {{ old('fin_mode', $finance->fin_mode ?? '') == 'Purchase Plan Cancelled' ? 'selected' : '' }}>Purchase Plan Cancelled</option>
-                                        </select>
-                                        @error('fin_mode') <span class="text-danger small">{{ $message }}</span> @enderror
-                                    </div>
-
-                                    <!-- Loan Status -->
-                                    <div class="col-sm-3">
-                                        <label class="form-label">Loan Status <span class="text-danger">*</span></label>
-                                        <select name="loan_status" id="loan_status_box" class="form-control" required>
-                                            <option value="Pending" {{ old('loan_status', $finance->loan_status ?? '') == 'Pending' ? 'selected' : '' }}>Pending</option>
-                                            <option value="Complete" {{ old('loan_status', $finance->loan_status ?? '') == 'Complete' ? 'selected' : '' }}>Complete</option>
-                                        </select>
-                                        @error('loan_status') <span class="text-danger small">{{ $message }}</span> @enderror
-                                    </div>
-
-                                    <!-- Financier -->
-                                    <div class="col-sm-3" id="financier_wrapper">
-                                        <label class="form-label">Financier <span class="text-danger">*</span></label>
-                                        <select name="financier" id="financier_select" class="form-control select2">
-                                            <option value="">-- Select Financier --</option>
-                                            @foreach($data['financiers'] ?? [] as $fin)
-                                                <option value="{{ $fin['id'] }}"
-                                                        data-short="{{ $fin['short_name'] ?? '' }}"
-                                                        {{ old('financier', $finance->financier ?? '') == $fin['id'] ? 'selected' : '' }}>
-                                                    {{ $fin['name'] }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                        @error('financier') <span class="text-danger small">{{ $message }}</span> @enderror
-                                    </div>
-
-                                    <!-- Short Name -->
-                                    <div class="col-sm-3" id="financier_short_wrapper">
-                                        <label class="form-label">Short Name</label>
-                                        <input type="text" class="form-control" id="financier_short_name" readonly value="{{ $finance && $finance->financier ? collect($data['financiers'] ?? [])->firstWhere('id', $finance->financier)['short_name'] ?? '' : '' }}">
-                                               
-                                    
-                                    
-                                    </div>
-
-                                    <!-- Case Status -->
-                                    <div class="col-sm-3">
-                                        <label class="form-label">Case Status <span class="text-danger">*</span></label>
-                                        <select name="case_status" id="case_status" class="form-control" required>
-                                            <option value="1" {{ old('case_status', $finance->case_status ?? 1) == 1 ? 'selected' : '' }}>In-Process</option>
-                                            <option value="2" {{ old('case_status', $finance->case_status ?? 1) == 2 ? 'selected' : '' }}>In House Finance Done</option>
-                                            <option value="3" id="case_lost_option" {{ old('case_status', $finance->case_status ?? 1) == 3 ? 'selected' : '' }}>Case Lost</option>
-                                        </select>
-                                        @error('case_status') <span class="text-danger small">{{ $message }}</span> @enderror
-                                    </div>
-
-                                    <!-- Verification Status -->
-                                    <div class="col-sm-3">
-                                        <label class="form-label">Verification Status</label>
-                                        <input type="text" id="verification_status_display" class="form-control" readonly value="Please select Finance Mode">
-                                        <input type="hidden" name="verification_status" id="verification_status_hidden" value="1">
-                                        <input type="hidden" name="payout_eligible" id="payout_hidden" value="0">
-                                    </div>
-
-                                    <!-- Case Lost Reason -->
-                                    <div class="col-sm-6" id="case_lost_reason_wrapper" style="display:none;">
-                                        <label class="form-label">Case Lost Reason</label>
-                                        <input type="text" class="form-control" id="case_lost_reason_display" readonly>
-                                        <input type="hidden" name="case_lost_reason" id="case_lost_reason_hidden" value="">
-                                    </div>
-
-                                    <!-- Instrument Type -->
-                                    <div class="col-sm-3 finance-field" id="instrument_type_wrapper" style="display:none;">
-                                        <label class="form-label">Instrument Type</label>
-                                        <select name="instrument_type" id="instrument_type" class="form-control">
-                                            <option value="">-- Select --</option>
-                                            <option value="1" {{ old('instrument_type', $finance->instrument_type ?? '') == 1 ? 'selected' : '' }}>Financier Payment</option>
-                                            <option value="2" {{ old('instrument_type', $finance->instrument_type ?? '') == 2 ? 'selected' : '' }}>Delivery Order</option>
-                                            <option value="3" {{ old('instrument_type', $finance->instrument_type ?? '') == 3 ? 'selected' : '' }}>Sanction Letter</option>
-                                            <option value="4" {{ old('instrument_type', $finance->instrument_type ?? '') == 4 ? 'selected' : '' }}>Mail Communication</option>
-                                            <option value="5" {{ old('instrument_type', $finance->instrument_type ?? '') == 5 ? 'selected' : '' }}>Whatsapp Communication</option>
-                                        </select>
-                                    </div>
-
-                                    <!-- Ref No -->
-                                    <div class="col-sm-3 finance-field" id="instrument_ref_no_wrapper" style="display:none;">
-                                        <label class="form-label" id="instrument_ref_label">Reference No.</label>
-                                        <input type="text" class="form-control" name="instrument_ref_no" id="instrument_ref_no"
-                                               value="{{ old('instrument_ref_no', $finance->instrument_ref_no ?? '') }}">
-                                    </div>
-
-                                    <!-- Instrument Proof -->
-                                    <div class="col-sm-6 finance-field" id="instrument_proof_wrapper" style="display:none;">
-                                        <label class="form-label">Instrument Proof</label>
-                                        <input type="file" class="form-control" name="instrument_proof" id="instrument_proof"
-                                               accept="image/jpeg,image/png,application/pdf" onchange="previewInstrumentProof(this)">
-                                        @if($finance && $finance->getFirstMediaUrl('instrument_proof'))
-                                            <div class="current-file-info mt-2">
-                                                Current: <a href="{{ $finance->getFirstMediaUrl('instrument_proof') }}" target="_blank">
-                                                    {{ basename($finance->getFirstMediaUrl('instrument_proof')) }}
-                                                </a>
-                                            </div>
-                                        @endif
-                                        <div id="instrument_preview_container" class="mt-2 position-relative">
-                                            <img id="instrumentImg" src="" width="150" style="display:none; border:1px solid #ddd;">
-                                            <iframe id="instrumentPdf" width="150" height="150" style="display:none;"></iframe>
-                                            <button type="button" id="instrumentClear" class="btn btn-danger btn-sm"
-                                                    style="position:absolute; top:-8px; right:-8px; display:none;"
-                                                    onclick="clearInstrumentProof()">X</button>
-                                        </div>
-                                        <small>Max 2 MB (JPG, PNG, PDF)</small>
-                                    </div>
-
-                                    <!-- Loan Fields -->
-                                    <div class="col-sm-3 finance-field" id="loan_amount_wrapper" style="display:none;">
-                                        <label class="form-label">Loan Amount</label>
-                                        <input type="number" name="loan_amount" id="loan_amount" class="form-control calc-field"
-                                               value="{{ old('loan_amount', $finance->loan_amount ?? '') }}">
-                                    </div>
-
-                                    <div class="col-sm-3 finance-field" id="margin_money_wrapper" style="display:none;">
-                                        <label class="form-label">Margin Money (by Financier)</label>
-                                        <input type="number" name="margin_money" id="margin_money" class="form-control calc-field"
-                                               value="{{ old('margin_money', $finance->margin ?? '') }}">
-                                    </div>
-
-                                    <div class="col-sm-3 finance-field" id="file_charge_wrapper" style="display:none;">
-                                        <label class="form-label">File Charge (deducted)</label>
-                                        <input type="number" name="file_charge" id="file_charge" class="form-control calc-field"
-                                               value="{{ old('file_charge', $finance->file_charge ?? '') }}">
-                                    </div>
-
-                                    <div class="col-sm-3 finance-field" id="payment_amount_wrapper" style="display:none;">
-                                        <label class="form-label">Payment Amount</label>
-                                        <input type="text" id="payment_amount" class="form-control" readonly>
-                                    </div>
-
-                                    <!-- Remark -->
-                                    <div class="col-sm-12">
-                                        <label class="form-label">Remark <span class="text-danger">*</span></label>
-                                        <textarea name="remark" class="form-control" rows="4" required>{{ old('remark', '') }}</textarea>
-                                        @error('remark') <span class="text-danger small">{{ $message }}</span> @enderror
-                                    </div>
-
-                                </div>
-                            </div>
-
-                            <div class="card-footer bg-white text-end">
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="la la-save"></i> Save Finance Details
-                                </button>
-                                <a href="{{ url()->previous() }}" class="btn btn-outline-secondary">
-                                    <i class="la la-arrow-left"></i> Back
-                                </a>
-                            </div>
-                        </div>
-                    </form>
-
+                    <div class="card-footer bg-white text-end">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="la la-save"></i> Save Finance Details
+                        </button>
+                        <a href="{{ url()->previous() }}" class="btn btn-outline-secondary">
+                            <i class="la la-arrow-left"></i> Back
+                        </a>
+                    </div>
                 </div>
-            </div>
+            </form>
+
         </div>
+
     </div>
+</div>
 @endsection
 
 @push('after_styles')
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 
-    <style>
-        .is-valid { border-color: #28a745 !important; box-shadow: 0 0 5px rgba(40,167,69,0.5); }
-        .text-danger { color: #dc3545; }
-        input[readonly], select[readonly] { background-color: #f8f9fa; cursor: not-allowed; }
-        .finance-field { display: none; }
-        #instrument_preview_container { min-height: 160px; position: relative; display: inline-block; }
-        #instrumentImg, #instrumentPdf { max-width: 100%; border: 1px solid #ddd; border-radius: 4px; }
-        #instrumentClear { position: absolute; top: -10px; right: -10px; z-index: 10; width: 24px; height: 24px; font-size: 14px; padding: 0; }
-        .current-file-info { font-size: 0.9rem; margin-top: 8px; color: #555; }
-        .current-file-info a { color: #007bff; text-decoration: underline; }
-        .current-file-info a:hover { color: #0056b3; }
-        .select2-container--default .select2-selection--single { height: calc(1.5em + 0.75rem + 2px); padding: 0.375rem 0.75rem; }
-    </style>
+<style>
+    .is-valid {
+        border-color: #28a745 !important;
+        box-shadow: 0 0 5px rgba(40, 167, 69, 0.5);
+    }
+
+    .text-danger {
+        color: #dc3545;
+    }
+
+    input[readonly],
+    select[readonly] {
+        background-color: #f8f9fa;
+        cursor: not-allowed;
+    }
+
+    .finance-field {
+        display: none;
+    }
+
+    #instrument_preview_container {
+        min-height: 160px;
+        position: relative;
+        display: inline-block;
+    }
+
+    #instrumentImg,
+    #instrumentPdf {
+        max-width: 100%;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+    }
+
+    #instrumentClear {
+        position: absolute;
+        top: -10px;
+        right: -10px;
+        z-index: 10;
+        width: 24px;
+        height: 24px;
+        font-size: 14px;
+        padding: 0;
+    }
+
+    .current-file-info {
+        font-size: 0.9rem;
+        margin-top: 8px;
+        color: #555;
+    }
+
+    .current-file-info a {
+        color: #007bff;
+        text-decoration: underline;
+    }
+
+    .current-file-info a:hover {
+        color: #0056b3;
+    }
+
+    .select2-container--default .select2-selection--single {
+        height: calc(1.5em + 0.75rem + 2px);
+        padding: 0.375rem 0.75rem;
+    }
+</style>
 @endpush
 
 @push('after_scripts')
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.19.5/dist/jquery.validate.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.19.5/dist/jquery.validate.min.js"></script>
 
-    <script>
+<script>
     (function($) {
         'use strict';
 
@@ -382,13 +458,51 @@
                 $('#financier_select').prop('disabled', false).prop('required', true);
             }
 
+
+            updateInstrumentFields();
             checkPayoutEligibility();
+        }
+
+        function updateInstrumentFields() {
+            const instrumentType = $('#instrument_type').val();
+
+            // Show/hide reference field only for type 1 & 2
+            if (instrumentType === '1' || instrumentType === '2') {
+                $('#instrument_ref_no_wrapper').show();
+
+                const labelText = instrumentType === '1' ? 'Receipt No.' : 'Delivery Order No.';
+                $('#instrument_ref_label').text(labelText);
+
+                // Make it required
+                $('#instrument_ref_no')
+                    .prop('required', true)
+                    .closest('.form-group, .col-sm-3') // optional: for styling
+                    .find('label')
+                    .append(' <span class="text-danger">*</span>'); // visual star
+
+            } else {
+                $('#instrument_ref_no_wrapper').hide();
+
+                // Remove required
+                $('#instrument_ref_no')
+                    .prop('required', false)
+                    .removeClass('is-invalid is-valid');
+
+                // Remove visual *
+                $('#instrument_ref_label .text-danger').remove();
+            }
+
+            // Re-validate after change
+            if ($('#financeForm').data('validator')) {
+                $('#financeForm').validate().element('#instrument_ref_no');
+            }
         }
 
         function showFinanceFields() {
             $('#instrument_type_wrapper, #instrument_ref_no_wrapper, #instrument_proof_wrapper, ' +
               '#loan_amount_wrapper, #margin_money_wrapper, #file_charge_wrapper, #payment_amount_wrapper').show();
             updateRefLabel();
+
             calculatePayment();
         }
 
@@ -476,5 +590,5 @@
         $(document).ready(init);
 
     })(jQuery);
-    </script>
+</script>
 @endpush

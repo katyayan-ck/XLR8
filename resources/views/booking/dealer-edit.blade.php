@@ -1,227 +1,242 @@
 @extends(backpack_view('blank'))
 
-@section('header')
-<section class="container-fluid">
-    <h2>
-        <i class="la la-file-invoice-dollar text-warning"></i> Dealer Invoice Details
-        <small class="d-none d-md-inline">Booking #{{ $booking->id }}</small>
-    </h2>
-</section>
-@endsection
+@section('title', 'Dealer Invoice - Booking #' . $booking->id)
+
+@push('after_styles')
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<style>
+    .required-mark {
+        color: #dc3545;
+        margin-left: 4px;
+    }
+
+    .form-group.readonly-field {
+        margin-bottom: 1.25rem;
+    }
+
+    .readonly-label {
+        font-weight: 500;
+        color: #495057;
+        margin-bottom: 0.35rem;
+        display: block;
+    }
+
+    .readonly-value {
+        padding: 0.375rem 0.75rem;
+        background-color: #f8f9fa;
+        border: 1px solid #ced4da;
+        border-radius: 0.25rem;
+        min-height: 38px;
+        display: flex;
+        align-items: center;
+    }
+</style>
+@endpush
 
 @section('content')
-<div class="row">
-    <div class="col-md-12">
 
-        <!-- ──────────────────────────────────────────────── -->
-        <!--       Booking Information (View Only) Card         -->
-        <!--       सबसे ऊपर दिखेगा - context के लिए जरूरी       -->
-        <!-- ──────────────────────────────────────────────── -->
-        <div class="card mb-4 shadow-sm border-0">
-            <div class="card-header bg-gradient-light text-dark d-flex align-items-center">
-                <i class="la la-info-circle me-2 text-primary fs-4"></i>
-                <h5 class="mb-0 fw-semibold">
-                    Booking Information (View Only) #{{ $booking->id }}
-                </h5>
-            </div>
-
-            <div class="card-body p-4">
-                <dl class="row g-4 mb-0">
-                    <!-- Row 1: Basic Info -->
-                    <div class="col-12">
-                        <div class="row g-4 border-bottom pb-3 mb-3">
-                            <div class="col-md-3 col-sm-6">
-                                <dt class="text-muted small fw-medium mb-1">Booking Date</dt>
-                                <dd class="fs-5 fw-semibold mb-0 text-dark">
-                                    {{ $booking->booking_date
-                                    ? \Carbon\Carbon::parse($booking->booking_date)->format('d M Y')
-                                    : '<span class="text-muted">—</span>' }}
-                                </dd>
-                            </div>
-
-                            <div class="col-md-3 col-sm-6">
-                                <dt class="text-muted small fw-medium mb-1">Customer Name</dt>
-                                <dd class="fs-5 fw-semibold mb-0 text-dark">
-                                    {{ $booking->name ?? '<span class="text-muted">—</span>' }}
-                                </dd>
-                            </div>
-
-                            <div class="col-md-3 col-sm-6">
-                                <dt class="text-muted small fw-medium mb-1">Branch</dt>
-                                <dd class="fs-5 fw-semibold mb-0 text-dark">
-                                    {{ $booking->branch
-                                    ? ($booking->branch->name ?? $booking->branch->abbr ?? '—')
-                                    : '<span class="text-muted">—</span>' }}
-                                </dd>
-                            </div>
-
-                            <div class="col-md-3 col-sm-6">
-                                <dt class="text-muted small fw-medium mb-1">Location</dt>
-                                <dd class="fs-5 fw-semibold mb-0 text-dark">
-                                    @if($booking->location_id)
-                                    {{ $booking->location?->name ?? '<span class="text-muted">—</span>' }}
-                                    @else
-                                    {{ $booking->location_other ?: '<span class="text-muted">—</span>' }}
-                                    @endif
-                                </dd>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Row 2: Vehicle Details + Chassis No. -->
-                    <div class="col-12">
-                        <div class="row g-4">
-                            <div class="col-md-3 col-sm-6">
-                                <dt class="text-muted small fw-medium mb-1">
-                                    <i class="la la-car-side me-1 text-primary"></i> Model
-                                </dt>
-                                <dd class="fs-5 fw-semibold mb-0 text-dark">
-                                    {{ $booking->model ?? '<span class="text-muted">—</span>' }}
-                                </dd>
-                            </div>
-
-                            <div class="col-md-3 col-sm-6">
-                                <dt class="text-muted small fw-medium mb-1">
-                                    <i class="la la-cogs me-1 text-primary"></i> Variant
-                                </dt>
-                                <dd class="fs-5 fw-semibold mb-0 text-dark">
-                                    {{ $booking->variant ?? '<span class="text-muted">—</span>' }}
-                                </dd>
-                            </div>
-
-                            <div class="col-md-3 col-sm-6">
-                                <dt class="text-muted small fw-medium mb-1">
-                                    <i class="la la-palette me-1 text-primary"></i> Color
-                                </dt>
-                                <dd class="fs-5 fw-semibold mb-0 text-dark">
-                                    {{ $booking->color ?? '<span class="text-muted">—</span>' }}
-                                </dd>
-                            </div>
-
-                            <div class="col-md-3 col-sm-6">
-                                <dt class="text-muted small fw-medium mb-1">
-                                    <i class="la la-key me-1 text-primary"></i> Chassis No.
-                                </dt>
-                                <dd class="fs-5 fw-semibold mb-0 text-dark">
-                                    {{ $booking->chassis_no ?? $booking->chasis_no ?? '<span
-                                        class="text-muted">—</span>' }}
-                                </dd>
-                            </div>
-                        </div>
-                    </div>
-                </dl>
+<!-- Invoice Details Card (Read-only) -->
+<div class="card card-body shadow-sm mb-4">
+    <h2 class="mb-3">Invoice Details</h2>
+    <div class="row">
+        <!-- Row 1 -->
+        <div class="col-md-3 form-group readonly-field">
+            <label class="readonly-label">XB No.</label>
+            <div class="readonly-value">
+                {{ $booking->id ?? '—' }}
             </div>
         </div>
-        <div class="card p-3" id="dealer-invoice-card">
-            <div class="card-body">
-                <h5 class="mb-3">Dealer Invoice Details - Booking #{{ $booking->id }}</h5>
 
-                @if(session('success'))
-                <div class="alert alert-success alert-dismissible fade show" role="alert">
-                    {{ session('success') }}
-                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                        <span aria-hidden="true">×</span>
-                    </button>
-                </div>
+        <div class="col-md-3 form-group readonly-field">
+            <label class="readonly-label">Booking Date</label>
+            <div class="readonly-value">
+                {{ $booking->booking_date ? \Carbon\Carbon::parse($booking->booking_date)->format('d-m-Y') : '—' }}
+            </div>
+        </div>
+
+        <div class="col-md-3 form-group readonly-field">
+            <label class="readonly-label">DMS OTF No.</label>
+            <div class="readonly-value">
+                {{ $booking->dms_otf ?? '—' }}
+            </div>
+        </div>
+
+        <div class="col-md-3 form-group readonly-field">
+            <label class="readonly-label">Customer Name</label>
+            <div class="readonly-value">
+                {{ $booking->name ?? '—' }}
+            </div>
+        </div>
+
+        <!-- Row 2 -->
+        <div class="col-md-3 form-group readonly-field">
+            <label class="readonly-label">Branch</label>
+            <div class="readonly-value">
+                {{ $booking->branch ? ($booking->branch->name ?? $booking->branch->abbr ?? '—') : '—' }}
+            </div>
+        </div>
+
+        <div class="col-md-3 form-group readonly-field">
+            <label class="readonly-label">Location</label>
+            <div class="readonly-value">
+                @if($booking->location_id)
+                    {{ $booking->location?->name ?? '—' }}
+                @else
+                    {{ $booking->location_other ?: '—' }}
                 @endif
+            </div>
+        </div>
 
-                @if($errors->any())
-                <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    <ul class="mb-0">
-                        @foreach($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                        @endforeach
-                    </ul>
-                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                        <span aria-hidden="true">×</span>
-                    </button>
-                </div>
-                @endif
+        <div class="col-md-3 form-group readonly-field">
+            <label class="readonly-label">Model</label>
+            <div class="readonly-value">
+                {{ $booking->model ?? '—' }}
+            </div>
+        </div>
 
-                <form id="dealer-invoice-form" class="forms-sample" method="POST" action="{{ $saveAction }}">
-                    @csrf
-                    @method('PUT')
+        <div class="col-md-3 form-group readonly-field">
+            <label class="readonly-label">Variant</label>
+            <div class="readonly-value">
+                {{ $booking->variant ?? '—' }}
+            </div>
+        </div>
 
-                    <div class="row">
-                        <!-- DMS Invoice Number -->
-                        <div class="col-sm-3 form-group {{ $errors->has('dms_invoice_number') ? 'has-danger' : '' }}">
-                            <label for="dms_invoice_number">DMS Invoice No. <span class="text-danger">*</span></label>
-                            <input type="text" name="dms_invoice_number" id="dms_invoice_number"
-                                class="form-control {{ $errors->has('dms_invoice_number') ? 'is-invalid' : '' }}"
-                                value="{{ old('dms_invoice_number') }}" placeholder="INV00A123456" required>
+        <!-- Row 3 -->
+        <div class="col-md-3 form-group readonly-field">
+            <label class="readonly-label">Color</label>
+            <div class="readonly-value">
+                {{ $booking->color ?? '—' }}
+            </div>
+        </div>
 
-                            @error('dms_invoice_number')
-                            <div class="invalid-feedback">
-                                {{ $message }}
-                            </div>
-                            @enderror
-                        </div>
+        <div class="col-md-3 form-group readonly-field">
+            <label class="readonly-label">Chassis No.</label>
+            <div class="readonly-value">
+                {{ $booking->chassis_no ?? $booking->chasis_no ?? '—' }}
+            </div>
+        </div>
 
-                        <!-- DMS Invoice Date -->
-                        <div class="col-sm-3 form-group {{ $errors->has('dms_invoice_date') ? 'has-danger' : '' }}">
-                            <label for="dms_invoice_date">DMS Invoice Date <span class="text-danger">*</span></label>
-                            <input type="text" name="dms_invoice_date_display" id="dms_invoice_date"
-                                class="form-control flatpickr {{ $errors->has('dms_invoice_date') ? 'is-invalid' : '' }}"
-                                placeholder="dd-MMM-yyyy" required>
-                            <input type="hidden" name="dms_invoice_date" id="hidden_dms_invoice_date">
-                            @error('dms_invoice_date')
-                            <div class="invalid-feedback">
-                                {{ $message }}
-                            </div>
-                            @enderror
-                        </div>
+        <div class="col-md-3 form-group readonly-field">
+            <label class="readonly-label">Dealer Invoice No.</label>
+            <div class="readonly-value">
+                {{ $booking->dealer_inv_no ?? '—' }}
+            </div>
+        </div>
 
-                        <!-- Dealer Invoice Number (Blocked + Readonly) -->
-                        <div class="col-sm-3 form-group">
-                            <label>Dealer Invoice Number</label>
-                            <input type="text" class="form-control bg-light"
-                                value="{{ $booking->dealer_inv_no ?? 'N/A' }}" readonly tabindex="-1">
-                        </div>
-
-                        <!-- Dealer Invoice Date (Blocked + Readonly) -->
-                        <div class="col-sm-3 form-group">
-                            <label>Dealer Invoice Date</label>
-                            <input type="text" class="form-control bg-light"
-                                value="{{ $booking->dealer_inv_date ? \Carbon\Carbon::parse($booking->dealer_inv_date)->format('d-M-Y') : 'N/A' }}"
-                                readonly tabindex="-1">
-                        </div>
-
-                        <!-- Submit -->
-                        <div class="col-12 mt-4 text-center">
-                            <button type="submit" class="btn btn-success btn-lg px-5">
-                                <i class="la la-save"></i> Submit Dealer Invoice
-                            </button>
-                        </div>
-                    </div>
-                </form>
-
+        <div class="col-md-3 form-group readonly-field">
+            <label class="readonly-label">Dealer Invoice Date</label>
+            <div class="readonly-value">
+                {{ $booking->dealer_inv_date
+                    ? \Carbon\Carbon::parse($booking->dealer_inv_date)->format('d-m-Y')
+                    : '—' }}
             </div>
         </div>
     </div>
 </div>
-@endsection
 
-@push('after_styles')
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-@endpush
+<!-- Dealer Invoice Form -->
+<form id="dealer-invoice-form" method="POST" action="{{ $saveAction }}">
+    @csrf
+    @method('PUT')
+
+    <div class="card card-body shadow-sm">
+        <h2 class="mb-3">Dealer Invoice Details - Booking #{{ $booking->id }}</h2>
+
+        @if(session('success'))
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            {{ session('success') }}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">×</span>
+            </button>
+        </div>
+        @endif
+
+        @if($errors->any())
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <ul class="mb-0">
+                @foreach($errors->all() as $error)
+                <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">×</span>
+            </button>
+        </div>
+        @endif
+
+        <div class="row">
+            <!-- DMS Invoice Number -->
+            <div class="col-md-3 form-group">
+                <label>
+                    DMS Invoice No.
+                    <span class="required-mark">*</span>
+                </label>
+                <input type="text" name="dms_invoice_number" id="dms_invoice_number" class="form-control"
+                    value="{{ old('dms_invoice_number') }}" placeholder="INV00A123456" required>
+                @error('dms_invoice_number')
+                <span class="text-danger small d-block mt-1">{{ $message }}</span>
+                @enderror
+            </div>
+
+            <!-- DMS Invoice Date -->
+            <div class="col-md-3 form-group">
+                <label>
+                    DMS Invoice Date
+                    <span class="required-mark">*</span>
+                </label>
+                <input type="text" name="dms_invoice_date_display" id="dms_invoice_date"
+                    class="form-control flatpickr-date" value="{{ old('dms_invoice_date_display') }}"
+                    placeholder="dd-MMM-yyyy" required>
+                <input type="hidden" name="dms_invoice_date" id="hidden_dms_invoice_date"
+                    value="{{ old('dms_invoice_date') }}">
+                @error('dms_invoice_date')
+                <span class="text-danger small d-block mt-1">{{ $message }}</span>
+                @enderror
+            </div>
+
+            <!-- Dealer Invoice Number (Readonly) -->
+            <div class="col-md-3 form-group readonly-field">
+                <label class="readonly-label">Dealer Invoice Number</label>
+                <div class="readonly-value">
+                    {{ $booking->dealer_inv_no ?? 'N/A' }}
+                </div>
+            </div>
+
+            <!-- Dealer Invoice Date (Readonly) -->
+            <div class="col-md-3 form-group readonly-field">
+                <label class="readonly-label">Dealer Invoice Date</label>
+                <div class="readonly-value">
+                    {{ $booking->dealer_inv_date ? \Carbon\Carbon::parse($booking->dealer_inv_date)->format('d-M-Y') :
+                    'N/A' }}
+                </div>
+            </div>
+
+            <div class="col-12 mt-4">
+                <button type="submit" class="btn btn-success btn-lg">
+                    <i class="la la-save"></i> Submit Dealer Invoice
+                </button>
+            </div>
+        </div>
+    </div>
+</form>
+
+@endsection
 
 @push('after_scripts')
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-
 <script>
     (function($) {
     'use strict';
 
     function initDealerInvoiceForm() {
-        // Flatpickr - date picker only, no default/pre-filled value
+        // Flatpickr
         flatpickr("#dms_invoice_date", {
             dateFormat: "d-M-Y",
             maxDate: "today",
             allowInput: false,
-            // No defaultDate set → blank rahega jab page load hoga
             onChange: function(selectedDates, dateStr, instance) {
                 if (selectedDates.length > 0) {
                     const d = selectedDates[0];
@@ -233,21 +248,22 @@
             }
         });
 
-        // Masking for DMS Invoice Number - format ke andar hi input rahega
+        // Masking
         $('#dms_invoice_number').mask('INV00A000000', {
             placeholder: "INV00A123456"
         });
 
-        // Uppercase karte rahenge
+        // Uppercase
         $('#dms_invoice_number').on('input', function() {
             $(this).val($(this).val().toUpperCase());
         });
 
-        // jQuery Validation
+        // Custom validator
         $.validator.addMethod("dmsInvoiceFormat", function(value, element) {
             return this.optional(element) || /^INV\d{2}[A-Z]\d{6}$/.test(value);
         }, "Please enter valid DMS Invoice number (e.g., INV00A123456)");
 
+        // Form validation
         $("#dealer-invoice-form").validate({
             rules: {
                 dms_invoice_number: {
@@ -264,18 +280,15 @@
                 dms_invoice_number: {
                     required: "DMS Invoice Number is required",
                     dmsInvoiceFormat: "Please enter valid DMS Invoice number (e.g., INV00A123456)",
-                    minlength: "Must be exactly 11 characters",
-                    maxlength: "Must be exactly 11 characters"
+                    minlength: "Must be exactly 12 characters",
+                    maxlength: "Must be exactly 12 characters"
                 },
                 dms_invoice_date_display: {
                     required: "DMS Invoice Date is required"
                 }
             },
             errorElement: "span",
-            errorClass: "text-danger small",
-            errorPlacement: function(error, element) {
-                error.insertAfter(element);
-            },
+            errorClass: "text-danger small d-block mt-1",
             highlight: function(element) {
                 $(element).addClass("is-invalid");
             },
@@ -287,9 +300,7 @@
 
     $(document).ready(function() {
         initDealerInvoiceForm();
-
-        // Optional: smooth scroll to card
-        document.getElementById("dealer-invoice-card")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        document.getElementById("dealer-invoice-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
 
 })(jQuery);

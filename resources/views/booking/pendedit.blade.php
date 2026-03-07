@@ -1,9 +1,51 @@
 @extends(backpack_view('blank'))
 
 @section('header')
+<style>
+    .modal-backdrop {
+        z-index: 1040 !important;
+    }
+
+    .modal {
+        z-index: 1050 !important;
+    }
+
+    .modal-dialog {
+        z-index: 1051 !important;
+        /* Add this extra for dialog */
+    }
+
+    readonly-field {
+        margin-bottom: 1.25rem;
+    }
+
+    .readonly-label {
+        font-weight: 500;
+        color: #495057;
+        margin-bottom: 0.35rem;
+        display: block;
+    }
+
+    .readonly-value {
+        padding: 0.375rem 0.75rem;
+        background-color: #f8f9fa;
+        border: 1px solid #ced4da;
+        border-radius: 0.25rem;
+        min-height: 38px;
+        display: flex;
+        align-items: center;
+        font-weight: 500;
+    }
+
+    .required-mark {
+        color: #dc3545;
+        margin-left: 4px;
+    }
+</style>
+{{--
 <section class="container-fluid">
     <h2>Pending Data for Booking #{{ $booking->sap_no ?? $booking->dms_no ?? $booking->id }}</h2>
-</section>
+</section> --}}
 @endsection
 
 @section('content')
@@ -33,98 +75,77 @@
     </div>
     @endif
 
-    <!-- ──────────────────────────────────────────────── -->
-    <!--       Booking Information (View Only) Card         -->
-    <!-- ──────────────────────────────────────────────── -->
-    <div class="card mb-4 shadow-sm border-0">
-        <div class="card-header bg-gradient-light text-dark d-flex align-items-center">
-            <i class="la la-info-circle me-2 text-primary fs-4"></i>
-            <h5 class="mb-0 fw-semibold">Booking Information (View Only)</h5>
-        </div>
+    <div class="card card-body shadow-sm mb-4">
+        <h2 class="mb-3">Booking Information (Read-only)</h2>
+        <div class="row">
 
-        <div class="card-body p-4">
-            <dl class="row g-4 mb-0">
-                <!-- Row 1 -->
-                <div class="col-12">
-                    <div class="row g-4 border-bottom pb-3 mb-3">
-                        <div class="col-md-3 col-sm-6">
-                            <dt class="text-muted small fw-medium mb-1">Booking Date</dt>
-                            <dd class="fs-5 fw-semibold mb-0 text-dark">
-                                {{ $booking->booking_date
-                                    ? \Carbon\Carbon::parse($booking->booking_date)->format('d M Y')
-                                    : '<span class="text-muted">—</span>' }}
-                            </dd>
-                        </div>
-
-                        <div class="col-md-3 col-sm-6">
-                            <dt class="text-muted small fw-medium mb-1">Customer Name</dt>
-                            <dd class="fs-5 fw-semibold mb-0 text-dark">
-                                {{ $booking->name ?? '<span class="text-muted">—</span>' }}
-                            </dd>
-                        </div>
-
-                        <div class="col-md-3 col-sm-6">
-                            <dt class="text-muted small fw-medium mb-1">Branch</dt>
-                            <dd class="fs-5 fw-semibold mb-0 text-dark">
-                                {{ $booking->branch
-                                    ? ($booking->branch->name ?? $booking->branch->abbr ?? '—')
-                                    : '<span class="text-muted">—</span>' }}
-                            </dd>
-                        </div>
-
-                        <div class="col-md-3 col-sm-6">
-                            <dt class="text-muted small fw-medium mb-1">Location</dt>
-                            <dd class="fs-5 fw-semibold mb-0 text-dark">
-                                @if($booking->location_id)
-                                    {{ $booking->location?->name ?? '<span class="text-muted">—</span>' }}
-                                @else
-                                    {{ $booking->location_other ?: '<span class="text-muted">—</span>' }}
-                                @endif
-                            </dd>
-                        </div>
-                    </div>
+            <div class="col-md-3 form-group readonly-field">
+                <label class="readonly-label">Booking Date</label>
+                <div class="readonly-value">
+                    {{ $booking->booking_date ? \Carbon\Carbon::parse($booking->booking_date)->format('d-m-Y') : '—' }}
                 </div>
+            </div>
 
-                <!-- Row 2 - Vehicle Details -->
-                <div class="col-12">
-                    <div class="row g-4">
-                        <div class="col-md-4 col-sm-6">
-                            <dt class="text-muted small fw-medium mb-1">
-                                <i class="la la-car-side me-1 text-primary"></i> Model
-                            </dt>
-                            <dd class="fs-5 fw-semibold mb-0 text-dark">
-                                {{ $booking->model ?? '<span class="text-muted">—</span>' }}
-                            </dd>
-                        </div>
-
-                        <div class="col-md-4 col-sm-6">
-                            <dt class="text-muted small fw-medium mb-1">
-                                <i class="la la-cogs me-1 text-primary"></i> Variant
-                            </dt>
-                            <dd class="fs-5 fw-semibold mb-0 text-dark">
-                                {{ $booking->variant ?? '<span class="text-muted">—</span>' }}
-                            </dd>
-                        </div>
-
-                        <div class="col-md-4 col-sm-6">
-                            <dt class="text-muted small fw-medium mb-1">
-                                <i class="la la-palette me-1 text-primary"></i> Color
-                            </dt>
-                            <dd class="fs-5 fw-semibold mb-0 text-dark">
-                                {{ $booking->color ?? '<span class="text-muted">—</span>' }}
-                            </dd>
-                        </div>
-                    </div>
+            <div class="col-md-3 form-group readonly-field">
+                <label class="readonly-label">Customer Name</label>
+                <div class="readonly-value">
+                    {{ $booking->name ?? '—' }}
+                    @if($booking->care_of)
+                    <small class="text-muted d-block mt-1">(C/o: {{ $booking->care_of }})</small>
+                    @endif
                 </div>
-            </dl>
+            </div>
+
+            <div class="col-md-3 form-group readonly-field">
+                <label class="readonly-label">Branch</label>
+                <div class="readonly-value">
+                    {{ $data['branch'] ?? '—' }}
+                </div>
+            </div>
+
+            <div class="col-md-3 form-group readonly-field">
+                <label class="readonly-label">Location</label>
+                <div class="readonly-value">
+                    {{ $data['location'] ?? '—' }}
+                </div>
+            </div>
+
+            @if($booking->location_other)
+            <div class="col-md-6 form-group readonly-field">
+                <label class="readonly-label">Other Location (manual entry)</label>
+                <div class="readonly-value text-danger">
+                    {{ $booking->location_other }}
+                </div>
+            </div>
+            @endif
+
+            <div class="col-md-4 form-group readonly-field">
+                <label class="readonly-label">Model</label>
+                <div class="readonly-value">
+                    {{ $booking->model ?? '—' }}
+                </div>
+            </div>
+
+            <div class="col-md-4 form-group readonly-field">
+                <label class="readonly-label">Variant</label>
+                <div class="readonly-value">
+                    {{ $booking->variant ?? '—' }}
+                </div>
+            </div>
+
+            <div class="col-md-4 form-group readonly-field">
+                <label class="readonly-label">Color</label>
+                <div class="readonly-value">
+                    {{ $booking->color ?? '—' }}
+                </div>
+            </div>
+
         </div>
     </div>
 
     <!-- Card 1: Receipt Log -->
-    <div class="card mt-4 shadow-sm">
-        <div class="card-header bg-info text-black">
-            <h4 class="mb-0 fw-bold">Receipt Log</h4>
-        </div>
+    <div class="card card-body shadow-sm mb-4">
+        <h2 class="mb-3">Receipt Logs</h2>
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-striped table-hover mb-0">
@@ -155,7 +176,8 @@
                                 @endif
                             </td>
                             <td>
-                                <a href="{{ route('receipt.edit', ['id' => $booking->id, 'receipt_id' => $log->id]) }}" title="Edit Receipt" class="text-success">
+                                <a href="{{ route('receipt.edit', ['id' => $booking->id, 'receipt_id' => $log->id]) }}"
+                                    title="Edit Receipt" class="text-success">
                                     <i class="la la-edit fs-5"></i> Edit
                                 </a>
                             </td>
@@ -175,27 +197,30 @@
                 </table>
             </div>
         </div>
+
     </div>
 
     <!-- Card 2: Add Receipt (only if col_type 2 or 3 and pending amount > 0) -->
     @if (in_array($booking->col_type, [2, 3]) && $booking->booking_amount > ($data['total_amount'] ?? 0))
-    <div class="card mt-4 shadow-sm" id="receipt-card">
-        <div class="card-header bg-warning text-dark">
-            <h4 class="mb-0 fw-bold">Add New Receipt</h4>
-        </div>
+    <div class="card card-body shadow-sm mb-4" id="receipt-card">
+        <h2 class="mb-3">Add New Receipt</h2>
         <div class="card-body">
-            <form id="receipt-form" method="POST" action="{{ route('booking.add-receipt.store', $booking->id) }}" enctype="multipart/form-data">
+            <form id="receipt-form" method="POST" action="{{ route('booking.add-receipt.store', $booking->id) }}"
+                enctype="multipart/form-data">
                 @csrf
                 <input type="hidden" name="bid" value="{{ $booking->id }}">
 
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label class="fw-bold">Booking Amount</label>
-                        <input type="text" class="form-control" value="{{ number_format($booking->booking_amount, 2) }}" readonly>
+                        <input type="text" class="form-control" value="{{ number_format($booking->booking_amount, 2) }}"
+                            readonly>
                     </div>
                     <div class="col-md-6">
                         <label class="fw-bold">Pending Amount</label>
-                        <input type="text" class="form-control" value="{{ number_format($booking->booking_amount - ($data['total_amount'] ?? 0), 2) }}" readonly>
+                        <input type="text" class="form-control"
+                            value="{{ number_format($booking->booking_amount - ($data['total_amount'] ?? 0), 2) }}"
+                            readonly>
                     </div>
 
                     <div class="col-md-3">
@@ -208,22 +233,50 @@
 
                     <div class="col-md-3">
                         <label>Receipt Date <span class="required-mark">*</span></label>
-                        <input type="text" name="receipt_date" id="receipt_date" class="form-control flatpickr" placeholder="dd-MMM-yyyy" required>
+                        <input type="text" name="receipt_date" id="receipt_date" class="form-control flatpickr"
+                            placeholder="dd-MMM-yyyy" required>
                         <input type="hidden" name="hidden_receipt_date" id="hidden_receipt_date">
                     </div>
 
                     <div class="col-md-3">
                         <label>Amount <span class="required-mark">*</span></label>
-                        <input type="number" name="amount" id="amount" class="form-control" step="0.01" min="0.01" required>
+                        <input type="number" name="amount" id="amount" class="form-control" step="0.01" min="0.01"
+                            required>
                     </div>
 
-                    <div class="col-md-3">
+                    {{-- <div class="col-md-3">
                         <label>Upload Image/PDF <span class="required-mark">*</span></label>
-                        <input type="file" name="amount_proof" id="amount_proof" class="form-control" accept="image/jpeg,image/png,application/pdf" required>
+                        <input type="file" name="amount_proof" id="amount_proof" class="form-control"
+                            accept="image/jpeg,image/png,application/pdf" required>
                         <small class="form-text">JPG, PNG, PDF (max 2MB)</small>
                         <div id="imagePreviewContainer" class="mt-2 position-relative" style="display:none;">
                             <img id="frameLeft" src="" class="img-fluid" style="max-width:100px;">
-                            <button type="button" id="removeImageButton" class="btn btn-danger btn-sm position-absolute" style="top:-10px;right:-10px;">×</button>
+                            <button type="button" id="removeImageButton" class="btn btn-danger btn-sm position-absolute"
+                                style="top:-10px;right:-10px;">×</button>
+                        </div>
+                    </div> --}}
+                    <div class="col-md-3">
+                        <label>Upload Image/PDF <span class="required-mark">*</span></label>
+                        <input type="file" name="amount_proof" id="amount_proof" class="form-control"
+                            accept="image/jpeg,image/png,image/jpg,application/pdf" required>
+                        <small class="form-text text-muted">JPG, JPEG, PNG, PDF only (max 2MB)</small>
+
+                        <!-- Preview + Chip Style Container -->
+                        <div class="mt-3" id="proofPreviewContainer" style="display: none;">
+                            <span
+                                class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2 px-3 py-2"
+                                style="cursor: pointer;" id="previewChip">
+                                <i class="la la-paperclip"></i>
+                                <!-- Backpack ke Line Awesome icon (better than emoji) -->
+                                <!-- ya emoji use karna ho to: 📎  -->
+                                <span id="proofFileName" class="fw-medium small"></span>
+
+                                {{-- <button type="button" id="removeProofButton"
+                                    class="btn btn-sm btn-danger rounded-circle ms-2"
+                                    style="width: 22px; height: 22px; font-size: 14px; line-height: 1; padding: 0; border: none;">
+                                    ×
+                                </button> --}}
+                            </span>
                         </div>
                     </div>
 
@@ -237,12 +290,11 @@
     @endif
 
     <!-- Card 3: Pending Data Form -->
-    <div class="card mt-4 shadow-sm" id="pending-data-card">
-        <div class="card-header bg-dark text-black">
-            <h4 class="mb-0 fw-bold">Pending Data</h4>
-        </div>
+    <div class="card card-body shadow-sm mb-4" id="pending-data-card">
+        <h2 class="mb-3">Pending Data</h2>
         <div class="card-body">
-            <form id="pending-form" method="POST" action="{{ route('booking.pending-update', $booking->id) }}" enctype="multipart/form-data">
+            <form id="pending-form" method="POST" action="{{ route('booking.pending-update', $booking->id) }}"
+                enctype="multipart/form-data">
                 @csrf
 
                 @if (request()->has('pending_flag'))
@@ -271,7 +323,7 @@
                     </div>
 
                     <div class="col-md-4">
-                        <label>Sales Force Booking No. <span class="required-mark">*</span></label>
+                        <label>DMS Booking No. <span class="required-mark">*</span></label>
                         <input type="text" name="dms_no" id="dms_no" class="form-control"
                             value="{{ old('dms_no', $booking->dms_no) }}">
                     </div>
@@ -284,7 +336,8 @@
 
                     <div class="col-md-4">
                         <label>DMS OTF Date <span class="required-mark">*</span></label>
-                        <input type="text" name="otf_date" id="otf_date" class="form-control flatpickr" placeholder="dd-MMM-yyyy"
+                        <input type="text" name="otf_date" id="otf_date" class="form-control flatpickr"
+                            placeholder="dd-MMM-yyyy"
                             value="{{ old('otf_date', $booking->otf_date ? date('d-M-Y', strtotime($booking->otf_date)) : '') }}">
                         <input type="hidden" name="hidden_otf_date" id="hidden_otf_date"
                             value="{{ old('hidden_otf_date', $booking->otf_date) }}">
@@ -296,7 +349,8 @@
                             value="{{ old('dms_so', $booking->dms_so == 0 ? '' : $booking->dms_so) }}">
                         @if ($booking->order != 2)
                         <div class="form-check mt-2">
-                            <input type="checkbox" name="not_required" id="not_required" class="form-check-input" {{ old('not_required', $booking->dms_so == 0) ? 'checked' : '' }}>
+                            <input type="checkbox" name="not_required" id="not_required" class="form-check-input" {{
+                                old('not_required', $booking->dms_so == 0) ? 'checked' : '' }}>
                             <label class="form-check-label" for="not_required">Not Required</label>
                         </div>
                         @endif
@@ -310,7 +364,8 @@
                     </div>
                     <div class="col-md-4">
                         <label>OEM Invoice Date</label>
-                        <input type="text" name="invoice_date" id="invoice_date" class="form-control flatpickr" placeholder="dd-MMM-yyyy"
+                        <input type="text" name="invoice_date" id="invoice_date" class="form-control flatpickr"
+                            placeholder="dd-MMM-yyyy"
                             value="{{ old('invoice_date', $booking->inv_date ? date('d-M-Y', strtotime($booking->inv_date)) : '') }}">
                         <input type="hidden" name="hidden_invoice_date" id="hidden_invoice_date"
                             value="{{ old('hidden_invoice_date', $booking->inv_date) }}">
@@ -321,7 +376,8 @@
                     </div>
                     <div class="col-md-4" id="dealerInvoiceDateField">
                         <label>Dealer Invoice Date</label>
-                        <input type="text" name="dealer_invoice_date_display" id="dealer_invoice_date" class="form-control flatpickr" placeholder="dd-MMM-yyyy">
+                        <input type="text" name="dealer_invoice_date_display" id="dealer_invoice_date"
+                            class="form-control flatpickr" placeholder="dd-MMM-yyyy">
                         <input type="hidden" name="dealer_invoice_date" id="hidden_dealer_invoice_date">
                     </div>
                     <div class="col-md-4">
@@ -357,9 +413,47 @@
         </div>
     </div>
 </div>
+
+
+<div class="modal fade" id="proofPreviewModal" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+    <!-- Add role="dialog", data-backdrop="static" for test -->
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 700px; max-height: 90vh;" role="document">
+        <!-- Add role="document" -->
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="proofPreviewModalLabel">Document Preview</h2>
+                {{-- <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <!-- Change to BS4 close -->
+                    <span aria-hidden="true">&times;</span>
+                </button> --}}
+            </div>
+            <div class="modal-body text-center p-0" style="min-height: 60vh; background: #f8f9fa;">
+                <!-- Image Preview -->
+                <img id="modalProofImg" src="" class="img-fluid shadow align-items-center justify-content-center"
+                    style="display:none; max-height:80vh; border-radius:8px;">
+                <!-- PDF Preview -->
+                <iframe id="modalProofPdf" style="display:none; width:100%; height:80vh; border:none;"
+                    sandbox="allow-scripts allow-same-origin"></iframe>
+                <!-- Fallback -->
+                <div id="modalNoPreview" class="d-flex align-items-center justify-content-center h-100 text-muted"
+                    style="display:none;">
+
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary"
+                    onclick="$('#proofPreviewModal').modal('hide')">Close</button>
+                <button type="button" id="modalDownloadBtn" class="btn btn-primary">
+                    <i class="fas fa-download me-1"></i> Download
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('after_scripts')
+
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="{{ asset('plugins/select2/dist/js/select2.min.js') }}"></script>
@@ -370,7 +464,7 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <script>
-        document.addEventListener("DOMContentLoaded", function () {
+    document.addEventListener("DOMContentLoaded", function () {
             flatpickr(".flatpickr", {
                 dateFormat: "d-M-Y",               // visible format: 31-Dec-2025
                 altInput: true,                    // creates a hidden alt input automatically
@@ -414,7 +508,7 @@
                 });
             });
         });
-    </script>
+</script>
 <script>
     (function($) {
         'use strict';
@@ -483,7 +577,7 @@
 
             $.validator.addMethod('dmsFormat', function(value, element) {
                 return this.optional(element) || /^B-\d{8}$/.test(value);
-            }, 'Please enter a valid Sales Force Booking number (e.g., B-12345678)');
+            }, 'Please enter a valid DMS Booking number (e.g., B-12345678)');
 
             $.validator.addMethod('otfFormat', function(value, element) {
                 return this.optional(element) || /^OTF\d{2}[A-Z]\d{6}$/.test(value);
@@ -575,8 +669,8 @@
                         required: 'Online Booking Reference Number is required'
                     },
                     dms_no: {
-                        required: 'Sales Force Booking Number is required',
-                        dmsFormat: 'Please enter a valid Sales Force Booking number (e.g., B-12345678)'
+                        required: 'DMS Booking Number is required',
+                        dmsFormat: 'Please enter a valid DMS Booking number (e.g., B-12345678)'
                     },
                     dms_otf: {
                         required: 'DMS OTF Number is required',
@@ -744,15 +838,88 @@
                 updateReceiptButtonState();
             });
 
+            // $('#amount_proof').on('change', function() {
+            //     const file = this.files[0];
+            //     const previewContainer = $('#imagePreviewContainer');
+            //     const imgPreview = $('#frameLeft');
+            //     const removeButton = $('#removeImageButton');
+
+            //     imgPreview.attr('src', '').hide();
+            //     previewContainer.hide();
+            //     removeButton.hide();
+
+            //     if (!file) {
+            //         $('#amount_proof').valid();
+            //         updateReceiptButtonState();
+            //         return;
+            //     }
+
+            //     if (file.size > 2 * 1024 * 1024) {
+            //         Swal.fire({
+            //             icon: 'error',
+            //             title: 'File Size Error',
+            //             text: 'File size must be under 2MB.',
+            //         });
+            //         this.value = '';
+            //         $('#amount_proof').valid();
+            //         updateReceiptButtonState();
+            //         return;
+            //     }
+
+            //     const fileType = file.type.toLowerCase();
+            //     if (!['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'].includes(fileType)) {
+            //         Swal.fire({
+            //             icon: 'error',
+            //             title: 'File Type Error',
+            //             text: 'Please select a JPG, JPEG, PNG, or PDF file.',
+            //         });
+            //         this.value = '';
+            //         $('#amount_proof').valid();
+            //         updateReceiptButtonState();
+            //         return;
+            //     }
+
+            //     if (fileType.startsWith('image/')) {
+            //         const reader = new FileReader();
+            //         reader.onload = function(e) {
+            //             imgPreview.attr('src', e.target.result).show();
+            //             previewContainer.show();
+            //             removeButton.show();
+            //             $('#amount_proof').valid();
+            //             updateReceiptButtonState();
+            //         };
+            //         reader.readAsDataURL(file);
+            //     } else {
+            //         previewContainer.show();
+            //         removeButton.show();
+            //         $('#amount_proof').valid();
+            //         updateReceiptButtonState();
+            //     }
+            // });
+
+            // $('#removeImageButton').on('click', function() {
+            //     $('#amount_proof').val('');
+            //     $('#imagePreviewContainer').css('display', 'none');
+            //     $('#frameLeft').src = '';
+            //     $(this).css('display', 'none');
+            //     $('#amount_proof').valid();
+            //     updateReceiptButtonState();
+            // });
+            // Replace ya add karo yeh part — amount_proof change handler
             $('#amount_proof').on('change', function() {
                 const file = this.files[0];
-                const previewContainer = $('#imagePreviewContainer');
-                const imgPreview = $('#frameLeft');
-                const removeButton = $('#removeImageButton');
+                const previewContainer = $('#proofPreviewContainer');
+                const imgPreview = $('#proofImagePreview');
+                const fileNameEl = $('#proofFileName');
+                const fileSizeEl = $('#proofFileSize');
+                const removeBtn = $('#removeProofButton');
 
-                imgPreview.attr('src', '').hide();
+                // Reset previous state
                 previewContainer.hide();
-                removeButton.hide();
+                imgPreview.attr('src', '').hide();
+                fileNameEl.text('');
+                fileSizeEl.text('');
+                removeBtn.hide();
 
                 if (!file) {
                     $('#amount_proof').valid();
@@ -760,54 +927,100 @@
                     return;
                 }
 
+                // Size validation
                 if (file.size > 2 * 1024 * 1024) {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'File Size Error',
-                        text: 'File size must be under 2MB.',
-                    });
+                    Swal.fire({ icon: 'error', title: 'File too large', text: 'Maximum file size allowed is 2MB' });
                     this.value = '';
-                    $('#amount_proof').valid();
-                    updateReceiptButtonState();
                     return;
                 }
 
-                const fileType = file.type.toLowerCase();
-                if (!['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'].includes(fileType)) {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'File Type Error',
-                        text: 'Please select a JPG, JPEG, PNG, or PDF file.',
-                    });
+                // Type validation
+                const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
+                if (!validTypes.includes(file.type.toLowerCase())) {
+                    Swal.fire({ icon: 'error', title: 'Invalid file type', text: 'Only JPG, JPEG, PNG & PDF files are allowed' });
                     this.value = '';
-                    $('#amount_proof').valid();
-                    updateReceiptButtonState();
                     return;
                 }
+
+                // Show chip/preview
+                previewContainer.show();
+                fileNameEl.text(file.name);
+                fileSizeEl.text((file.size / 1024).toFixed(1) + ' KB');
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    if (file.type.startsWith('image/')) {
+                        imgPreview.attr('src', e.target.result).show();
+                    } else {
+                        imgPreview.attr('src', 'https://img.icons8.com/color/96/000000/pdf.png').show(); // PDF icon
+                    }
+                    // Store data URL for modal
+                    $('#amount_proof').data('fileDataUrl', e.target.result);
+                    $('#amount_proof').data('fileType', file.type);
+                    $('#amount_proof').data('fileName', file.name);
+                };
+                reader.readAsDataURL(file);
+
+                removeBtn.show();
+                $('#amount_proof').valid();
+                updateReceiptButtonState();
+            });
+
+
+            // In bindEventListeners(), replace the existing $('#previewChip, #proofImagePreview').on('click') with this (adds debug)
+            $('#previewChip, #proofImagePreview').on('click', function() {
+                console.log('Modal click handler fired!'); // Check console
+                const dataUrl = $('#amount_proof').data('fileDataUrl');
+                const fileType = $('#amount_proof').data('fileType');
+                console.log('File Data URL:', dataUrl); // Should show base64
+                console.log('File Type:', fileType); // e.g., image/jpeg
+                if (!dataUrl || !fileType) {
+                    console.log('No file data available - select a file first.');
+                    return;
+                }
+
+                // Reset modal elements
+                $('#modalProofImg').hide().attr('src', '');
+                $('#modalProofPdf').hide().attr('src', '');
+                $('#modalNoPreview').hide();
 
                 if (fileType.startsWith('image/')) {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        imgPreview.attr('src', e.target.result).show();
-                        previewContainer.show();
-                        removeButton.show();
-                        $('#amount_proof').valid();
-                        updateReceiptButtonState();
-                    };
-                    reader.readAsDataURL(file);
+                    $('#modalProofImg').attr('src', dataUrl).css('display', 'inline-table').show(); // Fix display
+                } else if (fileType === 'application/pdf') {
+                    $('#modalProofPdf').attr('src', dataUrl).show();
                 } else {
-                    previewContainer.show();
-                    removeButton.show();
-                    $('#amount_proof').valid();
-                    updateReceiptButtonState();
+                    $('#modalNoPreview').show();
+                }
+
+                try {
+                    $('#proofPreviewModal').modal('show');
+                    $('.modal-backdrop').remove();
+
+                    console.log('Modal show called successfully.');
+                } catch (error) {
+                    console.error('Error showing modal:', error); // Catch JS errors
                 }
             });
 
-            $('#removeImageButton').on('click', function() {
-                $('#amount_proof').val('');
-                $('#imagePreviewContainer').css('display', 'none');
-                $('#frameLeft').src = '';
-                $(this).css('display', 'none');
+            $('#modalDownloadBtn').on('click', function() {
+                const dataUrl = $('#amount_proof').data('fileDataUrl');
+                const fileName = $('#amount_proof').data('fileName');
+                if (!dataUrl) return;
+
+                const a = document.createElement('a');
+                a.href = dataUrl;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            });
+
+            // Remove button handler
+            $('#removeProofButton').on('click', function() {
+                $('#amount_proof').val('').trigger('change');
+                $('#proofPreviewContainer').hide();
+                // Clear stored data
+                $('#amount_proof').removeData('fileDataUrl').removeData('fileType').removeData('fileName');
                 $('#amount_proof').valid();
                 updateReceiptButtonState();
             });

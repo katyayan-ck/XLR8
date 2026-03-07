@@ -46,7 +46,7 @@ return [
     // ----
 
     // Project name - shown in the window title
-    'project_name' => 'Backpack Admin Panel',
+    'project_name' => 'Xcelr8',
 
     // Content of the HTML meta robots tag to prevent indexing and link following
     'meta_robots_content' => 'noindex, nofollow',
@@ -63,7 +63,9 @@ return [
     'home_link' => '',
 
     // Menu logo. You can replace this with an <img> tag if you have a logo.
-    'project_logo' => '<b>Insightech</b>India',
+    // 'project_logo' => 'public/images/xceler8.png',
+    'project_logo' => '<img src="' . asset('images/xceler8.png') . '" style="height:35px;">',
+
 
     // Show / hide breadcrumbs on admin panel pages.
     'breadcrumbs' => true,
@@ -87,7 +89,8 @@ return [
     // ---------
 
     // Show "Getting Started with Backpack" info block?
-    'show_getting_started' => env('APP_ENV') == 'local',
+    // 'show_getting_started' => env('APP_ENV') == 'local',
+    'show_getting_started' => false,
 
     // -------------
     // GLOBAL STYLES
@@ -97,6 +100,7 @@ return [
     'styles' => [
         // 'styles/example.css',
         // 'https://some-cdn.com/example.css',
+
     ],
 
     // CSS files that are loaded in all pages, using Laravel's mix() helper

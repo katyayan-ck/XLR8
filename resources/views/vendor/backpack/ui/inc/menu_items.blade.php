@@ -41,10 +41,8 @@
         <x-backpack::menu-dropdown-item title="Pending DMS Booking" icon="la la-database"
             :link="backpack_url('booking/pending-dms')" />
 
-        {{-- <x-backpack::menu-dropdown-item title="Order Request" icon="la la-file-alt"
-            :link="backpack_url('booking/order-verification')" /> --}}
         <x-backpack::menu-dropdown-item title="Pending Sales Order" icon="la la-file-alt"
-            :link="backpack_url('booking/ordered-verification')" />
+            :link="backpack_url('booking/pending/sales-order')" />
 
         <x-backpack::menu-dropdown-item title="Pending KYC" icon="la la-id-card"
             :link="backpack_url('booking/pending-kyc')" />

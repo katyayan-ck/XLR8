@@ -45,8 +45,8 @@ Route::group([
     ])->where(['id' => '[0-9]+', 'status' => '[0-5]']);
 
     // ================= ORDERED VERIFICATION (if you have this function) =================
-    Route::get('booking/ordered-verification', 'BookingCrudController@orderedVerification')
-        ->name('booking.ordered-verification');
+    Route::get('booking/pending/sales-order', 'BookingCrudController@pendingorder')
+        ->name('booking.pending-order');
 
 
 
@@ -314,6 +314,7 @@ Route::group([
 
     Route::put('booking/{id}/delivery-update', 'BookingCrudController@PendDeliveryUpdate')
         ->name('booking.delivery-photos.update');
+
     Route::get('exchange/{id}/edit', 'BookingCrudController@exchangeEdit')
         ->name('exchange-edit')
         ->middleware('admin');

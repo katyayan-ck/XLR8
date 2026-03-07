@@ -12,104 +12,63 @@
         display: block;
     }
 
-    /* Group Header Colors - exact match from your screenshot */
-    .group-vehicle-info {
-        background-color: #FFD6D5 !important;
-    }
 
-    /* light pink/red */
-    .group-stock {
-        background-color: #ADD8E6 !important;
-    }
 
-    /* light blue */
-    .group-booking {
-        background-color: #A6F1A6 !important;
-    }
-
-    /* light green */
-    .group-hot-enq {
-        background-color: #94DBFA !important;
-    }
-
-    /* light cyan/blue */
-    .group-finance {
-        background-color: #92D9F5 !important;
-    }
-
-    /* light blue-cyan */
-    .group-exchange {
-        background-color: #F0FFF0 !important;
-    }
-
-    /* very light mint */
-    .group-global {
-        background-color: #FFE4B5 !important;
-    }
-
-    /* light yellow/khaki */
-    .group-pending {
-        background-color: #FFE4E1 !important;
-    }
-
-    /* light pinkish-orange */
-
-    .ag-header-cell-label {
+    .ag-header-cell-label,
+    .ag-header-group-cell-label {
         font-weight: 700 !important;
         justify-content: center !important;
-    }
-
-    .ag-cell {
-        font-size: 13px !important;
-        padding: 6px 8px !important;
-    }
-
-    .text-right {
-        text-align: right !important;
-    }
-
-    .fw-bold {
-        font-weight: 700 !important;
+        text-align: center !important;
     }
 </style>
 @endpush
 
 @section('header')
-<section class="container-fluid">
-    <h2>
-        <i class="la la-chart-bar text-success"></i> Consolidated Booking Report
-        <small class="d-none d-md-inline">All Branches Summary</small>
-    </h2>
-</section>
-@endsection
+
 
 @section('content')
 <div class="row">
     <div class="col-12">
+
+
         <div class="card shadow-sm">
+            <div
+                class="card-header bg-gradient-success d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <h3 class="card-title mb-0 fw-bold text-black text-nowrap">
+                    Consolidated Report Dashboard
+                </h3>
+            </div>
 
             {{-- TOOLBAR --}}
-            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 p-3 border-bottom bg-white">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 p-3 border-bottom bg-white"
+                style="border-radius: 15px">
                 <div class="d-flex align-items-center gap-2 flex-wrap">
                     <input type="text" id="quickFilter" class="form-control" style="width: 360px; min-width: 260px;"
-                        placeholder="Quick search in all columns...">
+                        placeholder="Smart Search...">
                     <button id="resetAll" class="btn btn-outline-danger btn-sm">
                         Reset
                     </button>
                 </div>
 
                 <div class="d-flex gap-2 flex-wrap">
-                    <button id="exportExcel" class="btn btn-success btn-sm">
-                        <i class="la la-file-excel-o"></i> Excel
+                    <button id="exportExcel" class="btn btn-sm text-nowrap d-flex align-items-center gap-2">
+
+                        <img src="{{ asset('images/export-excel.png') }}" alt="Excel" style="height:30px; width:auto;">
+
+                        {{-- <span>Excel</span> --}}
                     </button>
-                    <button id="exportPdf" class="btn btn-danger btn-sm">
-                        <i class="la la-file-pdf-o"></i> PDF
+
+                    <button id="exportPdf" class="btn btn-sm text-nowrap d-flex align-items-center gap-2">
+
+                        <img src="{{ asset('images/export-pdf.png') }}" alt="PDF" style="height:30px; width:auto;">
+
+                        {{-- <span>PDF</span> --}}
                     </button>
                 </div>
             </div>
 
             {{-- GRID --}}
-            <div id="myGrid" class="ag-theme-quartz" style="height: calc(100vh - 240px); width: 100%;"></div>
+            <div id="myGrid" class="ag-theme-quartz" style="height: calc(110vh - 240px); width: 100%;"></div>
         </div>
 
         @if(session('info'))
@@ -133,47 +92,80 @@
     let gridApi;
 
     const columnDefs = (gridConfig.columns || []).map(col => {
-        let headerClass = '';
-        if (col.headerName === 'Vehicle Info') headerClass = 'group-vehicle-info';
-        else if (col.headerName === 'STOCK') headerClass = 'group-stock';
-        else if (col.headerName === 'BOOKING') headerClass = 'group-booking';
-        else if (col.headerName === 'HOT ENQ') headerClass = 'group-hot-enq';
-        else if (col.headerName === 'INT IN FINANCE') headerClass = 'group-finance';
-        else if (col.headerName === 'INT IN EXCHANGE') headerClass = 'group-exchange';
-        else if (col.headerName === 'GLOBAL INFO') headerClass = 'group-global';
-        else if (col.headerName === 'PENDING ACTIONS') headerClass = 'group-pending';
+    let headerClass = '';
+    if (col.headerName === 'Vehicle Info') headerClass = 'group-vehicle-info';
+    else if (col.headerName === 'STOCK') headerClass = 'group-stock';
+    else if (col.headerName === 'BOOKING') headerClass = 'group-booking';
+    else if (col.headerName === 'HOT ENQ') headerClass = 'group-hot-enq';
+    else if (col.headerName === 'INT IN FINANCE') headerClass = 'group-finance';
+    else if (col.headerName === 'INT IN EXCHANGE') headerClass = 'group-exchange';
+    else if (col.headerName === 'GLOBAL INFO') headerClass = 'group-global';
+    else if (col.headerName === 'PENDING ACTIONS') headerClass = 'group-pending';
 
-        return {
-            headerName: col.headerName,
-            field: col.field,
-            children: col.children ? col.children.map(child => ({
-                ...child,
-                cellClass: child.cellClass || 'text-center'
-            })) : null,
-            headerClass: headerClass || '',
+    const isSnoColumn = col.field === 'sno' || col.headerName === 'S.No.';
+
+    const columnDef = {
+        headerName: col.headerName,
+        headerClass: headerClass || 'ag-header-center',
+        width: col.width || (col.children ? 180 : 140),
+        pinned: col.pinned || (isSnoColumn ? 'left' : false),
+        cellClass: col.cellClass || (isSnoColumn ? 'text-center fw-bold' : 'text-center'),
+        sortable: col.sortable !== false && !isSnoColumn,   // usually false for sno
+        filter: col.filter !== false && !isSnoColumn,       // usually false for sno
+        resizable: true,
+    };
+
+    if (col.field) {
+        columnDef.field = col.field;
+    }
+
+    if (col.children) {
+        columnDef.children = col.children.map(child => ({
+            headerName: child.headerName,
+            field: child.field,
+            width: child.width || 110,
+            cellClass: child.cellClass || 'text-center ag-right-aligned-cell',
             sortable: true,
             filter: true,
             resizable: true,
-            width: col.width || 150,
-        };
-    });
+        }));
+    }
+
+    return columnDef;
+});
 
     const gridOptions = {
-        columnDefs,
-        rowData: gridConfig.data || [],
-        pagination: true,
-        paginationPageSize: 20,
-        rowHeight : 30,
-        paginationPageSizeSelector: [10, 20, 50, 100],
-        animateRows: true,
-        defaultColDef: {
-            sortable: true,
-            filter: true,
-            resizable: true,
-            cellClass: 'text-center',
-        },
-        overlayNoRowsTemplate: '<span class="ag-overlay-no-rows-center">No data available</span>',
-    };
+    columnDefs,
+    rowData: gridConfig.data || [],
+    pagination: true,
+    paginationPageSize: 20,
+    rowHeight: 30,
+    paginationPageSizeSelector: [10, 20, 50, 100],
+    animateRows: true,
+
+    defaultColDef: {
+        sortable: true,
+        filter: true,
+        resizable: true,
+        cellClass: 'text-center',
+        headerClass: 'text-center'
+    },
+
+    overlayNoRowsTemplate: '<span class="ag-overlay-no-rows-center">No data available</span>',
+
+    onGridReady: params => {
+        gridApi = params.api;
+
+        // 🔥 Auto size columns based on content
+        setTimeout(() => {
+            const allColumnIds = [];
+            gridApi.getAllDisplayedColumns().forEach(column => {
+                allColumnIds.push(column.getColId());
+            });
+            gridApi.autoSizeColumns(allColumnIds);
+        }, 300);
+    }
+};
 
     document.addEventListener('DOMContentLoaded', () => {
         const gridDiv = document.querySelector('#myGrid');
@@ -278,41 +270,49 @@
 
         // PDF Export
         document.getElementById('exportPdf')?.addEventListener('click', () => {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
 
-            doc.setFontSize(16);
-            doc.text('Consolidated Booking Report', 40, 40);
+    doc.setFontSize(16);
+    doc.text('Consolidated Booking Report', 40, 40);
 
-            const exportColumns = [];
-            const flattenColumns = (cols) => {
-                cols.forEach(col => {
-                    if (col.children) {
-                        flattenColumns(col.children);
-                    } else {
-                        exportColumns.push({ header: col.headerName, dataKey: col.field });
-                    }
-                });
-            };
-            flattenColumns(columnDefs);
+    const exportColumns = [];
+    const fieldOrder = [];
 
-            const body = [];
-            gridApi.forEachNodeAfterFilterAndSort(node => {
-                body.push(node.data);
-            });
-
-            doc.autoTable({
-                head: [exportColumns.map(c => c.header)],
-                body: body,
-                startY: 60,
-                styles: { fontSize: 8, cellPadding: 4, overflow: 'linebreak' },
-                headStyles: { fillColor: [40, 167, 69], textColor: 255 },
-                alternateRowStyles: { fillColor: [245, 245, 245] },
-                margin: { top: 60, left: 30, right: 30 },
-            });
-
-            doc.save('Consolidated_Booking_Report.pdf');
+    const flattenColumns = (cols) => {
+        cols.forEach(col => {
+            if (col.children) {
+                flattenColumns(col.children);
+            } else if (col.field) {
+                exportColumns.push(col.headerName);
+                fieldOrder.push(col.field);
+            }
         });
+    };
+
+    flattenColumns(columnDefs);
+
+    const body = [];
+    gridApi.forEachNodeAfterFilterAndSort(node => {
+        const row = {};
+        fieldOrder.forEach((field, index) => {
+            row[exportColumns[index]] = node.data[field] ?? '';
+        });
+        body.push(Object.values(row));
+    });
+
+    doc.autoTable({
+        head: [exportColumns],
+        body: body,
+        startY: 60,
+        styles: { fontSize: 8, cellPadding: 4, overflow: 'linebreak', halign: 'center' },
+        headStyles: { fillColor: [40, 167, 69], textColor: 255 },
+        alternateRowStyles: { fillColor: [245, 245, 245] },
+        margin: { top: 60, left: 30, right: 30 },
+    });
+
+    doc.save('Consolidated_Booking_Report.pdf');
+});
     });
 </script>
 @endpush
