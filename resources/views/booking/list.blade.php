@@ -19,11 +19,11 @@
                         d-flex justify-content-between align-items-center
                         flex-nowrap flex-md-nowrap flex-wrap gap-3">
 
-                <h3 class="card-title mb-0 fw-bold text-black text-nowrap">
-                    <i class="la la-book me-2"></i>
+                <h2 class="card-title mb-0 fw-bold text-black text-nowrap">
+                    {{-- <i class="la la-book me-2"></i> --}}
                     {{ $title ?? 'All Live Bookings' }}
                     {{-- <small class="d-none d-md-inline ms-2">({{ $bookings->count() }} records)</small> --}}
-                </h3>
+                </h2>
 
                 <!-- Right side group: button LEFT → dropdown RIGHT -->
                 <div class="d-flex align-items-center gap-3 flex-nowrap">

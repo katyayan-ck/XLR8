@@ -3,9 +3,10 @@
 @section('title', 'Edit Receipt')
 
 @section('header')
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
+<link rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css">
 @endsection
 
 @section('content')
@@ -16,13 +17,12 @@
 
     <div class="card">
         <div class="card-header">
-            <h3>Receipt Details</h3>
+            <h2>Receipt Details</h2>
         </div>
 
         <div class="card-body">
             <form action="{{ route('receipt.update', ['bookingId' => $booking_id, 'receiptId' => $receipt_id]) }}"
-                  method="POST"
-                  enctype="multipart/form-data">
+                method="POST" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
 
@@ -32,7 +32,7 @@
                     <div class="col-sm-4">
                         <label for="reciept_no">Receipt No. <span class="text-danger">*</span></label>
                         <input type="text" name="reciept" id="reciept_no" class="form-control"
-                               value="{{ old('reciept', $entry->reciept) }}" required>
+                            value="{{ old('reciept', $entry->reciept) }}" required>
                         <div id="reciept_no_warning" class="text-danger mt-1" style="display:none;">
                             Receipt No already exists
                         </div>
@@ -44,14 +44,14 @@
                     <div class="col-sm-4">
                         <label for="date_picker">Date <span class="text-danger">*</span></label>
                         <input type="text" name="date" id="date_picker" class="form-control flatpickr"
-                               value="{{ old('date', \Carbon\Carbon::parse($entry->date)->format('d-M-Y')) }}" required>
+                            value="{{ old('date', \Carbon\Carbon::parse($entry->date)->format('d-M-Y')) }}" required>
                     </div>
 
                     <!-- Amount -->
                     <div class="col-sm-4">
                         <label for="amount">Amount <span class="text-danger">*</span></label>
                         <input type="number" name="amount" id="amount" class="form-control"
-                               value="{{ old('amount', $entry->amount) }}" step="0.01" required>
+                            value="{{ old('amount', $entry->amount) }}" step="0.01" required>
                     </div>
 
                     <!-- Proof Upload + Preview -->
@@ -59,46 +59,86 @@
                         <label>Current Proof</label>
                         <div style="margin-top:8px;">
                             @if($entry->getFirstMediaUrl('amount-proof'))
-                                @php
-                                    $media = $entry->getFirstMedia('amount-proof');
-                                    $isPdf = str_contains($media->mime_type ?? '', 'pdf');
-                                @endphp
-                                <div class="d-inline-block position-relative">
-                                    @if($isPdf)
-                                        <img src="{{ asset('images/pdf-icon.png') }}" width="100" alt="PDF">
-                                    @else
-                                        <img src="{{ $entry->getFirstMediaUrl('amount-proof') }}" class="img-thumbnail" width="140" alt="Proof">
-                                    @endif
-                                </div>
+                            @php
+                            $media = $entry->getFirstMedia('amount-proof');
+                            $isPdf = str_contains($media->mime_type ?? '', 'pdf');
+                            @endphp
+                            <div class="d-inline-block position-relative">
+                                @if($isPdf)
+                                <img src="{{ asset('images/pdf-icon.png') }}" width="100" alt="PDF">
+                                @else
+                                <img src="{{ $entry->getFirstMediaUrl('amount-proof') }}" class="img-thumbnail"
+                                    width="140" alt="Proof">
+                                @endif
+                            </div>
                             @else
-                                <span class="text-muted">No proof uploaded</span>
+                            <span class="text-muted">No proof uploaded</span>
                             @endif
                         </div>
                     </div>
 
                     <div class="col-sm-6">
-                        <label for="amount_proof">Replace Proof (optional)</label>
-                        <input type="file" name="amount_proof" id="amount_proof" class="form-control mt-2"
-                               accept="image/jpeg,image/png,application/pdf" onchange="previewFile(event)">
-                        <small class="text-muted">JPG, PNG, PDF (max 2MB)</small>
 
-                        <div id="previewContainer" class="mt-3" style="display:none;">
-                            <img id="imagePreview" class="img-thumbnail" width="140" style="display:none;">
-                            <img id="pdfIcon" src="{{ asset('images/pdf-icon.png') }}" width="100" style="display:none;">
-                        </div>
+                        <label class="form-label fw-bold">
+                            Replace Proof (optional)
+                        </label>
+
+                        <input class="form-control" type="file" name="amount_proof" id="amount_proof"
+                            accept=".jpg,.jpeg,.png,.pdf" onchange="handleReceiptProof(this)">
+
+                        <small class="text-muted">
+                            JPG, PNG, PDF (Max 2MB)
+                        </small>
+
+                        <div id="amount_proof_chip" class="mt-2"></div>
+
                     </div>
 
                     <!-- Buttons -->
                     <div class="col-12 mt-4">
                         <button type="submit" class="btn btn-primary px-4">Update Receipt</button>
                         <button type="submit" name="action" value="delete" class="btn btn-danger px-4 ms-2"
-                                onclick="return confirm('Are you sure you want to delete this receipt? This action cannot be undone.')">
+                            onclick="return confirm('Are you sure you want to delete this receipt? This action cannot be undone.')">
                             Delete Receipt
                         </button>
-                        <a href="{{ backpack_url('booking/' . $booking_id) }}" class="btn btn-secondary px-4 ms-2">Cancel</a>
+                        <a href="{{ backpack_url('booking/' . $booking_id) }}"
+                            class="btn btn-secondary px-4 ms-2">Cancel</a>
                     </div>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="proofPreviewModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title" id="proofPreviewModalLabel"></h5>
+
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body text-center">
+
+                <img id="modalProofImg" style="max-width:100%; max-height:70vh; display:none;">
+
+                <iframe id="modalProofPdf" style="width:100%; height:500px; display:none;" frameborder="0"></iframe>
+
+            </div>
+
+            <div class="modal-footer">
+
+                <a id="modalDownloadLink" class="btn btn-success" download>
+                    Download
+                </a>
+
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    Close
+                </button>
+
+            </div>
+
         </div>
     </div>
 </div>
@@ -107,9 +147,68 @@
 @push('after_scripts')
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
-$(document).ready(function() {
+    function handleReceiptProof(input)
+{
+    if (!input.files?.[0]) return;
+
+    const file = input.files[0];
+
+    if (file.size > 2 * 1024 * 1024)
+    {
+        Swal.fire({
+            icon:'error',
+            title:'Invalid File',
+            text:'File must be less than 2MB!'
+        });
+
+        input.value='';
+        return;
+    }
+
+    const url = URL.createObjectURL(file);
+    const container = document.getElementById('amount_proof_chip');
+
+    container.innerHTML = `
+        <span class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2 px-3 py-2"
+              style="cursor:pointer;"
+              onclick="openProofPreview('${url}','${file.type==='application/pdf'?'pdf':'image'}','${file.name}')">
+
+            <i class="la la-paperclip"></i>
+            <span class="fw-medium small">${file.name}</span>
+
+        </span>
+    `;
+}
+
+function openProofPreview(url,type,fileName)
+{
+    document.getElementById('proofPreviewModalLabel').innerText = fileName;
+
+    const img = document.getElementById('modalProofImg');
+    const pdf = document.getElementById('modalProofPdf');
+
+    img.style.display='none';
+    pdf.style.display='none';
+
+    if(type==='image')
+    {
+        img.src = url;
+        img.style.display='block';
+    }
+    else
+    {
+        pdf.src = url;
+        pdf.style.display='block';
+    }
+
+    document.getElementById('modalDownloadLink').href = url;
+
+    $('#proofPreviewModal').modal('show');
+}
+    $(document).ready(function() {
 
     // Flatpickr
     flatpickr("#date_picker", {
@@ -117,6 +216,15 @@ $(document).ready(function() {
         maxDate: "today",
         allowInput: true
     });
+
+    $('#proofPreviewModal').on('show.bs.modal', function () {
+    $(this).appendTo('body');
+});
+
+
+
+
+
 
     // Preview new file
     function previewFile(event) {

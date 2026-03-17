@@ -244,30 +244,7 @@
             </div>
 
 
-            {{-- <div class="col-sm-3 form-group">
-                <label>Instrument Proof</label>
-                @php
-                $media = $finance->getFirstMedia('instrument_proof');
-                $url = $media ? $media->getUrl() : null;
-                @endphp
-                @if ($media)
-                <div class="photo-preview">
-                    <a href="{{ $url }}" target="_blank">
-                        @if(str_contains($media->mime_type, 'pdf'))
-                        <img src="{{ asset('images/pdf-icon.png') }}" alt="PDF" class="img-fluid" width="100">
-                        @else
-                        <img src="{{ $url }}" alt="Instrument Proof" class="img-fluid" width="150"
-                            onerror="this.src='{{ asset('images/placeholder.jpg') }}'">
-                        @endif
-                    </a>
-                    <br>
-                    <small class="text-muted"><a href="{{ $url }}" target="_blank">Open in new
-                            tab</a></small>
-                </div>
-                @else
-                <p class="text-muted">No attachment uploaded.</p>
-                @endif
-            </div> --}}
+
             <div class="col-sm-3 form-group">
                 <label>Instrument Proof</label>
 
@@ -278,12 +255,20 @@
                 @endphp
 
                 @if ($media)
+
                 <div class="mt-2">
-                    <span class="btn btn-primary instrument-chip" style="cursor:pointer" data-url="{{ $url }}"
-                        data-name="{{ $fileName }}">
-                        📎 {{ $fileName }}
+
+                    <span
+                        class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2 px-3 py-2 instrument-chip"
+                        style="cursor:pointer" data-url="{{ $url }}" data-name="{{ $fileName }}">
+
+                        <i class="la la-paperclip"></i>
+                        <span class="fw-medium small">{{ $fileName }}</span>
+
                     </span>
+
                 </div>
+
                 @else
                 <p class="text-muted">No attachment uploaded.</p>
                 @endif

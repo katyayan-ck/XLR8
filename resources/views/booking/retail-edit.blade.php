@@ -181,57 +181,43 @@
 
                     <!-- Ref No -->
                     <div class="col-sm-3 finance-field" id="instrument_ref_no_wrapper" style="display:none;">
-                        <label class="form-label" id="instrument_ref_label">Reference No. <span
-                                class="text-danger">*</span></label>
+                        <label class="form-label" id="instrument_ref_label">Reference No.
+                            <span class="text-danger">*</span></label>
                         <input type="text" class="form-control" name="instrument_ref_no" id="instrument_ref_no"
                             value="{{ old('instrument_ref_no', $finance->instrument_ref_no ?? '') }}">
                     </div>
 
                     <!-- Instrument Proof -->
-                    {{-- <div class="col-sm-6 finance-field" id="instrument_proof_wrapper" style="display:none;">
-                        <label class="form-label">Instrument Proof <span class="text-danger">*</span></label>
-                        <input type="file" class="form-control" name="instrument_proof" id="instrument_proof"
-                            accept="image/jpeg,image/png,application/pdf" onchange="previewInstrumentProof(this)">
-                        @if($finance && $finance->getFirstMediaUrl('instrument_proof'))
-                        <div class="current-file-info mt-2">
-                            Current: <a href="{{ $finance->getFirstMediaUrl('instrument_proof') }}" target="_blank">
-                                {{ basename($finance->getFirstMediaUrl('instrument_proof')) }}
-                            </a>
-                        </div>
-                        @endif
-                        <div id="instrument_preview_container" class="mt-2 position-relative">
-                            <img id="instrumentImg" src="" width="150" style="display:none; border:1px solid #ddd;">
-                            <iframe id="instrumentPdf" width="150" height="150" style="display:none;"></iframe>
-                            <button type="button" id="instrumentClear" class="btn btn-danger btn-sm"
-                                style="position:absolute; top:-8px; right:-8px; display:none;"
-                                onclick="clearInstrumentProof()">X</button>
-                        </div>
-                        <small>Max 2 MB (JPG, PNG, PDF)</small>
-                    </div> --}}
                     <div class="col-sm-3 finance-field" id="instrument_proof_wrapper" style="display:none;">
                         <label class="form-label">
                             Instrument Proof <span class="text-danger">*</span>
                         </label>
 
-                        <input type="file" class="form-control" name="instrument_proof" id="instrument_proof"
+                        <input type="file" class="form-control" name="instrument_proof" id="instrumentProofInput"
                             accept="image/jpeg,image/png,application/pdf">
 
-                        <!-- Chip Preview Area -->
-                        <div id="instrumentProofPreview" class="mt-3">
-                            @if($finance && $finance->getFirstMediaUrl('instrument_proof'))
-                            @php
-                            $existingUrl = $finance->getFirstMediaUrl('instrument_proof');
-                            $fileName = basename($existingUrl);
-                            @endphp
+                        <!-- Chip Preview -->
+                        <div id="instrumentProofPreview" class="mt-3"></div>
 
-                            <span class="btn btn-primary instrument-chip" style="cursor:pointer"
-                                data-url="{{ $existingUrl }}" data-name="{{ $fileName }}">
-                                📎 {{ $fileName }}
-                            </span>
-                            @endif
-                        </div>
 
-                        <small>Max 2 MB (JPG, PNG, PDF)</small>
+                        @if($finance && $finance->getFirstMediaUrl('instrument_proof'))
+                        @php
+                        $existingUrl = $finance->getFirstMediaUrl('instrument_proof');
+                        $fileName = basename($existingUrl);
+                        @endphp
+
+                        <span class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2 px-3 py-2"
+                            style="cursor:pointer"
+                            onclick="openInstrumentModal('{{ $existingUrl }}','{{ $fileName }}')">
+
+                            <i class="la la-paperclip"></i>
+                            <span class="fw-medium small">{{ $fileName }}</span>
+
+                        </span>
+
+                        @endif
+
+                        {{-- <small class="text-muted">Max 2 MB (JPG, PNG, PDF)</small> --}}
                     </div>
 
                     <!-- Loan Fields -->
@@ -284,7 +270,7 @@
     <!-- Remarks History -->
     <div class="card">
 
-        <h3 class="mt-4">Booking Journey (Remarks)</h3>
+        <h2 class="mt-4" style="margin-left: 18px">Booking Journey (Remarks)</h2>
 
         <div class="card-body">
             <div class="row">
@@ -324,28 +310,25 @@
 
 
 </div>
-</div>
+
 {{-- ===================== ATTACHMENT MODAL ===================== --}}
-<div class="modal fade" id="attachmentModal" tabindex="-1">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
+<div class="modal fade" id="instrumentProofModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
 
             <div class="modal-header">
-                <h5 class="modal-title" id="modalFileName">File Preview</h5>
+                <h5 class="modal-title" id="instrumentModalFileName"></h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
 
             <div class="modal-body text-center">
-
-                <iframe id="modalFilePreview" style="width:100%; height:70vh;" frameborder="0">
-                </iframe>
-
+                <iframe id="instrumentModalPreview" style="width:100%; height:500px;" frameborder="0"></iframe>
             </div>
 
             <div class="modal-footer">
 
-                <a id="modalDownload" class="btn btn-success" download>
-                    <i class="la la-download"></i> Download
+                <a id="instrumentModalDownload" class="btn btn-success" download>
+                    Download
                 </a>
 
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
@@ -412,6 +395,47 @@
         height: calc(1.5em + 0.75rem + 2px);
         padding: 0.375rem 0.75rem;
     }
+
+    /* Base height & padding match Bootstrap input/select */
+    .select2-container--default .select2-selection--single {
+        height: calc(1.5em + 0.75rem + 2px) !important;
+        padding: 0.375rem 2.25rem 0.375rem 0.75rem !important;
+        border: 1px solid #ced4da;
+        border-radius: 0.375rem;
+        background-color: #fff;
+    }
+
+    /* Completely hide the default Select2 arrow */
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        display: none !important;
+    }
+
+    /* Add Bootstrap 5 style chevron using same SVG as .form-select */
+    .select2-container--default .select2-selection--single {
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right 0.75rem center;
+        background-size: 16px 16px;
+    }
+
+    /* When dropdown is open → flip the chevron (like native select) */
+    .select2-container--default.select2-container--open .select2-selection--single {
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 11 6-6 6 6'/%3e%3c/svg%3e") !important;
+    }
+
+    /* Optional: better focus ring to match Bootstrap */
+    .select2-container--default.select2-container--focus .select2-selection--single {
+        border-color: #86b7fe;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, .25);
+    }
+
+    /* Fix for narrow columns (your col-sm-3 fields) */
+    @media (max-width: 576px) {
+        .select2-container--default .select2-selection--single {
+            padding-right: 2rem !important;
+            background-position: right 0.5rem center;
+        }
+    }
 </style>
 @endpush
 
@@ -441,7 +465,7 @@
             const previouslySelected = $('#financier_select').val();
 
             // Reset everything
-            $('.finance-field').hide();
+            $('#instrument_ref_no_wrapper, #instrument_proof_wrapper, #loan_amount_wrapper, #margin_money_wrapper, #file_charge_wrapper, #payment_amount_wrapper').hide();
             $('#case_lost_reason_wrapper').hide();
             $('#financier_wrapper, #financier_short_wrapper').show();
             $('#financier_select').prop('disabled', false).prop('required', true);
@@ -592,7 +616,7 @@
             const caseStatus = $('#case_status').val();
             const instType = $('#instrument_type').val();
             const instRef = $('#instrument_ref_no').val()?.trim();
-            const instProof = $('#instrument_proof').val() || currentMediaUrl;
+            const instProof = $('#instrumentProofInput').val() || currentMediaUrl;
             const loan = $('#loan_amount').val();
             const margin = $('#margin_money').val();
             const fileCharge = $('#file_charge').val();
@@ -606,47 +630,52 @@
         // INSTRUMENT CHIP SYSTEM
         // ===========================
 
-        $('#instrument_proof').on('change', function () {
+        function handleInstrumentProof(input) {
 
-            const previewDiv = document.getElementById('instrumentProofPreview');
-            previewDiv.innerHTML = '';
+    const previewDiv = document.getElementById('instrumentProofPreview');
 
-            if (this.files && this.files[0]) {
+    if (input.files && input.files[0]) {
 
-                const file = this.files[0];
-                const fileURL = URL.createObjectURL(file);
+        const file = input.files[0];
+        const fileURL = URL.createObjectURL(file);
 
-                previewDiv.innerHTML = `
-                    <span class="btn btn-primary instrument-chip"
-                          style="cursor:pointer"
-                          data-url="${fileURL}"
-                          data-name="${file.name}">
-                        📎 ${file.name}
-                    </span>
-                `;
-            }
-        });
+        // remove old chip
+        previewDiv.innerHTML = '';
 
-        $(document).on('click', '.instrument-chip', function () {
+        previewDiv.innerHTML = `
+            <span class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2 px-3 py-2"
+                style="cursor:pointer"
+                onclick="openInstrumentModal('${fileURL}', '${file.name.replace(/'/g,"\\'")}')">
 
-            const url = $(this).data('url');
-            const name = $(this).data('name');
+                <i class="la la-paperclip"></i>
+                <span class="fw-medium small">${file.name}</span>
 
-            $('#modalFileName').text(name);
-            $('#modalDownload').attr('href', url);
-            $('#modalFilePreview').attr('src', url);
+            </span>
+        `;
+    }
+}
 
-            $('#attachmentModal').modal({
-                backdrop: false,
-                keyboard: true
-            }).modal('show');
-        });
+window.openInstrumentModal = function(url, name) {
+
+    document.getElementById('instrumentModalFileName').innerText = name;
+    document.getElementById('instrumentModalPreview').src = url;
+    document.getElementById('instrumentModalDownload').href = url;
+
+    $('#instrumentProofModal').modal('show');
+}
+
+document.getElementById('instrumentProofInput')
+?.addEventListener('change', function () {
+    handleInstrumentProof(this);
+});
+
+
 
         // Initialization
         function init() {
             $('.select2').select2({
                 placeholder: "-- Select --",
-                allowClear: true,
+
                 width: '100%'
             });
 
@@ -728,7 +757,7 @@
             });
 
             // Events
-            $('#fin_mode, #case_status, #loan_status_box, #instrument_type').on('change', apply);
+            $('#fin_mode, #case_status, #loan_status_box').on('change', apply);
             $('#instrument_type').on('change', updateRefLabel);
             $('.calc-field').on('input keyup change', function() {
                 calculatePayment();
@@ -746,6 +775,10 @@
                 $('#financier_select').trigger('change');
             }
         }
+
+        $('#instrumentProofModal').on('show.bs.modal', function () {
+    $(this).appendTo('body');
+});
 
         $(document).ready(init);
 

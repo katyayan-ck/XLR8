@@ -793,42 +793,42 @@
 @push('after_scripts')
 <script>
     function handleAttachment(input) {
-    const previewDiv = document.getElementById('attachmentPreview');
-    previewDiv.innerHTML = '';
 
-    if (input.files && input.files[0]) {
-        const file = input.files[0];
-        const fileURL = URL.createObjectURL(file);
+        const previewDiv = document.getElementById('attachmentPreview');
+        previewDiv.innerHTML = '';
 
-        previewDiv.innerHTML = `
-            <span class="btn btn-primary"
-                  style="cursor:pointer"
-                  onclick="openAttachmentModal('${fileURL}', '${file.name}')">
-                📎 ${file.name}
-            </span>
-        `;
+        if (input.files && input.files[0]) {
+
+            const file = input.files[0];
+            const fileURL = URL.createObjectURL(file);
+
+            previewDiv.innerHTML = `
+                <span class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2 px-3 py-2"
+                    style="cursor:pointer"
+                    onclick="openAttachmentModal('${fileURL}', '${file.name.replace(/'/g,"\\'")}')">
+
+                    <i class="la la-paperclip"></i>
+
+                    <span class="fw-medium small">
+                        ${file.name.length > 28 ? file.name.substring(0,25)+'...' : file.name}
+                    </span>
+
+                </span>
+            `;
+        }
     }
-}
 
 function openAttachmentModal(url, name) {
 
     document.getElementById('modalFileName').innerText = name;
     document.getElementById('modalDownload').href = url;
+    document.getElementById('modalFilePreview').src = url;
 
-    const previewFrame = document.getElementById('modalFilePreview');
+    const modal = new bootstrap.Modal(
+        document.getElementById('attachmentModal')
+    );
 
-    if (name.toLowerCase().endsWith('.pdf')) {
-        // Direct PDF preview without PDF.js conflict
-        previewFrame.src = url;
-    } else {
-        // Image preview
-        previewFrame.src = url;
-    }
-
-    $('#attachmentModal').modal({
-        backdrop: false,
-        keyboard: true
-    }).modal('show');
+    modal.show();
 }
 
 

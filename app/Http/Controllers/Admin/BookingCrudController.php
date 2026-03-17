@@ -730,8 +730,8 @@ class BookingCrudController extends CrudController
         $columns = [
 
             // Pinned left – hamesha dikhe
-            ['headerName' => 'S.No.',       'field' => 'serial_no',     'width' => 80,  'pinned' => 'left', 'sortable' => false, 'filter' => false],
-            ['headerName' => 'XB No.',      'field' => 'booking_no',     'width' => 140, 'pinned' => 'left', 'sortable' => true],
+            ['headerName' => 'S.No.',       'field' => 'serial_no',     'width' => 80,  'sortable' => false, 'filter' => false],
+            ['headerName' => 'XB No.',      'field' => 'booking_no',     'width' => 140,  'sortable' => true],
 
 
             ['headerName' => 'Entry Date',         'field' => 'created_at',            'width' => 110, 'type' => 'date'],
@@ -740,7 +740,11 @@ class BookingCrudController extends CrudController
             ['headerName' => 'Refund Request Date',    'field' => 'refund_request_date',   'width' => 130, 'type' => 'date'],
             ['headerName' => 'Refunded Date',      'field' => 'refund_date',           'width' => 120, 'type' => 'date'],
             ['headerName' => 'Refund Reject Date', 'field' => 'refund_rejection_date', 'width' => 140, 'type' => 'date'],
-            ['headerName' => 'Invoice Date',       'field' => 'invoice_date',          'width' => 120, 'type' => 'date'],
+            ['headerName' => 'Invoice Date',       'field' => 'inv_date',          'width' => 120, 'type' => 'date'],
+            ['headerName' => 'Dealer Invoice Date',       'field' => 'dealer_inv_date',          'width' => 120, 'type' => 'date'],
+            ['headerName' => 'Receipt No.',       'field' => 'receipt_no',          'width' => 120],
+            ['headerName' => 'Invoice No.',       'field' => 'inv_no',          'width' => 120],
+            ['headerName' => 'Dealer Invoice No.',       'field' => 'dealer_inv_no',          'width' => 120],
             ['headerName' => 'Receipt Date',       'field' => 'receipt_date',          'width' => 120, 'type' => 'date'],
             ['headerName' => 'CPD',                'field' => 'cpd',                   'width' => 100, 'type' => 'date'],
             ['headerName' => 'Delivery Date',      'field' => 'del_date',              'width' => 120, 'type' => 'date'],
@@ -751,6 +755,7 @@ class BookingCrudController extends CrudController
             ['headerName' => 'Customer Name',  'field' => 'name',         'width' => 180, 'filter' => true],
             ['headerName' => 'Care Of',        'field' => 'care_of',      'width' => 140],
             ['headerName' => 'Mobile No.',         'field' => 'mobile',       'width' => 120],
+            ['headerName' => 'Alternate Mobile No.',         'field' => 'alt_mobile',       'width' => 120],
             ['headerName' => 'PAN No.',         'field' => 'pan_no',       'width' => 110],
             ['headerName' => 'Aadhaar No.',     'field' => 'adhar_no',     'width' => 130],
             ['headerName' => 'GSTIN',           'field' => 'gstn',         'width' => 120],
@@ -760,6 +765,8 @@ class BookingCrudController extends CrudController
             ['headerName' => 'Variant',        'field' => 'variant',        'width' => 150],
             ['headerName' => 'Color',          'field' => 'color',          'width' => 100],
             ['headerName' => 'Chassis No.',        'field' => 'chasis_no',      'width' => 130],
+            ['headerName' => 'Seating',        'field' => 'seating',      'width' => 130],
+            ['headerName' => 'Model Variant 1',        'field' => 'vh1_detail',      'width' => 130],
 
             // Amount & Finance
             ['headerName' => 'Booking Amount',         'field' => 'booking_amount', 'width' => 120, 'type' => 'number'],
@@ -778,6 +785,10 @@ class BookingCrudController extends CrudController
 
 
             ['headerName' => 'Booking Age',       'field' => 'days_count',     'width' => 100, 'type' => 'number', 'cellClass' => 'text-right'],
+            ['headerName' => 'Used Vehicle Expected Price',       'field' => 'used_vehicle_exp_price',     'width' => 100, 'type' => 'number', 'cellClass' => 'text-right'],
+            ['headerName' => 'Used Vehicle Offered Price',       'field' => 'used_vehicle_off_price',     'width' => 100, 'type' => 'number', 'cellClass' => 'text-right'],
+            ['headerName' => 'Used Vehicle Exchange Bonus',       'field' => 'new_vehicle_exc_bonus',     'width' => 100, 'type' => 'number', 'cellClass' => 'text-right'],
+            ['headerName' => 'Price Gap',       'field' => 'price_gap',     'width' => 100, 'type' => 'number', 'cellClass' => 'text-right'],
 
             // DMS / Refs
             ['headerName' => 'SAP Booking No.',         'field' => 'sap_no',         'width' => 110],
@@ -968,21 +979,23 @@ class BookingCrudController extends CrudController
 
             $mapped->action = '
                                 <div class="d-flex gap-2">
-                                    <a href="' . $editUrl . '"
-                                       class="btn btn-sm btn-info py-1 px-2"
-                                       title="Edit">
-                                        Edit
-                                    </a>
-                                    <a href="' . $amountUrl . '"
-                                       class="btn btn-sm btn-success py-1 px-2"
-                                       title="Add Amount">
-                                        Add ₹
-                                    </a>
                                     <a href="' . $showUrl . '"
                                        class="btn btn-sm btn-primary py-1 px-2"
                                        title="View">
                                         View
                                     </a>
+
+                                    <a href="' . $amountUrl . '"
+                                       class="btn btn-sm btn-success py-1 px-2"
+                                       title="Add Amount">
+                                        Add ₹
+                                    </a>
+                                    <a href="' . $editUrl . '"
+                                       class="btn btn-sm btn-info py-1 px-2"
+                                       title="Edit">
+                                        Edit
+                                    </a>
+
                                 </div>
                                 ';
             // btn btn-sm btn-danger
@@ -3195,7 +3208,7 @@ class BookingCrudController extends CrudController
 
             if (in_array($user->id, $allowedUsers)) {
                 $row->action = '<div class="table-actions text-center">
-                    <a class="btn btn-sm btn-info" href="' . route('dms-edit', $t->id) . '?from=pending" title="Edit DMS / SO">
+                    <a class="btn btn-sm btn-primary py-1 px-2" href="' . route('dms-edit', $t->id) . '?from=pending" title="Edit DMS / SO">
                         Process
                     </a>
                 </div>';
@@ -3470,7 +3483,7 @@ class BookingCrudController extends CrudController
             $row->serial_no = ($paginatedBookings->currentPage() - 1) * $paginatedBookings->perPage() + $index + 1;
 
             $row->action = '<a href="' . route('booking.kyc.edit', $t->id) . '"
-                        class="btn btn-primary btn-sm py-1 px-2" title="Complete KYC">
+                        class="btn btn-sm btn-primary py-1 px-2" title="Complete KYC">
                             Process
                        </a>';
 
@@ -3650,7 +3663,7 @@ class BookingCrudController extends CrudController
 
                 $actionHtml .= '
         <a href="' . route('dms-edit', $t->id) . '"
-           class="btn btn-sm btn-info">
+           class="btn btn-sm btn-primary py-1 px-2">
             Process
         </a>';
             }
@@ -3684,9 +3697,9 @@ class BookingCrudController extends CrudController
 
         $this->data['gridConfig'] = $gridConfig;
 
-        if ($gridData->isEmpty()) {
-            session()->flash('info', 'No bookings found for selected status.');
-        }
+        // if ($gridData->isEmpty()) {
+        //     session()->flash('info', 'No bookings found for selected status.');
+        // }
 
         return view('booking.pending-dms', $this->data);
     }
@@ -4883,9 +4896,7 @@ class BookingCrudController extends CrudController
 
         $this->data['gridConfig'] = $gridConfig;
 
-        if ($gridData->isEmpty()) {
-            session()->flash('info', 'No pending payment bookings found.');
-        }
+
 
         return view('booking.pending-payment', $this->data);
     }
@@ -4989,9 +5000,7 @@ class BookingCrudController extends CrudController
 
         $this->data['gridConfig'] = $gridConfig;
 
-        if ($gridData->isEmpty()) {
-            session()->flash('info', 'No pending insurance bookings found for the selected period.');
-        }
+
 
         return view('booking.pending-insurance', $this->data);
     }
@@ -5319,12 +5328,12 @@ class BookingCrudController extends CrudController
             // </div>';
             $row->action = '<div class="table-actions text-center d-flex justify-content-center gap-3">
                 <a href="' . backpack_url('booking/' . $t->id . '/edit') . '#delivery"
-                title="Mark DO" class="text-success fs-5">
-                    <i class="la la-truck"></i>
+                title="Mark DO" class="btn btn-success btn-sm py-2 px-1">
+                    Process
                 </a>
                 <a href="' . backpack_url('booking/' . $t->id) . '"
-                title="View" class="text-primary fs-5">
-                    <i class="la la-eye"></i>
+                title="View" class="btn btn-primary btn-sm py-2 px-1">
+                    View
                 </a>
                 </div>';
 

@@ -39,25 +39,27 @@
                             <div class="col-sm-3">
                                 <label class="form-label">Model / Variant</label>
                                 <input type="text" class="form-control"
-                                       value="{{ $booking->model ?? 'N/A' }} / {{ $booking->variant ?? 'N/A' }}" readonly>
+                                    value="{{ $booking->model ?? 'N/A' }} / {{ $booking->variant ?? 'N/A' }}" readonly>
                             </div>
                             <div class="col-sm-3">
                                 <label class="form-label">Finance Mode (Primary)</label>
-                                <input type="text" class="form-control" value="{{ $booking->fin_mode ?? 'N/A' }}" readonly>
+                                <input type="text" class="form-control" value="{{ $booking->fin_mode ?? 'N/A' }}"
+                                    readonly>
                             </div>
                             <div class="col-sm-3">
                                 <label class="form-label">Financier (Primary)</label>
                                 <input type="text" class="form-control"
-                                       value="{{ collect($data['financiers'] ?? [])->firstWhere('id', $booking->financier)['name'] ?? 'N/A' }}"
-                                       readonly>
+                                    value="{{ collect($data['financiers'] ?? [])->firstWhere('id', $booking->financier)['name'] ?? 'N/A' }}"
+                                    readonly>
                             </div>
-                            
+
                         </div>
                     </div>
                 </div>
 
                 <!-- Editable Finance Form -->
-                <form id="financeForm" method="POST" action="{{ route('finance.update', $booking->id) }}" enctype="multipart/form-data">
+                <form id="financeForm" method="POST" action="{{ route('finance.update', $booking->id) }}"
+                    enctype="multipart/form-data">
                     @csrf
                     @method('PUT')
 
@@ -75,11 +77,17 @@
                                     <label class="form-label">Finance Mode <span class="text-danger">*</span></label>
                                     <select name="fin_mode" id="fin_mode" class="form-control select2" required>
                                         <option value="">-- Select --</option>
-                                        <option value="In-house" {{ old('fin_mode', $finance->fin_mode ?? '') == 'In-house' ? 'selected' : '' }}>In-house</option>
-                                        <option value="Cash" {{ old('fin_mode', $finance->fin_mode ?? '') == 'Cash' ? 'selected' : '' }}>Cash</option>
-                                        <option value="Customer Self" {{ old('fin_mode', $finance->fin_mode ?? '') == 'Customer Self' ? 'selected' : '' }}>Customer Self</option>
-                                        <option value="Yet To Decide" {{ old('fin_mode', $finance->fin_mode ?? '') == 'Yet To Decide' ? 'selected' : '' }}>Yet To Decide</option>
-                                        <option value="Purchase Plan Cancelled" {{ old('fin_mode', $finance->fin_mode ?? '') == 'Purchase Plan Cancelled' ? 'selected' : '' }}>Purchase Plan Cancelled</option>
+                                        <option value="In-house" {{ old('fin_mode', $finance->fin_mode ?? '') ==
+                                            'In-house' ? 'selected' : '' }}>In-house</option>
+                                        <option value="Cash" {{ old('fin_mode', $finance->fin_mode ?? '') == 'Cash' ?
+                                            'selected' : '' }}>Cash</option>
+                                        <option value="Customer Self" {{ old('fin_mode', $finance->fin_mode ?? '') ==
+                                            'Customer Self' ? 'selected' : '' }}>Customer Self</option>
+                                        <option value="Yet To Decide" {{ old('fin_mode', $finance->fin_mode ?? '') ==
+                                            'Yet To Decide' ? 'selected' : '' }}>Yet To Decide</option>
+                                        <option value="Purchase Plan Cancelled" {{ old('fin_mode', $finance->fin_mode ??
+                                            '') == 'Purchase Plan Cancelled' ? 'selected' : '' }}>Purchase Plan
+                                            Cancelled</option>
                                     </select>
                                     @error('fin_mode') <span class="text-danger">{{ $message }}</span> @enderror
                                 </div>
@@ -88,8 +96,10 @@
                                 <div class="col-sm-3">
                                     <label class="form-label">Loan Status <span class="text-danger">*</span></label>
                                     <select name="loan_status" id="loan_status_box" class="form-control" required>
-                                        <option value="Pending" {{ old('loan_status', $finance->loan_status ?? '') == 'Pending' ? 'selected' : '' }}>Pending</option>
-                                        <option value="Complete" {{ old('loan_status', $finance->loan_status ?? '') == 'Complete' ? 'selected' : '' }}>Complete</option>
+                                        <option value="Pending" {{ old('loan_status', $finance->loan_status ?? '') ==
+                                            'Pending' ? 'selected' : '' }}>Pending</option>
+                                        <option value="Complete" {{ old('loan_status', $finance->loan_status ?? '') ==
+                                            'Complete' ? 'selected' : '' }}>Complete</option>
                                     </select>
                                     @error('loan_status') <span class="text-danger">{{ $message }}</span> @enderror
                                 </div>
@@ -100,11 +110,11 @@
                                     <select name="financier" id="financier_select" class="form-control select2">
                                         <option value="">-- Select Financier --</option>
                                         @foreach($data['financiers'] ?? [] as $fin)
-                                            <option value="{{ $fin['id'] }}"
-                                                    data-short="{{ $fin['short_name'] ?? '' }}"
-                                                    {{ old('financier', $finance->financier ?? '') == $fin['id'] ? 'selected' : '' }}>
-                                                {{ $fin['name'] }}
-                                            </option>
+                                        <option value="{{ $fin['id'] }}" data-short="{{ $fin['short_name'] ?? '' }}" {{
+                                            old('financier', $finance->financier ?? '') == $fin['id'] ? 'selected' : ''
+                                            }}>
+                                            {{ $fin['name'] }}
+                                        </option>
                                         @endforeach
                                     </select>
                                     @error('financier') <span class="text-danger">{{ $message }}</span> @enderror
@@ -114,16 +124,19 @@
                                 <div class="col-sm-3" id="financier_short_wrapper">
                                     <label class="form-label">Short Name</label>
                                     <input type="text" class="form-control" id="financier_short_name" readonly
-                                           value="{{ collect($data['financiers'] ?? [])->firstWhere('id', $finance->financier)['short_name'] ?? '' }}">
+                                        value="{{ collect($data['financiers'] ?? [])->firstWhere('id', $finance->financier)['short_name'] ?? '' }}">
                                 </div>
 
                                 <!-- Case Status -->
                                 <div class="col-sm-3">
                                     <label class="form-label">Case Status <span class="text-danger">*</span></label>
                                     <select name="case_status" id="case_status" class="form-control" required>
-                                        <option value="1" {{ old('case_status', $finance->case_status ?? 1) == 1 ? 'selected' : '' }}>In-Process</option>
-                                        <option value="2" {{ old('case_status', $finance->case_status ?? 1) == 2 ? 'selected' : '' }}>In House Finance Done</option>
-                                        <option value="3" id="case_lost_option" {{ old('case_status', $finance->case_status ?? 1) == 3 ? 'selected' : '' }}>Case Lost</option>
+                                        <option value="1" {{ old('case_status', $finance->case_status ?? 1) == 1 ?
+                                            'selected' : '' }}>In-Process</option>
+                                        <option value="2" {{ old('case_status', $finance->case_status ?? 1) == 2 ?
+                                            'selected' : '' }}>In House Finance Done</option>
+                                        <option value="3" id="case_lost_option" {{ old('case_status', $finance->
+                                            case_status ?? 1) == 3 ? 'selected' : '' }}>Case Lost</option>
                                     </select>
                                     @error('case_status') <span class="text-danger">{{ $message }}</span> @enderror
                                 </div>
@@ -131,8 +144,10 @@
                                 <!-- Verification Status -->
                                 <div class="col-sm-3">
                                     <label class="form-label">Verification Status</label>
-                                    <input type="text" id="verification_status_display" class="form-control" readonly value="Please select Finance Mode">
-                                    <input type="hidden" name="verification_status" id="verification_status_hidden" value="1">
+                                    <input type="text" id="verification_status_display" class="form-control" readonly
+                                        value="Please select Finance Mode">
+                                    <input type="hidden" name="verification_status" id="verification_status_hidden"
+                                        value="1">
                                 </div>
 
                                 <!-- Case Lost Reason -->
@@ -149,39 +164,50 @@
                                     <label class="form-label">Instrument Type</label>
                                     <select name="instrument_type" id="instrument_type" class="form-control">
                                         <option value="">-- Select --</option>
-                                        <option value="1" {{ old('instrument_type', $finance->instrument_type ?? '') == 1 ? 'selected' : '' }}>Financier Payment</option>
-                                        <option value="2" {{ old('instrument_type', $finance->instrument_type ?? '') == 2 ? 'selected' : '' }}>Delivery Order</option>
-                                        <option value="3" {{ old('instrument_type', $finance->instrument_type ?? '') == 3 ? 'selected' : '' }}>Sanction Letter</option>
-                                        <option value="4" {{ old('instrument_type', $finance->instrument_type ?? '') == 4 ? 'selected' : '' }}>Mail Communication</option>
-                                        <option value="5" {{ old('instrument_type', $finance->instrument_type ?? '') == 5 ? 'selected' : '' }}>Whatsapp Communication</option>
+                                        <option value="1" {{ old('instrument_type', $finance->instrument_type ?? '') ==
+                                            1 ? 'selected' : '' }}>Financier Payment</option>
+                                        <option value="2" {{ old('instrument_type', $finance->instrument_type ?? '') ==
+                                            2 ? 'selected' : '' }}>Delivery Order</option>
+                                        <option value="3" {{ old('instrument_type', $finance->instrument_type ?? '') ==
+                                            3 ? 'selected' : '' }}>Sanction Letter</option>
+                                        <option value="4" {{ old('instrument_type', $finance->instrument_type ?? '') ==
+                                            4 ? 'selected' : '' }}>Mail Communication</option>
+                                        <option value="5" {{ old('instrument_type', $finance->instrument_type ?? '') ==
+                                            5 ? 'selected' : '' }}>Whatsapp Communication</option>
                                     </select>
                                 </div>
 
                                 <!-- Ref No -->
-                                <div class="col-sm-3 finance-field" id="instrument_ref_no_wrapper" style="display:none;">
+                                <div class="col-sm-3 finance-field" id="instrument_ref_no_wrapper"
+                                    style="display:none;">
                                     <label class="form-label" id="instrument_ref_label">Reference No.</label>
-                                    <input type="text" class="form-control" name="instrument_ref_no" id="instrument_ref_no"
-                                           value="{{ old('instrument_ref_no', $finance->instrument_ref_no ?? '') }}">
+                                    <input type="text" class="form-control" name="instrument_ref_no"
+                                        id="instrument_ref_no"
+                                        value="{{ old('instrument_ref_no', $finance->instrument_ref_no ?? '') }}">
                                 </div>
 
                                 <!-- Instrument Proof -->
                                 <div class="col-sm-6 finance-field" id="instrument_proof_wrapper" style="display:none;">
                                     <label class="form-label">Instrument Proof</label>
-                                    <input type="file" class="form-control" name="instrument_proof" id="instrument_proof"
-                                           accept="image/jpeg,image/png,application/pdf" onchange="previewInstrumentProof(this)">
+                                    <input type="file" class="form-control" name="instrument_proof"
+                                        id="instrument_proof" accept="image/jpeg,image/png,application/pdf"
+                                        onchange="previewInstrumentProof(this)">
                                     @if($finance && $finance->getFirstMediaUrl('instrument_proof'))
-                                        <div class="current-file-info mt-2">
-                                            Current: <a href="{{ $finance->getFirstMediaUrl('instrument_proof') }}" target="_blank">
-                                                {{ basename($finance->getFirstMediaUrl('instrument_proof')) }}
-                                            </a>
-                                        </div>
+                                    <div class="current-file-info mt-2">
+                                        Current: <a href="{{ $finance->getFirstMediaUrl('instrument_proof') }}"
+                                            target="_blank">
+                                            {{ basename($finance->getFirstMediaUrl('instrument_proof')) }}
+                                        </a>
+                                    </div>
                                     @endif
                                     <div id="instrument_preview_container" class="mt-2 position-relative">
-                                        <img id="instrumentImg" src="" width="150" style="display:none; border:1px solid #ddd;">
-                                        <iframe id="instrumentPdf" width="150" height="150" style="display:none;"></iframe>
+                                        <img id="instrumentImg" src="" width="150"
+                                            style="display:none; border:1px solid #ddd;">
+                                        <iframe id="instrumentPdf" width="150" height="150"
+                                            style="display:none;"></iframe>
                                         <button type="button" id="instrumentClear" class="btn btn-danger btn-sm"
-                                                style="position:absolute; top:-8px; right:-8px; display:none;"
-                                                onclick="clearInstrumentProof()">X</button>
+                                            style="position:absolute; top:-8px; right:-8px; display:none;"
+                                            onclick="clearInstrumentProof()">X</button>
                                     </div>
                                     <small>Max 2 MB (JPG, PNG, PDF)</small>
                                 </div>
@@ -189,20 +215,23 @@
                                 <!-- Loan Fields -->
                                 <div class="col-sm-3 finance-field" id="loan_amount_wrapper" style="display:none;">
                                     <label class="form-label">Loan Amount</label>
-                                    <input type="number" name="loan_amount" id="loan_amount" class="form-control calc-field"
-                                           value="{{ old('loan_amount', $finance->loan_amount ?? '') }}">
+                                    <input type="number" name="loan_amount" id="loan_amount"
+                                        class="form-control calc-field"
+                                        value="{{ old('loan_amount', $finance->loan_amount ?? '') }}">
                                 </div>
 
                                 <div class="col-sm-3 finance-field" id="margin_money_wrapper" style="display:none;">
                                     <label class="form-label">Margin Money (by Financier)</label>
-                                    <input type="number" name="margin_money" id="margin_money" class="form-control calc-field"
-                                           value="{{ old('margin_money', $finance->margin ?? '') }}">
+                                    <input type="number" name="margin_money" id="margin_money"
+                                        class="form-control calc-field"
+                                        value="{{ old('margin_money', $finance->margin ?? '') }}">
                                 </div>
 
                                 <div class="col-sm-3 finance-field" id="file_charge_wrapper" style="display:none;">
                                     <label class="form-label">File Charge (deducted)</label>
-                                    <input type="number" name="file_charge" id="file_charge" class="form-control calc-field"
-                                           value="{{ old('file_charge', $finance->file_charge ?? '') }}">
+                                    <input type="number" name="file_charge" id="file_charge"
+                                        class="form-control calc-field"
+                                        value="{{ old('file_charge', $finance->file_charge ?? '') }}">
                                 </div>
 
                                 <div class="col-sm-3 finance-field" id="payment_amount_wrapper" style="display:none;">
@@ -213,7 +242,8 @@
                                 <!-- Remark -->
                                 <div class="col-sm-12">
                                     <label class="form-label">Remark <span class="text-danger">*</span></label>
-                                    <textarea name="remark" class="form-control" rows="4" required>{{ old('remark', '') }}</textarea>
+                                    <textarea name="remark" class="form-control" rows="4"
+                                        required>{{ old('remark', '') }}</textarea>
                                     @error('remark') <span class="text-danger">{{ $message }}</span> @enderror
                                 </div>
 
@@ -242,10 +272,25 @@
 @push('after_styles')
 <link rel="stylesheet" href="{{ asset('plugins/select2/dist/css/select2.min.css') }}">
 <style>
-    .is-valid { border-color: #28a745 !important; box-shadow: 0 0 5px rgba(40,167,69,0.5); }
-    .text-danger { color: #dc3545; }
-    .readonly-field, input[readonly], select[readonly] { background-color: #f8f9fa; cursor: not-allowed; }
-    .finance-field { display: none; }
+    .is-valid {
+        border-color: #28a745 !important;
+        box-shadow: 0 0 5px rgba(40, 167, 69, 0.5);
+    }
+
+    .text-danger {
+        color: #dc3545;
+    }
+
+    .readonly-field,
+    input[readonly],
+    select[readonly] {
+        background-color: #f8f9fa;
+        cursor: not-allowed;
+    }
+
+    .finance-field {
+        display: none;
+    }
 </style>
 @endpush
 
@@ -256,7 +301,7 @@
 <style>
     .is-valid {
         border-color: #28a745 !important;
-        box-shadow: 0 0 5px rgba(40,167,69,0.5);
+        box-shadow: 0 0 5px rgba(40, 167, 69, 0.5);
     }
 
     .text-danger {
@@ -334,7 +379,7 @@
 <script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.19.5/dist/jquery.validate.min.js"></script>
 
 <script>
-(function($) {
+    (function($) {
     'use strict';
 
     // ───────────── Global Variables ─────────────

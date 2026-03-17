@@ -30,10 +30,10 @@
             {{-- HEADER --}}
             <div
                 class="card-header bg-gradient-{{ request('payout_type', 'pending') === 'completed' ? 'success' : 'warning' }} d-flex justify-content-between align-items-center flex-wrap gap-3">
-                <h3 class="card-title mb-0 fw-bold text-black text-nowrap">
+                <h2 class="card-title mb-0 fw-bold text-black text-nowrap">
                     Finance Payout - {{ request('payout_type', 'pending') === 'completed' ? 'Completed' : 'Pending' }}
                     Dashboard
-                </h3>
+                </h2>
 
                 <div class="d-flex align-items-center gap-3 flex-wrap">
                     <div class="d-flex align-items-center gap-2">
@@ -87,7 +87,7 @@
                         </button>
 
                         <div class="position-relative">
-                            <button id="btnCustomiseHeaders" class="btn btn-success btn-sm text-nowrap">
+                            <button id="btnCustomiseHeaders" class="btn btn-danger btn-sm text-nowrap">
                                 Customise Headers
                             </button>
 
@@ -142,7 +142,7 @@
                 </div>
 
                 {{-- GRID --}}
-                <div id="myGrid" class="ag-theme-quartz" style="height: calc(110vh - 260px); width: 100%;"></div>
+                <div id="myGrid" class="ag-theme-quartz" style="height: calc(93vh - 260px); width: 100%;"></div>
             </div>
 
             @if(session('info'))

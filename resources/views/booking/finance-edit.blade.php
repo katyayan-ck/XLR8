@@ -159,8 +159,8 @@
 
                             <!-- Instrument Type -->
                             <div class="col-sm-3 finance-field" id="instrument_type_wrapper" style="display:none;">
-                                <label class="form-label">Instrument Type</label>
-                                <select name="instrument_type" id="instrument_type" class="form-control">
+                                <label class="form-label">Instrument Type <span class="text-danger">*</span></label>
+                                <select name="instrument_type" id="instrument_type" class="form-control form-select">
                                     <option value="">-- Select --</option>
                                     <option value="1" {{ old('instrument_type', $finance->instrument_type ?? '') == 1 ?
                                         'selected' : '' }}>Financier Payment</option>
@@ -177,52 +177,53 @@
 
                             <!-- Ref No -->
                             <div class="col-sm-3 finance-field" id="instrument_ref_no_wrapper" style="display:none;">
-                                <label class="form-label" id="instrument_ref_label">Reference No.</label>
+                                <label class="form-label" id="instrument_ref_label">Reference No. <span
+                                        class="text-danger">*</span></label>
                                 <input type="text" class="form-control" name="instrument_ref_no" id="instrument_ref_no"
                                     value="{{ old('instrument_ref_no', $finance->instrument_ref_no ?? '') }}">
                             </div>
 
                             <!-- Instrument Proof -->
+                            <!-- Instrument Proof -->
                             <div class="col-sm-6 finance-field" id="instrument_proof_wrapper" style="display:none;">
-                                <label class="form-label">Instrument Proof</label>
-                                <input type="file" class="form-control" name="instrument_proof" id="instrument_proof"
-                                    accept="image/jpeg,image/png,application/pdf"
-                                    onchange="previewInstrumentProof(this)">
+                                <label class="form-label">Instrument Proof <span class="text-danger">*</span></label>
+
+                                <input type="file" class="form-control" name="instrument_proof"
+                                    id="instrumentProofInput" accept="image/jpeg,image/png,application/pdf">
+
+                                <!-- Chip Preview -->
+                                <div id="instrumentProofPreview" class="mt-3"></div>
+
                                 @if($finance && $finance->getFirstMediaUrl('instrument_proof'))
-                                <div class="current-file-info mt-2">
-                                    Current: <a href="{{ $finance->getFirstMediaUrl('instrument_proof') }}"
-                                        target="_blank">
-                                        {{ basename($finance->getFirstMediaUrl('instrument_proof')) }}
+                                <div class="mt-2">
+                                    <a href="{{ $finance->getFirstMediaUrl('instrument_proof') }}" target="_blank"
+                                        class="btn btn-sm btn-info">
+                                        <i class="la la-paperclip"></i> View Current Proof
                                     </a>
                                 </div>
                                 @endif
-                                <div id="instrument_preview_container" class="mt-2 position-relative">
-                                    <img id="instrumentImg" src="" width="150"
-                                        style="display:none; border:1px solid #ddd;">
-                                    <iframe id="instrumentPdf" width="150" height="150" style="display:none;"></iframe>
-                                    <button type="button" id="instrumentClear" class="btn btn-danger btn-sm"
-                                        style="position:absolute; top:-8px; right:-8px; display:none;"
-                                        onclick="clearInstrumentProof()">X</button>
-                                </div>
-                                <small>Max 2 MB (JPG, PNG, PDF)</small>
+
+                                <small class="text-muted">Max 2 MB (JPG, PNG, PDF)</small>
                             </div>
 
                             <!-- Loan Fields -->
                             <div class="col-sm-3 finance-field" id="loan_amount_wrapper" style="display:none;">
-                                <label class="form-label">Loan Amount</label>
+                                <label class="form-label">Loan Amount <span class="text-danger">*</span></label>
                                 <input type="number" name="loan_amount" id="loan_amount" class="form-control calc-field"
                                     value="{{ old('loan_amount', $finance->loan_amount ?? '') }}">
                             </div>
 
                             <div class="col-sm-3 finance-field" id="margin_money_wrapper" style="display:none;">
-                                <label class="form-label">Margin Money (by Financier)</label>
+                                <label class="form-label">Margin Money (by Financier) <span
+                                        class="text-danger">*</span></label>
                                 <input type="number" name="margin_money" id="margin_money"
                                     class="form-control calc-field"
                                     value="{{ old('margin_money', $finance->margin ?? '') }}">
                             </div>
 
                             <div class="col-sm-3 finance-field" id="file_charge_wrapper" style="display:none;">
-                                <label class="form-label">File Charge (deducted)</label>
+                                <label class="form-label">File Charge (deducted) <span
+                                        class="text-danger">*</span></label>
                                 <input type="number" name="file_charge" id="file_charge" class="form-control calc-field"
                                     value="{{ old('file_charge', $finance->file_charge ?? '') }}">
                             </div>
@@ -256,6 +257,33 @@
 
         </div>
 
+    </div>
+</div>
+<!-- Instrument Proof Preview Modal -->
+<div class="modal fade" id="instrumentProofModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title" id="instrumentModalFileName"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body text-center">
+                <iframe id="instrumentModalPreview" style="width:100%; height:500px;" frameborder="0"></iframe>
+            </div>
+
+            <div class="modal-footer">
+                <a id="instrumentModalDownload" class="btn btn-success" download>
+                    Download
+                </a>
+
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    Close
+                </button>
+            </div>
+
+        </div>
     </div>
 </div>
 @endsection
@@ -326,14 +354,94 @@
         height: calc(1.5em + 0.75rem + 2px);
         padding: 0.375rem 0.75rem;
     }
+
+    .select2-container--default .select2-selection--single {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23495057'%3E%3Cpath d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 0.75rem center;
+        background-size: 12px 12px;
+        padding-right: 2.25rem !important;
+    }
+
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        display: none;
+    }
+
+    .select2-container--default.select2-container--open .select2-selection--single {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23495057'%3E%3Cpath d='M7.646 4.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1-.708.708L8 6.207 2.354 11.354a.5.5 0 0 1-.708-.708l6-6z'/%3E%3C/svg%3E");
+    }
+
+    .modal-backdrop {
+        z-index: 1040 !important;
+    }
+
+    .modal {
+        z-index: 1060 !important;
+    }
+
+    .modal-dialog {
+        z-index: 1070 !important;
+    }
 </style>
 @endpush
 
 @push('after_scripts')
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.19.5/dist/jquery.validate.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
+    function handleInstrumentProof(input) {
+
+    const previewDiv = document.getElementById('instrumentProofPreview');
+    previewDiv.innerHTML = '';
+
+    if (input.files && input.files[0]) {
+
+        const file = input.files[0];
+
+        if (file.size > 2 * 1024 * 1024) {
+
+            Swal.fire({
+                icon: 'error',
+                title: 'File Too Large',
+                text: 'File must be less than 2MB',
+                confirmButtonColor: '#3085d6'
+            });
+
+            input.value = '';
+            return;
+        }
+
+        const fileURL = URL.createObjectURL(file);
+
+        previewDiv.innerHTML = `
+            <span class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2 px-3 py-2"
+                style="cursor:pointer"
+                onclick="openInstrumentModal('${fileURL}', '${file.name.replace(/'/g,"\\'")}')">
+
+                <i class="la la-paperclip"></i>
+                <span class="fw-medium small">${file.name}</span>
+
+            </span>
+        `;
+    }
+}
+
+
+    function openInstrumentModal(url, name) {
+
+        document.getElementById('instrumentModalFileName').innerText = name;
+        document.getElementById('instrumentModalPreview').src = url;
+        document.getElementById('instrumentModalDownload').href = url;
+
+        $('#instrumentProofModal').modal('show');
+    }
+
+    document.getElementById('instrumentProofInput')
+    ?.addEventListener('change', function () {
+        handleInstrumentProof(this);
+    });
     (function($) {
         'use strict';
 
@@ -398,113 +506,151 @@
         }
 
         function applyLogic() {
-            const mode = $('#fin_mode').val();
-            const caseVal = $('#case_status').val();
-            const prevFin = $('#financier_select').val();
 
-            $('.finance-field').hide();
-            $('#case_lost_reason_wrapper').hide();
-            $('#financier_wrapper, #financier_short_wrapper').show();
-            $('#financier_select').prop('disabled', false).prop('required', true);
-            $('#case_status').prop('disabled', false);
-            $('#loan_status_box').prop('disabled', false).prop('required', true);
+    const mode = $('#fin_mode').val();
+    const caseVal = $('#case_status').val();
+    const prevFin = $('#financier_select').val();
 
-            let vText = 'Please select Finance Mode';
-            let vVal = 1;
-            let vColor = '#6c757d';
+    $('.finance-field').hide();
+    $('#case_lost_reason_wrapper').hide();
 
-            if (mode) {
-                if (mode === originalFinMode) { vText = 'Verified (Match)'; vVal = 2; vColor = '#28a745'; }
-                else if (mode === 'Purchase Plan Cancelled') { vText = 'Plan Cancelled'; vVal = 4; vColor = '#dc3545'; }
-                else { vText = 'Verified (Mismatch)'; vVal = 3; vColor = '#dc3545'; }
-            }
+    $('#financier_wrapper, #financier_short_wrapper').show();
+    $('#financier_select').prop('disabled', false).prop('required', true);
 
-            $('#verification_status_display').val(vText).css('color', vColor);
-            $('#verification_status_hidden').val(vVal);
+    $('#case_status').prop('disabled', false);
+    $('#loan_status_box').prop('disabled', false).prop('required', true);
 
-            let disableFinancier = false;
+    let disableFinancier = false;
 
-            if (mode === 'Cash' || mode === 'Customer Self') {
-                disableFinancier = true;
-                $('#case_status').val(3).prop('disabled', true);
-                $('#loan_status_box').val('').prop('disabled', true).prop('required', false);
-                $('#case_lost_reason_wrapper').show();
-                if (mode === 'Cash') {
-                    $('#case_lost_reason_display').val('Cash Purchase');
-                    $('#case_lost_reason_hidden').val('1');
-                } else {
-                    $('#case_lost_reason_display').val('Customer Self Finance');
-                    $('#case_lost_reason_hidden').val('2');
-                    showFinanceFields();
-                }
-            }
+    if (mode === 'Cash' || mode === 'Customer Self') {
 
-            if (mode === 'In-house') {
-                $('#case_lost_option').hide();
-                if (caseVal == 3) $('#case_status').val(1);
-                if (caseVal == 2) {
-                    $('#loan_status_box').val('Complete').prop('disabled', true).prop('required', false);
-                    showFinanceFields();
-                }
-            } else {
-                $('#case_lost_option').show();
-            }
+        disableFinancier = true;
 
-            if (disableFinancier) {
-                $('#financier_select').val('').trigger('change')
-                    .prop('disabled', true).prop('required', false);
-            } else {
-                if (prevFin && prevFin !== '') $('#financier_select').val(prevFin).trigger('change');
-                $('#financier_select').prop('disabled', false).prop('required', true);
-            }
+        $('#case_status').val(3).prop('disabled', true);
+        $('#loan_status_box').val('').prop('disabled', true).prop('required', false);
 
+        $('#case_lost_reason_wrapper').show();
 
-            updateInstrumentFields();
-            checkPayoutEligibility();
+        if (mode === 'Cash') {
+
+            $('#case_lost_reason_display').val('Cash Purchase');
+            $('#case_lost_reason_hidden').val('1');
+
+        } else {
+
+            $('#case_lost_reason_display').val('Customer Self Finance');
+            $('#case_lost_reason_hidden').val('2');
+
+            showFinanceFields();
         }
 
+    }
+
+    if (mode === 'In-house') {
+
+        $('#case_lost_option').hide();
+
+        if (caseVal == 3) {
+            $('#case_status').val(1);
+        }
+
+        if (caseVal == 2) {
+
+            $('#loan_status_box')
+                .val('Complete')
+                .prop('disabled', true)
+                .prop('required', false);
+
+            showFinanceFields();
+        }
+
+    } else {
+
+        $('#case_lost_option').show();
+
+    }
+
+    if (disableFinancier) {
+
+        $('#financier_select')
+            .val('')
+            .trigger('change')
+            .prop('disabled', true)
+            .prop('required', false);
+
+    } else {
+
+        if (prevFin && prevFin !== '') {
+            $('#financier_select').val(prevFin).trigger('change');
+        }
+
+        $('#financier_select')
+            .prop('disabled', false)
+            .prop('required', true);
+    }
+
+    updateInstrumentFields();
+    checkPayoutEligibility();
+}
+
         function updateInstrumentFields() {
+
             const instrumentType = $('#instrument_type').val();
 
-            // Show/hide reference field only for type 1 & 2
             if (instrumentType === '1' || instrumentType === '2') {
+
                 $('#instrument_ref_no_wrapper').show();
 
-                const labelText = instrumentType === '1' ? 'Receipt No.' : 'Delivery Order No.';
+                const labelText = instrumentType === '1'
+                    ? 'Receipt No.'
+                    : 'Delivery Order No.';
+
                 $('#instrument_ref_label').text(labelText);
 
-                // Make it required
-                $('#instrument_ref_no')
-                    .prop('required', true)
-                    .closest('.form-group, .col-sm-3') // optional: for styling
-                    .find('label')
-                    .append(' <span class="text-danger">*</span>'); // visual star
+                $('#instrument_ref_no').prop('required', true);
 
             } else {
+
                 $('#instrument_ref_no_wrapper').hide();
 
-                // Remove required
                 $('#instrument_ref_no')
                     .prop('required', false)
                     .removeClass('is-invalid is-valid');
-
-                // Remove visual *
-                $('#instrument_ref_label .text-danger').remove();
             }
 
-            // Re-validate after change
-            if ($('#financeForm').data('validator')) {
-                $('#financeForm').validate().element('#instrument_ref_no');
-            }
         }
 
         function showFinanceFields() {
-            $('#instrument_type_wrapper, #instrument_ref_no_wrapper, #instrument_proof_wrapper, ' +
-              '#loan_amount_wrapper, #margin_money_wrapper, #file_charge_wrapper, #payment_amount_wrapper').show();
-            updateRefLabel();
 
-            calculatePayment();
-        }
+    $('#instrument_type_wrapper, #instrument_ref_no_wrapper, #instrument_proof_wrapper, ' +
+      '#loan_amount_wrapper, #margin_money_wrapper, #file_charge_wrapper, #payment_amount_wrapper').show();
+
+    const mode = $('#fin_mode').val();
+    const caseStatus = $('#case_status').val();
+
+    if (mode === 'In-house' && caseStatus == '2') {
+
+        $('#instrument_type').prop('required', true);
+        $('#instrument_proof').prop('required', true);
+        $('#loan_amount').prop('required', true);
+        $('#margin_money').prop('required', true);
+        $('#file_charge').prop('required', true);
+        $('#instrument_ref_no').prop('required', true);
+
+    } else {
+
+        $('#instrument_type').prop('required', false);
+        $('#instrument_proof').prop('required', false);
+        $('#loan_amount').prop('required', false);
+        $('#margin_money').prop('required', false);
+        $('#file_charge').prop('required', false);
+        $('#instrument_ref_no').prop('required', false);
+
+    }
+
+    updateRefLabel();
+    calculatePayment();
+}
 
         function updateRefLabel() {
             const t = $('#instrument_type').val();
@@ -529,7 +675,7 @@
                 $('#case_status').val() == '2' &&
                 $('#instrument_type').val() &&
                 $.trim($('#instrument_ref_no').val()) &&
-                ($('#instrument_proof').val() || currentMediaUrl) &&
+                ($('#instrumentProofInput').val() || currentMediaUrl) &&
                 parseFloat($('#loan_amount').val()) > 0
             );
             $('#payout_hidden').val(eligible ? '1' : '0');
@@ -538,7 +684,7 @@
         function init() {
             $('.select2').select2({
                 placeholder: "-- Select --",
-                allowClear: true,
+
                 width: '100%'
             });
 
@@ -588,6 +734,10 @@
         }
 
         $(document).ready(init);
+
+        $('#instrumentProofModal').on('show.bs.modal', function () {
+    $(this).appendTo('body');
+});
 
     })(jQuery);
 </script>

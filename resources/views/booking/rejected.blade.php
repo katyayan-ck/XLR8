@@ -17,9 +17,9 @@
             {{-- HEADER --}}
             <div
                 class="card-header bg-gradient-danger d-flex justify-content-between align-items-center flex-wrap gap-3">
-                <h3 class="card-title mb-0 fw-bold text-black text-nowrap">
+                <h2 class="card-title mb-0 fw-bold text-black text-nowrap">
                     Refund Rejected Dashboard
-                </h3>
+                </h2>
             </div>
 
             {{-- BODY --}}
@@ -45,7 +45,7 @@
                         </button>
 
                         <div class="position-relative">
-                            <button id="btnCustomiseHeaders" class="btn btn-success btn-sm">
+                            <button id="btnCustomiseHeaders" class="btn btn-danger btn-sm">
                                 Customise Headers
                             </button>
 

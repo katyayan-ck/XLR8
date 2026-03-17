@@ -17,7 +17,7 @@
         <div class="col-xl-3 col-md-6">
             <div class="stat-card primary">
                 <p>Total Vehicles</p>
-                <h3 id="vehicles">128</h3>
+                <h3 id="vehicles">129</h3>
             </div>
         </div>
         <div class="col-xl-3 col-md-6">

@@ -52,8 +52,10 @@
 <div class="container-fluid">
 
     <!-- Booking Information Card - Top (View Only) -->
-    <div class="card card-body shadow-sm mb-4">
-        <h2 class="mb-3"><i class="la la-info-circle text-primary"></i> Booking Details (Pending KYC / Payment)</h2>
+    <div class="card card-body shadow-sm mb-4" style="border-radius: 12px">
+        <h2 class="mb-3">
+            {{-- <i class="la la-info-circle text-primary"></i> --}}
+            Booking Details (Pending KYC / Payment)</h2>
         <div class="row">
 
             <div class="col-md-3 form-group readonly-field">
@@ -135,8 +137,10 @@
         @method('PUT')
         <input type="hidden" name="pending_flag" value="1">
 
-        <div class="card card-body shadow-sm">
-            <h2 class="mb-3"><i class="la la-id-card text-warning"></i> Complete KYC</h2>
+        <div class="card card-body shadow-sm" style="border-radius:12px">
+            <h2 class="mb-3">
+                {{-- <i class="la la-id-card text-warning"></i> --}}
+                Complete KYC</h2>
 
             @if (session('success'))
             <div class="alert alert-success alert-dismissible fade show">

@@ -36,7 +36,7 @@
 @section('content')
 
 <!-- Invoice Details Card (Read-only) -->
-<div class="card card-body shadow-sm mb-4">
+<div class="card card-body shadow-sm mb-4" style="border-radius:12px">
     <h2 class="mb-3">Invoice Details</h2>
     <div class="row">
         <!-- Row 1 -->
@@ -80,9 +80,9 @@
             <label class="readonly-label">Location</label>
             <div class="readonly-value">
                 @if($booking->location_id)
-                    {{ $booking->location?->name ?? '—' }}
+                {{ $booking->location?->name ?? '—' }}
                 @else
-                    {{ $booking->location_other ?: '—' }}
+                {{ $booking->location_other ?: '—' }}
                 @endif
             </div>
         </div>
@@ -127,8 +127,8 @@
             <label class="readonly-label">Dealer Invoice Date</label>
             <div class="readonly-value">
                 {{ $booking->dealer_inv_date
-                    ? \Carbon\Carbon::parse($booking->dealer_inv_date)->format('d-m-Y')
-                    : '—' }}
+                ? \Carbon\Carbon::parse($booking->dealer_inv_date)->format('d-m-Y')
+                : '—' }}
             </div>
         </div>
     </div>
@@ -139,8 +139,8 @@
     @csrf
     @method('PUT')
 
-    <div class="card card-body shadow-sm">
-        <h2 class="mb-3">Dealer Invoice Details - Booking #{{ $booking->id }}</h2>
+    <div class="card card-body shadow-sm" style="border-radius:12px">
+        <h2 class="mb-3">Dealer Invoice Details - Booking </h2>
 
         @if(session('success'))
         <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -213,7 +213,8 @@
 
             <div class="col-12 mt-4">
                 <button type="submit" class="btn btn-success btn-lg">
-                    <i class="la la-save"></i> Submit Dealer Invoice
+                    {{-- <i class="la la-save"></i> --}}
+                    Submit Dealer Invoice
                 </button>
             </div>
         </div>

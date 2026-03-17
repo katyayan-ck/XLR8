@@ -27,9 +27,9 @@
             <div class="card-header bg-gradient-danger
                         d-flex justify-content-between align-items-center
                         flex-nowrap flex-md-nowrap flex-wrap">
-                <h3 class="card-title mb-0 fw-bold text-black text-nowrap">
+                <h2 class="card-title mb-0 fw-bold text-black text-nowrap">
                     Finance Not Interested Dashboard
-                </h3>
+                </h2>
 
                 {{-- <div class="d-flex align-items-center gap-2
                             flex-nowrap flex-md-nowrap flex-wrap
@@ -66,7 +66,7 @@
                         </button>
 
                         <div class="position-relative">
-                            <button id="btnCustomiseHeaders" class="btn btn-success btn-sm">
+                            <button id="btnCustomiseHeaders" class="btn btn-danger btn-sm">
                                 Customise Headers
                             </button>
 
@@ -115,7 +115,7 @@
                 </div>
 
                 {{-- GRID --}}
-                <div id="myGrid" class="ag-theme-quartz" style="height: calc(110vh - 260px); width:100%;"></div>
+                <div id="myGrid" class="ag-theme-quartz" style="height: calc(93vh - 260px); width:100%;"></div>
 
             </div>
         </div>

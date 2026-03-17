@@ -39,9 +39,9 @@
             {{-- HEADER --}}
             <div
                 class="card-header bg-gradient-success d-flex justify-content-between align-items-center flex-wrap gap-3">
-                <h3 class="card-title mb-0 fw-bold text-black text-nowrap">
+                <h2 class="card-title mb-0 fw-bold text-black text-nowrap">
                     Pending Actions Report Dashboard
-                </h3>
+                </h2>
             </div>
 
 
@@ -73,7 +73,7 @@
             </div>
 
             {{-- GRID --}}
-            <div id="myGrid" class="ag-theme-quartz" style="height: calc(110vh - 220px); width:100%;"></div>
+            <div id="myGrid" class="ag-theme-quartz" style="height: calc(93vh - 220px); width:100%;"></div>
         </div>
 
         @if(session('info'))
