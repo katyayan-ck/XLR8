@@ -64,7 +64,7 @@ return [
 
     // Menu logo. You can replace this with an <img> tag if you have a logo.
     // 'project_logo' => 'public/images/xceler8.png',
-    'project_logo' => '<img src="' . asset('images/xceler8.png') . '" style="height:35px;">',
+    //'project_logo' => '<img src="' . asset('images/xceler8.png') . '" style="height:35px;">',
 
 
     // Show / hide breadcrumbs on admin panel pages.

@@ -1515,20 +1515,23 @@ $('#financier').on('change', function() {
             toggleRequiredMark($('#gstn'), !isChecked);
         });
 
-        $('#customercat').on('change', function() {
-    const isFirm = this.value === 'Firm';
+        // ==================== CUSTOMER CATEGORY CHANGE ====================
+$('#customercat').on('change', function() {
+    const category = this.value;
+    const isFirm = category === 'Firm';
+    const isCSD  = category === 'CSD';
+    const isIndividual = category === 'Individual';
 
+    // 1. Customer Name Label
+    $('#customernamelabel').text(isFirm ? 'Firm Name' : 'Customer Name');
+
+    // 2. Care Of Field Logic
     if (isFirm) {
-        // Care Of mein "Owned By" default select kar do
         $('#careof').html(`
             <option value="">Please Select...</option>
             <option value="5" selected>Owned By</option>
         `);
-        // Care Of Name enabled aur required rakho
-        $('#careofname').prop('disabled', false).prop('required', true);
-        toggleRequiredMark($('#careofname'), true);
     } else {
-        // Normal individual ke liye
         $('#careof').html(`
             <option value="">Please Select...</option>
             <option value="1">Son of</option>
@@ -1536,11 +1539,40 @@ $('#financier').on('change', function() {
             <option value="3">Married to</option>
             <option value="4">Guardian Name</option>
         `);
-        $('#careofname').prop('disabled', false).prop('required', true);
-        toggleRequiredMark($('#careofname'), true);
     }
 
-    $('#customernamelabel').text(isFirm ? 'Firm Name' : 'Customer Name');
+    $('#careof').prop('disabled', false).prop('required', true).trigger('change');
+    $('#careofname').prop('disabled', false).prop('required', true);
+    toggleRequiredMark($('#careofname'), true);
+
+    // 3. GST Section Logic (YOUR MAIN REQUIREMENT)
+    const $gstInput     = $('#gstn');
+    const $gstCheckbox  = $('#notrequiredgst');
+    const $gstGroup     = $('#gstn-group');
+
+    if (isCSD) {
+        // CSD → Hide entire GST section
+       $gstGroup.show();
+       $gstCheckbox.prop('checked', false).prop('disabled', false);   // Uncheck by default
+       $gstInput.prop('required', true).prop('disabled', false);
+       toggleRequiredMark($gstInput, true);
+
+    } else if (isFirm) {
+        // Firm → GST Required + Checkbox Unchecked
+        $gstGroup.show();
+        $gstCheckbox.prop('checked', false).prop('disabled', false);   // Uncheck by default
+        $gstInput.prop('required', true).prop('disabled', false);
+        toggleRequiredMark($gstInput, true);
+
+    } else {
+        // Individual (default behavior)
+        $gstGroup.show();
+        $gstCheckbox.prop('checked', true).prop('disabled', false);   // Checked by default
+        $gstInput.prop('required', false).prop('disabled', true);
+        toggleRequiredMark($gstInput, false);
+    }
+
+    
 });
 
         $('#coltype').on('change', function() {

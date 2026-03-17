@@ -21,7 +21,7 @@
         "owen-it/laravel-auditing": "^14.0",
         "spatie/laravel-medialibrary": "^11.17",
         "spatie/laravel-permission": "^6.23",
-        "spatie/laravel-translatable": "^6.12"
+        "spatie/laravel-translatable": "^6.0"
     },
     "require-dev": {
         "backpack/generators": "^4.1",

@@ -353,4 +353,6 @@ Route::group([
     Route::put('booking/{id}/refunded-update', 'BookingCrudController@refundedUpdate')
         ->name('update-refunded')
         ->middleware('admin');
+    Route::get('booking/{id}/check-field-payment', 'BookingCrudController@checkFieldPayment')
+        ->name('booking.check-field-payment');
 });
