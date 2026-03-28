@@ -17,9 +17,9 @@
             {{-- HEADER --}}
             <div
                 class="card-header bg-gradient-danger d-flex justify-content-between align-items-center flex-wrap gap-3">
-                <h3 class="card-title mb-0 fw-bold text-black text-nowrap">
+                <h2 class="card-title mb-0 fw-bold text-black text-nowrap">
                     Pending Refund Dashboard
-                </h3>
+                </h2>
             </div>
 
             {{-- BODY --}}
@@ -43,7 +43,7 @@
                         </button>
 
                         <div class="position-relative">
-                            <button id="btnCustomiseHeaders" class="btn btn-success btn-sm">
+                            <button id="btnCustomiseHeaders" class="btn btn-danger btn-sm">
                                 Customise Headers
                             </button>
 
@@ -93,7 +93,7 @@
                 </div>
 
                 {{-- GRID --}}
-                <div id="myGrid" class="ag-theme-quartz" style="height: calc(110vh - 260px); width: 100%;"></div>
+                <div id="myGrid" class="ag-theme-quartz" style="height: calc(93vh - 260px); width: 100%;"></div>
             </div>
 
 
@@ -104,9 +104,45 @@
 
 @push('after_styles')
 <link rel="stylesheet" href="https://unpkg.com/ag-grid-community/styles/ag-theme-quartz.css">
+
 <style>
-    .ag-theme-quartz .center-header .ag-header-cell-label {
+    /* Center regular (child/leaf) column headers – your existing rule */
+    .ag-theme-quartz .center-header .ag-header-cell-label,
+    .ag-theme-quartz .ag-header-cell-label {
         justify-content: center !important;
+        text-align: center !important;
+    }
+
+    /* Center GROUP / parent headers – this is the main fix you need */
+    .ag-theme-quartz .ag-header-group-cell-label {
+        justify-content: center !important;
+        text-align: center !important;
+        width: 100% !important;
+        display: flex !important;
+        align-items: center !important;
+    }
+
+    .ag-theme-quartz .ag-header-group-cell {
+        text-align: center !important;
+    }
+
+    /* Make sure pinned groups also center correctly */
+    .ag-pinned-left-cols-container .ag-header-group-cell-label,
+    .ag-pinned-right-cols-container .ag-header-group-cell-label {
+        justify-content: center !important;
+    }
+
+    /* Optional: better padding & visual cue for refund theme */
+    .ag-header-group-cell-label {
+        padding: 0 6px !important;
+    }
+
+    /* Pinned columns visual cue – red theme for refunds */
+    .ag-pinned-left-cols-container .ag-header-group-cell,
+    .ag-pinned-right-cols-container .ag-header-group-cell {
+        background-color: #f8d7da !important;
+        /* light red */
+        font-weight: 600;
     }
 </style>
 @endpush
@@ -118,165 +154,270 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
 
 <script>
-    const gridConfig = @json($gridConfig ?? []);
-let gridApi;
+    // ────────────────────────────────────────────────
+    // ALL_COLUMNS from controller → $gridConfig['columns']
+    // ────────────────────────────────────────────────
+    const ALL_COLUMNS = @json($gridConfig['columns'] ?? []);
 
-/* =========================
-   DEFAULT VISIBLE HEADERS
-========================= */
-const DEFAULT_VISIBLE_FIELDS = [
-    'serial_no',
-    'booking_no',
-    'booking_date',
-    'cancel_date',
-    'refund_request_date',
-    'branch_id',
-    'location_id',
-    'segment',
-    'model',
-    'variant',
-    'color',
-    'seating',
-    'name',
-    'sales',
-    'consultant',
-    'action'
-];
-
-/* =========================
-   COLUMN DEFINITIONS
-========================= */
-const columnDefs = (gridConfig.columns || []).map(col => ({
-    headerName: col.headerName,
-    field: col.field,
-    sortable: true,
-    filter: true,
-    resizable: true,
-    pinned: col.pinned || false,
-    width: col.width || 150,
-    cellRenderer: col.field === 'action'
-        ? params => params.value || ''
-        : null,
-    cellClass: col.cellClass || '',
-    type: col.type || null,
-}));
-
-/* =========================
-   GRID OPTIONS
-========================= */
-const gridOptions = {
-    columnDefs,
-    rowData: gridConfig.data || [],
-    pagination: true,
-    paginationPageSize: 50,
-    rowHeight: 30,
-    animateRows: true,
-    defaultColDef: {
-    sortable: true,
-    filter: true,
-    resizable: true,
-    headerClass: 'center-header',
-    cellStyle: { textAlign: 'center' }
-},
-    onGridReady: params => {
-    gridApi = params.api;
-
-    const allCols = gridApi.getColumnDefs().map(c => c.field);
-    gridApi.setColumnsVisible(allCols, false);
-    gridApi.setColumnsVisible(DEFAULT_VISIBLE_FIELDS, true);
-
-    // 🔥 Auto width adjust
-    setTimeout(() => {
-        const allColumnIds = [];
-        gridApi.getAllDisplayedColumns().forEach(column => {
-            allColumnIds.push(column.getColId());
-        });
-        gridApi.autoSizeColumns(allColumnIds);
-    }, 300);
-}
-};
-
-/* =========================
-   INIT GRID (ONLY ONCE)
-========================= */
-document.addEventListener('DOMContentLoaded', () => {
-    const gridDiv = document.querySelector('#myGrid');
-    agGrid.createGrid(gridDiv, gridOptions);
-
-    /* ===== Quick Search ===== */
-    document.getElementById('quickFilter')?.addEventListener('input', e => {
-        gridApi.setGridOption('quickFilterText', e.target.value);
-    });
-
-    /* ===== Reset ===== */
-    document.getElementById('resetAll')?.addEventListener('click', () => {
-        gridApi.setFilterModel(null);
-        gridApi.setGridOption('quickFilterText', '');
-        document.getElementById('quickFilter').value = '';
-    });
-
-    /* ===== All Headers ===== */
-    document.getElementById('btnAllHeaders')?.addEventListener('click', () => {
-    const allCols = gridApi.getColumnDefs().map(c => c.field);
-    gridApi.setColumnsVisible(allCols, true);
-
-    setTimeout(() => {
-        const allColumnIds = [];
-        gridApi.getAllDisplayedColumns().forEach(column => {
-            allColumnIds.push(column.getColId());
-        });
-        gridApi.autoSizeColumns(allColumnIds);
-    }, 200);
-});
-
-    /* ===== Default Headers ===== */
-    document.getElementById('btnDefaultHeaders')?.addEventListener('click', () => {
-    const allCols = gridApi.getColumnDefs().map(c => c.field);
-    gridApi.setColumnsVisible(allCols, false);
-    gridApi.setColumnsVisible(DEFAULT_VISIBLE_FIELDS, true);
-
-    setTimeout(() => {
-        const allColumnIds = [];
-        gridApi.getAllDisplayedColumns().forEach(column => {
-            allColumnIds.push(column.getColId());
-        });
-        gridApi.autoSizeColumns(allColumnIds);
-    }, 200);
-});
-
-    /* ===== Customise Headers ===== */
-    function openColumnBubble() {
-        const tbody = document.getElementById('columnBubbleBody');
-        tbody.innerHTML = '';
-
-        const state = gridApi.getColumnState();
-
-        gridApi.getColumnDefs().forEach(col => {
-            if (!col.field || col.field === 'action') return;
-
-            const isVisible = !state.find(s => s.colId === col.field)?.hide;
-
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td class="text-center" style="width:30px">
-                    <input type="checkbox" ${isVisible ? 'checked' : ''}>
-                </td>
-                <td style="font-size:13px">${col.headerName}</td>
-            `;
-
-            tr.querySelector('input').addEventListener('change', e => {
-                gridApi.applyColumnState({
-                    state: [{ colId: col.field, hide: !e.target.checked }],
-                    applyOrder: false
-                });
-            });
-
-            tbody.appendChild(tr);
-        });
-
-        document.getElementById('columnBubble').style.display = 'block';
+    function getCols(fields) {
+        return ALL_COLUMNS.filter(col => fields.includes(col.field));
     }
 
+    let gridApi;
+
+    // ────────────────────────────────────────────────
+    // Default visible fields → only Y marked ones
+    // ────────────────────────────────────────────────
+    const DEFAULT_VISIBLE_FIELDS = [
+        // Primary - Y
+        'serial_no',
+        'booking_no',
+        'created_at',           // Entry Date
+        'booking_date',
+        'days_count',           // Booking Age
+        'cancel_date',          // Cancellation Date
+        'refund_request_date',  // Refund Request Date
+
+
+        // Customer - Y
+        'b_cat',
+        'booking_amount',       // Booking Amount
+        'refund_amount',     // Amount To Refund
+        'name',                 // Customer Name
+        'mobile',               // Contact No.
+        'branch_name',
+        'location_name',
+
+        // Vehicle - Y
+        'model',
+        'variant',
+        'color',
+        'seating',
+        'chasis_no',            // Allotted Chassis No.
+
+        // Booking Detail - Y
+        'b_source',       // Booking Source
+        'consultant',           // Sales Consultant
+
+        // Action (always visible)
+        'action'
+    ];
+
+    // ────────────────────────────────────────────────
+    // Grouped columns with pinning & centering
+    // ────────────────────────────────────────────────
+    const columnGroups = [
+        {
+            headerName: 'Primary',
+            headerClass: 'ag-header-center',
+            children: getCols([
+                'serial_no',
+                'booking_no',
+                'created_at',
+                'booking_date',
+                'days_count',
+                'cancel_date',
+                'refund_request_date'
+            ]).map(col => {
+                if (col.field === 'serial_no' || col.field === 'booking_no') {
+                    col.pinned = 'left';
+                }
+                return col;
+            })
+        },
+        {
+            headerName: 'Customer',
+            headerClass: 'ag-header-center',
+            children: getCols([
+                'b_cat',
+                // 'booking_amount',
+                'refund_amount',
+                'receipt_no',
+                'receipt_date',
+                'name',
+                'mobile',
+                'pan_no',
+                'adhar_no',
+                'gstn',
+                'branch_name',
+                'location_name'
+            ])
+        },
+        {
+            headerName: 'Vehicle',
+            headerClass: 'ag-header-center',
+            children: getCols([
+                'segment',
+                'model',
+                'variant',
+                'color',
+                'seating',
+                'chasis_no'
+            ])
+        },
+        {
+            headerName: 'Booking Detail',
+            headerClass: 'ag-header-center',
+            children: getCols([
+                'b_source',
+                'consultant'
+            ])
+        },
+        {
+            headerName: 'Action',
+            headerClass: 'ag-header-center',
+            children: getCols(['action']).map(col => {
+                col.pinned = 'right';
+                col.cellRenderer = 'htmlRenderer';  // Ensures HTML renders properly
+                col.autoHeight = true;
+                col.cellClass = 'text-center p-0';
+                return col;
+            })
+        }
+    ];
+
+    const gridOptions = {
+        columnDefs: columnGroups,
+        rowData: @json($gridConfig['data'] ?? []),
+        pagination: true,
+        paginationPageSize: 50,
+        paginationPageSizeSelector: [20, 50, 100, 200],
+        rowHeight: 30,
+        animateRows: true,
+
+        defaultColDef: {
+            sortable: true,
+            filter: true,
+            resizable: true,
+            headerClass: 'center-header',
+            cellStyle: { textAlign: 'center' },
+            suppressHeaderMenuButton: false,
+        },
+
+        components: {
+            htmlRenderer: params => params.value || '',  // Raw HTML for action column
+        },
+
+        onGridReady: params => {
+            gridApi = params.api;
+
+            const allFields = [];
+            columnGroups.forEach(group => {
+                if (group.children) {
+                    group.children.forEach(child => {
+                        if (child.field) allFields.push(child.field);
+                    });
+                }
+            });
+
+            gridApi.setColumnsVisible(allFields, false);
+            gridApi.setColumnsVisible(DEFAULT_VISIBLE_FIELDS, true);
+
+            setTimeout(() => {
+                const visibleIds = gridApi.getAllDisplayedColumns().map(c => c.getColId());
+                gridApi.autoSizeColumns(visibleIds, false);
+            }, 400);
+        }
+    };
+
+    // ────────────────────────────────────────────────
+    // Customise Headers – grouped + parent/child sync
+    // ────────────────────────────────────────────────
+    function openColumnBubble() {
+        const bubble = document.getElementById('columnBubble');
+        const tbody  = document.getElementById('columnBubbleBody');
+        if (!gridApi || !bubble || !tbody) return;
+
+        tbody.innerHTML = '';
+
+        columnGroups.forEach(group => {
+            const groupName = group.headerName;
+            const children  = group.children || [];
+
+            if (groupName === 'Action') return;
+
+            const groupTr = document.createElement('tr');
+            groupTr.style.background = '#f0f0f0';
+
+            const groupCheckTd = document.createElement('td');
+            groupCheckTd.style.width = '30px';
+            groupCheckTd.className = 'text-center';
+
+            const groupCheckbox = document.createElement('input');
+            groupCheckbox.type = 'checkbox';
+
+            const fields = children.map(c => c.field).filter(Boolean);
+            const visibleCount = fields.filter(f => {
+                const col = gridApi.getColumn(f);
+                return col && col.isVisible();
+            }).length;
+
+            groupCheckbox.checked = visibleCount === fields.length && visibleCount > 0;
+            groupCheckbox.indeterminate = visibleCount > 0 && visibleCount < fields.length;
+
+            if (groupName === 'Primary') {
+                groupCheckbox.checked = true;
+                groupCheckbox.disabled = true;
+            }
+
+            groupCheckbox.addEventListener('change', () => {
+                gridApi.setColumnsVisible(fields, groupCheckbox.checked);
+                tbody.querySelectorAll(`tr[data-group="${groupName}"] input`)
+                    .forEach(cb => cb.checked = groupCheckbox.checked);
+            });
+
+            groupCheckTd.appendChild(groupCheckbox);
+
+            const groupLabelTd = document.createElement('td');
+            groupLabelTd.colSpan = 2;
+            groupLabelTd.innerHTML = `<strong>${groupName}</strong>`;
+
+            groupTr.appendChild(groupCheckTd);
+            groupTr.appendChild(groupLabelTd);
+            tbody.appendChild(groupTr);
+
+            children.forEach(child => {
+                if (!child.field) return;
+
+                const tr = document.createElement('tr');
+                tr.dataset.group = groupName;
+
+                const tdCheck = document.createElement('td');
+                tdCheck.style.paddingLeft = '40px';
+                tdCheck.className = 'text-center';
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+
+                const col = gridApi.getColumn(child.field);
+                checkbox.checked = col ? col.isVisible() : false;
+
+                if (groupName === 'Primary') {
+                    checkbox.disabled = true;
+                    checkbox.checked = true;
+                }
+
+                checkbox.addEventListener('change', () => {
+                    gridApi.setColumnsVisible([child.field], checkbox.checked);
+                });
+
+                tdCheck.appendChild(checkbox);
+
+                const tdLabel = document.createElement('td');
+                tdLabel.innerText = child.headerName;
+
+                tr.appendChild(tdCheck);
+                tr.appendChild(tdLabel);
+                tbody.appendChild(tr);
+            });
+        });
+
+        bubble.style.display = 'block';
+    }
+
+    // ────────────────────────────────────────────────
+    // Event Listeners
+    // ────────────────────────────────────────────────
     document.getElementById('btnCustomiseHeaders')?.addEventListener('click', e => {
         e.stopPropagation();
         openColumnBubble();
@@ -289,63 +430,114 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('columnBubble')?.addEventListener('click', e => e.stopPropagation());
 
     document.addEventListener('click', () => {
-        document.getElementById('columnBubble').style.display = 'none';
+        const bubble = document.getElementById('columnBubble');
+        if (bubble) bubble.style.display = 'none';
     });
 
-    /* ===== Excel Export (VISIBLE COLS) ===== */
-    document.getElementById('exportCsv')?.addEventListener('click', () => {
-        const visibleColumns = gridApi.getAllDisplayedColumns()
-            .map(c => c.getColDef())
-            .filter(c => c.field && c.field !== 'action');
+    document.getElementById('btnAllHeaders')?.addEventListener('click', () => {
+        const allFields = [];
+        columnGroups.forEach(group => {
+            if (group.children) {
+                group.children.forEach(c => {
+                    if (c.field) allFields.push(c.field);
+                });
+            }
+        });
+        gridApi.setColumnsVisible(allFields, true);
+        setTimeout(() => {
+            const visibleIds = gridApi.getAllDisplayedColumns().map(c => c.getColId());
+            gridApi.autoSizeColumns(visibleIds, false);
+        }, 200);
+    });
 
-        const rows = [];
-        gridApi.forEachNodeAfterFilterAndSort(node => {
-            const row = {};
-            visibleColumns.forEach(col => {
-                row[col.headerName] = node.data[col.field] ?? '';
+    document.getElementById('btnDefaultHeaders')?.addEventListener('click', () => {
+        const allFields = [];
+        columnGroups.forEach(group => {
+            if (group.children) {
+                group.children.forEach(c => {
+                    if (c.field) allFields.push(c.field);
+                });
+            }
+        });
+
+        gridApi.setColumnsVisible(allFields, false);
+        gridApi.setColumnsVisible(DEFAULT_VISIBLE_FIELDS, true);
+
+        setTimeout(() => {
+            const visibleIds = gridApi.getAllDisplayedColumns().map(c => c.getColId());
+            gridApi.autoSizeColumns(visibleIds, false);
+        }, 200);
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const gridDiv = document.querySelector('#myGrid');
+        gridApi = agGrid.createGrid(gridDiv, gridOptions);
+
+        document.getElementById('quickFilter')?.addEventListener('input', e => {
+            gridApi.setGridOption('quickFilterText', e.target.value);
+        });
+
+        document.getElementById('resetAll')?.addEventListener('click', () => {
+            gridApi.setFilterModel(null);
+            gridApi.setGridOption('quickFilterText', '');
+            document.getElementById('quickFilter').value = '';
+        });
+
+        // Excel Export
+        document.getElementById('exportCsv')?.addEventListener('click', () => {
+            const visibleColumns = gridApi.getAllDisplayedColumns()
+                .map(col => col.getColDef())
+                .filter(col => col.field && col.field !== 'action');
+
+            const rows = [];
+            gridApi.forEachNodeAfterFilterAndSort(node => {
+                const row = {};
+                visibleColumns.forEach(col => {
+                    row[col.headerName] = node.data[col.field] ?? '';
+                });
+                rows.push(row);
             });
-            rows.push(row);
+
+            const worksheet = XLSX.utils.json_to_sheet(rows);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Pending Refunds');
+            XLSX.writeFile(workbook, `pending-refunds-${new Date().toISOString().slice(0,10)}.xlsx`);
         });
 
-        const ws = XLSX.utils.json_to_sheet(rows);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, 'Pending Refunds');
-        XLSX.writeFile(wb, 'pending-refunds.xlsx');
+        // PDF Export
+        document.getElementById('exportExcel')?.addEventListener('click', () => {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('l', 'pt', 'a4');
+
+            const visibleColumns = gridApi.getAllDisplayedColumns()
+                .map(col => col.getColDef())
+                .filter(col => col.field && col.field !== 'action');
+
+            const exportCols = visibleColumns.map(col => ({
+                header: col.headerName,
+                dataKey: col.field
+            }));
+
+            const rows = [];
+            gridApi.forEachNodeAfterFilterAndSort(node => {
+                const row = {};
+                visibleColumns.forEach(col => {
+                    row[col.field] = node.data[col.field];
+                });
+                rows.push(row);
+            });
+
+            doc.text('Pending Refunds Report', 40, 30);
+            doc.autoTable({
+                columns: exportCols,
+                body: rows,
+                startY: 50,
+                styles: { fontSize: 8 },
+                headStyles: { fillColor: [220, 53, 69] }, // red theme for refunds
+            });
+
+            doc.save('pending-refunds.pdf');
+        });
     });
-
-    /* ===== PDF Export (VISIBLE COLS) ===== */
-    document.getElementById('exportExcel')?.addEventListener('click', () => {
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF('l', 'pt', 'a4');
-
-        const visibleColumns = gridApi.getAllDisplayedColumns()
-            .map(c => c.getColDef())
-            .filter(c => c.field && c.field !== 'action');
-
-        const cols = visibleColumns.map(c => ({
-            header: c.headerName,
-            dataKey: c.field
-        }));
-
-        const rows = [];
-        gridApi.forEachNodeAfterFilterAndSort(node => {
-            const r = {};
-            visibleColumns.forEach(c => r[c.field] = node.data[c.field]);
-            rows.push(r);
-        });
-
-        doc.text('Pending Refunds Report', 40, 30);
-        doc.autoTable({
-            columns: cols,
-            body: rows,
-            startY: 50,
-            styles: { fontSize: 8 }
-        });
-
-        doc.save('pending-refunds.pdf');
-    });
-});
 </script>
-
-
 @endpush

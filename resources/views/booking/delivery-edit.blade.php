@@ -73,7 +73,7 @@
     @include(backpack_view('inc.alerts'))
 
     <!-- Booking & Invoice Summary Card (Read-only) -->
-    <div class="card card-body shadow-sm mb-4">
+    <div class="card card-body shadow-sm mb-4" style="border-radius: 12px">
         <h2 class="mb-3">Booking & Invoice Summary (Read-only)</h2>
         <div class="row g-3">
 
@@ -186,7 +186,7 @@
     </div>
 
     <!-- Main Delivery Upload Form -->
-    <div class="card card-body shadow-sm mb-4">
+    <div class="card card-body shadow-sm mb-4" style="border-radius: 12px">
         <h2 class="mb-3">Upload Delivery Photos</h2>
 
         <form method="POST" action="{{ route('booking.delivery-photos.update', $booking->id ?? '') }}"

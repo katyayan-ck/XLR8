@@ -78,8 +78,10 @@
     @include(backpack_view('inc.alerts'))
 
     <!-- Invoice Details Card - Top (View Only) -->
-    <div class="card card-body shadow-sm mb-4">
-        <h2 class="mb-3"><i class="la la-file-invoice text-primary"></i> Invoice Details (RTO)</h2>
+    <div class="card card-body shadow-sm mb-4" style="border-radius: 12px">
+        <h2 class="mb-3">
+            {{-- <i class="la la-file-invoice text-primary"></i> --}}
+            Invoice Details (RTO)</h2>
         <div class="row">
 
             <div class="col-md-3 form-group readonly-field">
@@ -177,7 +179,7 @@
     </div>
 
     <!-- RTO Edit Form Card -->
-    <div class="card card-body shadow-sm mb-4">
+    <div class="card card-body shadow-sm mb-4" style="border-radius: 12px">
         <h2 class="mb-3">RTO / Registration Details</h2>
 
         <form id="rtoForm" method="POST" action="{{ route('booking.rto.update', $booking->id) }}"
@@ -314,28 +316,16 @@
                     @error('bank_ref_no') <span class="text-danger small">{{ $message }}</span> @enderror
                 </div>
 
-                {{-- <div class="col-md-6" id="trc_copy_group">
-                    <label class="form-label">TRC Copy</label>
-                    <input type="file" name="trc_copy" id="trc_copy" class="form-control" accept=".pdf">
-                    @error('trc_copy') <span class="text-danger small">{{ $message }}</span> @enderror
-                    <div class="mt-2 position-relative d-inline-block">
-                        <img id="trc_preview" src="" alt="TRC Preview" style="max-width:200px; display:none;">
-                        <i id="trc_pdf_icon" class="fas fa-file-pdf fa-3x text-danger" style="display:none;"></i>
-                        <i id="discardTrc" class="fas fa-times-circle fa-2x text-danger"
-                            style="display:none; position:absolute; top:-10px; right:-10px; cursor:pointer;"></i>
-                    </div>
-                </div> --}}
+
                 <div class="col-md-3" id="trc_copy_group">
-
                     <label class="form-label">TRC Copy</label>
+                    <input type="file" name="trc_copy" id="trcCopyInput" class="form-control" accept=".pdf">
+                    @error('trc_copy') <span class="text-danger small d-block mt-1">{{ $message }}</span> @enderror
 
-                    <input type="file" name="trc_copy" id="trc_copy" class="form-control" accept=".pdf">
+                    <!-- Chip Preview Area -->
+                    <div id="trcCopyPreview" class="mt-3"></div>
 
-                    @error('trc_copy')
-                    <span class="text-danger small">{{ $message }}</span>
-                    @enderror
 
-                    <div id="trc_copy_chip" class="mt-2"></div>
 
                 </div>
 
@@ -347,28 +337,15 @@
                     @error('tax_payment_ref_no') <span class="text-danger small">{{ $message }}</span> @enderror
                 </div>
 
-                {{-- <div class="col-md-6" id="tax_receipt_copy_group">
-                    <label class="form-label">Tax Receipt Copy</label>
-                    <input type="file" name="tax_receipt_copy" id="tax_receipt_copy" class="form-control" accept=".pdf">
-                    @error('tax_receipt_copy') <span class="text-danger small">{{ $message }}</span> @enderror
-                    <div class="mt-2 position-relative d-inline-block">
-                        <img id="tax_preview" src="" alt="Tax Preview" style="max-width:200px; display:none;">
-                        <i id="tax_pdf_icon" class="fas fa-file-pdf fa-3x text-danger" style="display:none;"></i>
-                        <i id="discardTax" class="fas fa-times-circle fa-2x text-danger"
-                            style="display:none; position:absolute; top:-10px; right:-10px; cursor:pointer;"></i>
-                    </div>
-                </div> --}}
+
                 <div class="col-md-3" id="tax_receipt_copy_group">
-
                     <label class="form-label">Tax Receipt Copy</label>
-
-                    <input type="file" name="tax_receipt_copy" id="tax_receipt_copy" class="form-control" accept=".pdf">
-
-                    @error('tax_receipt_copy')
-                    <span class="text-danger small">{{ $message }}</span>
+                    <input type="file" name="tax_receipt_copy" id="taxCopyInput" class="form-control" accept=".pdf">
+                    @error('tax_receipt_copy') <span class="text-danger small d-block mt-1">{{ $message }}</span>
                     @enderror
 
-                    <div id="tax_receipt_copy_chip" class="mt-2"></div>
+                    <div id="taxCopyPreview" class="mt-3"></div>
+
 
                 </div>
 
@@ -394,38 +371,20 @@
 
 </div>
 <!-- Proof Preview Modal -->
-<div class="modal fade" id="proofPreviewModal" tabindex="-1">
-    <div class="modal-dialog modal-xl">
+<div class="modal fade" id="policyCopyModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
-
             <div class="modal-header">
-                <h5 class="modal-title" id="proofFileName">Preview</h5>
-
-                <button type="button" class="btn-close" data-bs-dismiss="modal">
-                </button>
+                <h5 class="modal-title" id="policyModalFileName"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-
             <div class="modal-body text-center">
-
-                <img id="proofImage" src="" class="img-fluid" style="display:none; max-height:600px;">
-
-                <iframe id="proofPdf" src="" width="100%" height="600" style="display:none;">
-                </iframe>
-
+                <iframe id="policyModalPreview" style="width:100%; height:500px;" frameborder="0"></iframe>
             </div>
-
             <div class="modal-footer">
-
-                <a id="proofDownloadBtn" class="btn btn-success" download>
-                    <i class="fas fa-download"></i> Download
-                </a>
-
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    Close
-                </button>
-
+                <a id="policyModalDownload" class="btn btn-success" download>Download</a>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
-
         </div>
     </div>
 </div>
@@ -433,231 +392,195 @@
 @endsection
 
 @push('after_scripts')
+
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-<!-- Your existing JavaScript remains completely unchanged -->
 <script>
-    $(document).ready(function() {
+    document.addEventListener('DOMContentLoaded', function () {
 
-        function handleFileUpload(input) {
+    // ────────────────────────────────────────────────
+    //   File Preview + Modal Logic  (Insurance jaisa bilkul same)
+    // ────────────────────────────────────────────────
 
+    function handlePolicyFile(input, previewContainerId) {
+        const previewDiv = document.getElementById(previewContainerId);
+        if (!previewDiv) return;
+
+        previewDiv.innerHTML = '';
+
+        if (input.files && input.files[0]) {
             const file = input.files[0];
-            if(!file) return;
 
-            if(file.size > 2 * 1024 * 1024){
+            // 2MB size check (jaise insurance mein common hota hai)
+            if (file.size > 2 * 1024 * 1024) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'File Too Large',
+                    text: 'File size must be less than 2MB',
+                    confirmButtonColor: '#3085d6'
+                });
+                input.value = '';
+                return;
+            }
 
-    Swal.fire({
-        icon: 'error',
-        title: 'File Too Large',
-        text: 'File size must be less than 2MB',
-        confirmButtonColor: '#3085d6'
-    });
+            const fileURL = URL.createObjectURL(file);
 
-    input.value = "";
-    return;
-}
-
-            let containerId = "";
-
-            if(input.id === 'trc_copy') containerId = 'trc_copy_chip';
-            if(input.id === 'tax_receipt_copy') containerId = 'tax_receipt_copy_chip';
-
-            const container = document.getElementById(containerId);
-
-            const url = URL.createObjectURL(file);
-            const name = file.name;
-
-            const chip = document.createElement("div");
-chip.className = "proof-chip bg-primary mt-2";
-chip.style.cursor = "pointer";
-
-chip.innerHTML = `
-<i class="fas fa-file-pdf text-danger"></i>
-<span class="file-name">${name}</span>
-
-<button type="button"
-class="btn-action btn-download ms-2 download-chip">
-<i class="fas fa-download"></i>
-</button>
-
-<button type="button"
-class="btn-action text-danger ms-1 remove-chip">✖</button>
-`;
-
-chip.onclick = () => openProofPreview(url,'pdf',name);
-
-chip.querySelector('.download-chip').onclick = function(e){
-    e.stopPropagation();
-    downloadFile(url,name);
-}
-
-chip.querySelector('.remove-chip').onclick = function(e){
-    e.stopPropagation();
-    input.value = "";
-    container.innerHTML = "";
-}
-
-            container.innerHTML = "";
-            container.appendChild(chip);
-
+            previewDiv.innerHTML = `
+                <span class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2 px-3 py-2"
+                      style="cursor: pointer;"
+                      onclick="openPolicyModal('${fileURL}', '${file.name.replace(/'/g, "\\'")}')">
+                    <i class="la la-paperclip"></i>
+                    <span class="fw-medium small text-truncate" style="max-width: 180px;">
+                        ${file.name}
+                    </span>
+                </span>
+            `;
         }
-        function openProofPreview(url,type,fileName){
-
-    document.getElementById('proofFileName').innerText = fileName;
-
-    // ⭐ download button set
-    const downloadBtn = document.getElementById('proofDownloadBtn');
-    downloadBtn.href = url;
-    downloadBtn.setAttribute("download", fileName);
-
-    if(type === 'pdf'){
-        document.getElementById('proofImage').style.display = "none";
-
-        const pdf = document.getElementById('proofPdf');
-        pdf.style.display = "block";
-        pdf.src = url;
-
-    }else{
-
-        document.getElementById('proofPdf').style.display = "none";
-
-        const img = document.getElementById('proofImage');
-        img.style.display = "block";
-        img.src = url;
     }
 
-    const modal = new bootstrap.Modal(document.getElementById('proofPreviewModal'), {
-        backdrop:false
+    window.openPolicyModal = function(url, name) {
+        const modalTitle    = document.getElementById('policyModalFileName');
+        const modalDownload = document.getElementById('policyModalDownload');
+        const modalPreview  = document.getElementById('policyModalPreview');
+
+        if (modalTitle)    modalTitle.innerText = name;
+        if (modalDownload) modalDownload.href = url;
+        if (modalPreview)  modalPreview.src = url;
+
+        const modalElement = document.getElementById('policyCopyModal');
+        if (modalElement) {
+            const modal = new bootstrap.Modal(modalElement);
+            modal.show();
+        }
+    };
+
+    // ────────────────────────────────────────────────
+    //   Attach listeners to both file inputs
+    // ────────────────────────────────────────────────
+
+    const trcInput = document.getElementById('trcCopyInput');
+    const taxInput = document.getElementById('taxCopyInput');
+
+    if (trcInput) {
+        trcInput.addEventListener('change', function() {
+            handlePolicyFile(this, 'trcCopyPreview');
+        });
+    }
+
+    if (taxInput) {
+        taxInput.addEventListener('change', function() {
+            handlePolicyFile(this, 'taxCopyPreview');
+        });
+    }
+
+    // Bootstrap modal ko body ke andar move karna (backpack / z-index issues fix)
+    const policyModal = document.getElementById('policyCopyModal');
+    if (policyModal) {
+        $('#policyCopyModal').on('show.bs.modal', function () {
+            $(this).appendTo('body');
+        });
+    }
+
+    // ────────────────────────────────────────────────
+    //   Baaki saara code jo pehle tha (masking, validation, dynamic fields)
+    //   ise bilkul change mat karna — sirf file preview part upar wala hai
+    // ────────────────────────────────────────────────
+
+    function applyStrictMask(selector, maskPattern, placeholderText) {
+        $(selector).mask(maskPattern, {
+            placeholder: placeholderText
+        }).on('input paste keyup', function() {
+            let $this = $(this);
+            let val = $this.val().toUpperCase().replace(/[^A-Z0-9]/g, '');
+            if ($this.attr('id') === 'vehicle_reg_no') {
+                val = val.substring(0, 10);
+            }
+            $this.val(val);
+            $this.unmask().mask(maskPattern, { placeholder: '' });
+        }).on('blur', function() {
+            if ($(this).val() === '') {
+                $(this).attr('placeholder', placeholderText);
+            }
+        });
+    }
+
+    applyStrictMask('#trc_number', 'AAAAAAAAAAAAAAA', 'TRC123456789');
+    applyStrictMask('#application_no', 'AAAAAAAAAAAAAAA', 'APP123456789');
+    applyStrictMask('#bank_ref_no', 'AAAAAAAAAAAAAAAAAAAA', 'BANKREF123456789');
+    applyStrictMask('#tax_payment_ref_no', 'AAAAAAAAAAAAAAAAAAAA', 'TAXREF123456789');
+
+    $('#vehicle_reg_no').on('input paste keyup', function() {
+        let $this = $(this);
+        let val = $this.val().toUpperCase().replace(/\s+/g, '');
+        $this.val(val);
     });
 
-    modal.show();
-}
+    function validateField(fieldId, regex, errorMsg) {
+        const field = $('#' + fieldId);
+        let error = field.next('.text-danger');
+        if (error.length) error.remove();
+        const val = field.val().trim();
+        if (val && !regex.test(val)) {
+            field.addClass('is-invalid');
+            $('<span class="text-danger small d-block mt-1">' + errorMsg + '</span>').insertAfter(field);
+        } else {
+            field.removeClass('is-invalid');
+        }
+    }
 
-function downloadFile(url,name){
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = name;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-}
+    $('#trc_number').on('input change blur', function() { validateField('trc_number', /^[A-Z0-9]{10,15}$/, 'TRC Number: 10-15 alphanumeric only'); });
+    $('#application_no').on('input change blur', function() { validateField('application_no', /^[A-Z0-9]{10,15}$/, 'Application No.: 10-15 alphanumeric only'); });
+    $('#bank_ref_no, #tax_payment_ref_no').on('input change blur', function() { validateField(this.id, /^[A-Z0-9]{10,20}$/, 'Ref No.: 10-20 alphanumeric only'); });
 
-        document.getElementById('trc_copy').addEventListener('change', function(){
-            handleFileUpload(this);
+    // Dynamic fields show/hide logic (tumhara purana code)
+    const rulesData = @json($data['rto_rules'] ?? []);
+
+    function updateFields() {
+        const normalize = str => (str || '').trim().replace(/\s+/g, ' ').toUpperCase();
+        const saleText   = normalize($('#sale_type option:selected').text());
+        const permitText = normalize($('#permit option:selected').text());
+        const bodyText   = normalize($('#body_type option:selected').text());
+        const regText    = normalize($('#reg_no_type option:selected').text());
+
+        const matchingRule = rulesData.find(rule => {
+            const ruleSale   = normalize(rule.sale_type);
+            const rulePermit = normalize(rule.permit);
+            const ruleBody   = normalize(rule.body_type);
+            const ruleReg    = normalize(rule.reg_no_type);
+            return (ruleSale === saleText) &&
+                   (rulePermit === permitText) &&
+                   (ruleBody === bodyText) &&
+                   (ruleReg === regText);
         });
 
-        document.getElementById('tax_receipt_copy').addEventListener('change', function(){
-            handleFileUpload(this);
-        });
-        // Masking apply + auto uppercase + no space
-        function applyStrictMask(selector, maskPattern, placeholderText) {
-            $(selector).mask(maskPattern, {
-                placeholder: placeholderText
-            }).on('input paste keyup', function() {
-                let $this = $(this);
-                let val = $this.val().toUpperCase().replace(/[^A-Z0-9]/g, '');
-                if ($this.attr('id') === 'vehicle_reg_no') {
-                    val = val.substring(0, 10);
-                }
-                $this.val(val);
-                $this.unmask().mask(maskPattern, { placeholder: '' });
-            }).on('blur', function() {
-                if ($(this).val() === '') {
-                    $(this).attr('placeholder', placeholderText);
+        const groups = {
+            'application_no_group':   'app_no',
+            'trc_number_group':       'trc_number',
+            'bank_ref_no_group':      'trc_pay',
+            'trc_copy_group':         'trc_copy',
+            'tax_payment_ref_no_group': 'tax_pay',
+            'tax_receipt_copy_group': 'tax_copy',
+            'vehicle_reg_no_group':   'veh_reg'
+        };
+
+        Object.keys(groups).forEach(id => $('#' + id).hide());
+
+        if (matchingRule) {
+            Object.keys(groups).forEach(id => {
+                const key = groups[id];
+                if (String(matchingRule[key] || '').trim().toUpperCase() === 'YES') {
+                    $('#' + id).show();
                 }
             });
         }
-
-        applyStrictMask('#trc_number', 'AAAAAAAAAAAAAAA', 'TRC123456789');
-        applyStrictMask('#application_no', 'AAAAAAAAAAAAAAA', 'APP123456789');
-        applyStrictMask('#bank_ref_no', 'AAAAAAAAAAAAAAAAAAAA', 'BANKREF123456789');
-        applyStrictMask('#tax_payment_ref_no', 'AAAAAAAAAAAAAAAAAAAA', 'TAXREF123456789');
-
-        $('#vehicle_reg_no').on('input paste keyup', function() {
-            let $this = $(this);
-            let val = $this.val().toUpperCase().replace(/\s+/g, '');
-            $this.val(val);
-        });
-
-        // Real-time format validation + error below field
-        function validateField(fieldId, regex, errorMsg) {
-            const field = $('#' + fieldId);
-            let error = field.next('.text-danger');
-            if (error.length) error.remove();
-            const val = field.val().trim();
-            if (val && !regex.test(val)) {
-                field.addClass('is-invalid');
-                $('<span class="text-danger small d-block mt-1">' + errorMsg + '</span>').insertAfter(field);
-            } else {
-                field.removeClass('is-invalid');
-            }
-        }
-
-        $('#trc_number').on('input change blur', function() { validateField('trc_number', /^[A-Z0-9]{10,15}$/, 'TRC Number: 10-15 alphanumeric only'); });
-        $('#application_no').on('input change blur', function() { validateField('application_no', /^[A-Z0-9]{10,15}$/, 'Application No.: 10-15 alphanumeric only'); });
-        $('#bank_ref_no, #tax_payment_ref_no').on('input change blur', function() { validateField(this.id, /^[A-Z0-9]{10,20}$/, 'Ref No.: 10-20 alphanumeric only'); });
-
-        // Dynamic fields show/hide
-        const rulesData = @json($data['rto_rules'] ?? []);
-        function updateFields() {
-    const normalize = str => (str || '').trim().replace(/\s+/g, ' ').toUpperCase();
-
-    const saleText   = normalize($('#sale_type option:selected').text());
-    const permitText = normalize($('#permit option:selected').text());
-    const bodyText   = normalize($('#body_type option:selected').text());
-    const regText    = normalize($('#reg_no_type option:selected').text());
-
-    console.log('Selected (normalized):', { saleText, permitText, bodyText, regText });
-
-    const matchingRule = rulesData.find(rule => {
-        const ruleSale   = normalize(rule.sale_type);
-        const rulePermit = normalize(rule.permit);
-        const ruleBody   = normalize(rule.body_type);
-        const ruleReg    = normalize(rule.reg_no_type);
-
-        const isMatch = (ruleSale === saleText) &&
-                        (rulePermit === permitText) &&
-                        (ruleBody === bodyText) &&
-                        (ruleReg === regText);
-
-        // Optional: log first few mismatches for debugging
-        if (!isMatch && rulesData.indexOf(rule) < 3) {
-            console.log('Compared to rule:', { ruleSale, rulePermit, ruleBody, ruleReg });
-        }
-
-        return isMatch;
-    });
-
-    console.log('Matching rule found:', matchingRule ? 'YES' : 'NO', matchingRule);
-
-    const groups = {
-        'application_no_group':   'app_no',
-        'trc_number_group':       'trc_number',
-        'bank_ref_no_group':      'trc_pay',
-        'trc_copy_group':         'trc_copy',
-        'tax_payment_ref_no_group': 'tax_pay',
-        'tax_receipt_copy_group': 'tax_copy',
-        'vehicle_reg_no_group':   'veh_reg'
-    };
-
-    // Hide all first
-    Object.keys(groups).forEach(id => $('#' + id).hide());
-
-    if (matchingRule) {
-        console.log('Showing fields based on rule:', matchingRule);
-        Object.keys(groups).forEach(id => {
-            const key = groups[id];
-            if (String(matchingRule[key] || '').trim().toUpperCase() === 'YES') {
-                $('#' + id).show();
-            }
-        });
     }
-}
 
-        $('#sale_type, #permit, #body_type, #reg_no_type').on('change', updateFields);
-        updateFields(); // Initial call
-    });
+    $('#sale_type, #permit, #body_type, #reg_no_type').on('change', updateFields);
+    updateFields(); // Initial call
+});
 </script>
+
 @endpush

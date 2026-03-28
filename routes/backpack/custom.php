@@ -197,7 +197,10 @@ Route::group([
         ->name('exchange.not-interested')
         ->middleware('admin');
 
-
+    Route::get('booking/{id}/receipt/{receipt_id}/edit', 'BookingCrudController@receiptEdit')
+        ->name('receipt.edit');
+    Route::put('booking/{bookingId}/receipt/{receiptId}', 'BookingCrudController@receiptUpdate')
+        ->name('receipt.update');
 
 
     Route::get('booking/finance', 'BookingCrudController@intInFinance')
@@ -353,4 +356,6 @@ Route::group([
     Route::put('booking/{id}/refunded-update', 'BookingCrudController@refundedUpdate')
         ->name('update-refunded')
         ->middleware('admin');
+    Route::get('booking/{id}/check-field-payment', 'BookingCrudController@checkFieldPayment')
+        ->name('booking.check-field-payment');
 });

@@ -22,7 +22,7 @@
         border: 1px solid rgba(0, 0, 0, 0.125);
     }
 
-    .card-body h5 {
+    .card-body h2 {
         font-weight: 600;
         color: #495057;
     }
@@ -69,7 +69,7 @@
 
                 <div class="card mt-0">
                     <div class="card-body">
-                        <h5 class="mb-4">Payment Details (Locked)</h5>
+                        <h2 class="mb-4">Payment Details (Locked)</h2>
                         <div class="row">
                             <div class="col-sm-2 form-group">
                                 <label>Customer Type</label>
@@ -122,7 +122,7 @@
 
                 <div class="card mt-4">
                     <div class="card-body">
-                        <h5 class="mb-4">Customer Details</h5>
+                        <h2 class="mb-4">Customer Details</h2>
                         <div class="row">
                             <div class="col-sm-3 form-group">
                                 <label for="name">Customer Name <span class="required-mark">*</span></label>
@@ -281,46 +281,52 @@
                             </div>
 
                             <!-- Referred By Details -->
-                            <div class="col-sm-12 mt-4">
-                                <h5 class="mb-3">Referred By Details</h5>
-                                <div class="form-check mb-3">
-                                    <input type="checkbox" class="form-check-input" id="referred_by_checkbox"
-                                        name="referred_by" {{ $entry->r_name ? 'checked' : '' }}>
-                                    <label class="form-check-label" for="referred_by_checkbox">Referred By</label>
-                                </div>
 
-                                <div class="row" id="referred_by_fields"
-                                    style="{{ $entry->r_name ? '' : 'display:none;' }}">
-                                    <div class="col-sm-3 form-group">
-                                        <label for="ref_customer_name">Customer Name <span class="required-mark"
-                                                style="display: none;">*</span></label>
-                                        <input type="text" name="ref_customer_name" id="ref_customer_name"
-                                            class="form-control uppercase" value="{{ $entry->r_name ?? '' }}">
-                                    </div>
-                                    <div class="col-sm-3 form-group">
-                                        <label for="ref_mobile_no">Mobile No. <span class="required-mark"
-                                                style="display: none;">*</span></label>
-                                        <input type="text" name="ref_mobile_no" id="ref_mobile_no" class="form-control"
-                                            value="{{ $entry->r_mobile ?? '' }}">
-                                    </div>
-                                    <div class="col-sm-3 form-group">
-                                        <label for="ref_existing_model">Existing Model <span class="required-mark"
-                                                style="display: none;">*</span></label>
-                                        <input type="text" name="ref_existing_model" id="ref_existing_model"
-                                            class="form-control uppercase" value="{{ $entry->r_model ?? '' }}">
-                                    </div>
-                                    <div class="col-sm-3 form-group">
-                                        <label for="ref_variant">Variant <span class="required-mark"
-                                                style="display: none;">*</span></label>
-                                        <input type="text" name="ref_variant" id="ref_variant"
-                                            class="form-control uppercase" value="{{ $entry->r_variant ?? '' }}">
-                                    </div>
-                                    <div class="col-sm-3 form-group">
-                                        <label for="ref_chassis_reg_no">Chassis / Regn. No. <span class="required-mark"
-                                                style="display: none;">*</span></label>
-                                        <input type="text" name="ref_chassis_reg_no" id="ref_chassis_reg_no"
-                                            class="form-control uppercase" value="{{ $entry->r_chassis ?? '' }}">
-                                    </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-body">
+                        <div class="col-sm-12 mt-4">
+                            <h2 class="mb-3">Referred By Details</h2>
+                            <div class="form-check mb-3">
+                                <input type="checkbox" class="form-check-input" id="referred_by_checkbox"
+                                    name="referred_by" {{ $entry->r_name ? 'checked' : '' }}>
+                                <label class="form-check-label" for="referred_by_checkbox">Referred By</label>
+                            </div>
+
+                            <div class="row" id="referred_by_fields"
+                                style="{{ $entry->r_name ? '' : 'display:none;' }}">
+                                <div class="col-sm-3 form-group">
+                                    <label for="ref_customer_name">Customer Name <span class="required-mark"
+                                            style="display: none;">*</span></label>
+                                    <input type="text" name="ref_customer_name" id="ref_customer_name"
+                                        class="form-control uppercase" value="{{ $entry->r_name ?? '' }}">
+                                </div>
+                                <div class="col-sm-3 form-group">
+                                    <label for="ref_mobile_no">Mobile No. <span class="required-mark"
+                                            style="display: none;">*</span></label>
+                                    <input type="text" name="ref_mobile_no" id="ref_mobile_no" class="form-control"
+                                        value="{{ $entry->r_mobile ?? '' }}">
+                                </div>
+                                <div class="col-sm-3 form-group">
+                                    <label for="ref_existing_model">Existing Model <span class="required-mark"
+                                            style="display: none;">*</span></label>
+                                    <input type="text" name="ref_existing_model" id="ref_existing_model"
+                                        class="form-control uppercase" value="{{ $entry->r_model ?? '' }}">
+                                </div>
+                                <div class="col-sm-3 form-group">
+                                    <label for="ref_variant">Variant <span class="required-mark"
+                                            style="display: none;">*</span></label>
+                                    <input type="text" name="ref_variant" id="ref_variant"
+                                        class="form-control uppercase" value="{{ $entry->r_variant ?? '' }}">
+                                </div>
+                                <div class="col-sm-3 form-group">
+                                    <label for="ref_chassis_reg_no">Chassis / Regn. No. <span class="required-mark"
+                                            style="display: none;">*</span></label>
+                                    <input type="text" name="ref_chassis_reg_no" id="ref_chassis_reg_no"
+                                        class="form-control uppercase" value="{{ $entry->r_chassis ?? '' }}">
                                 </div>
                             </div>
                         </div>
@@ -329,7 +335,7 @@
 
                 <div class="card mt-4">
                     <div class="card-body">
-                        <h5 class="mb-4">Purchase Type Details</h5>
+                        <h2 class="mb-4">Purchase Type Details</h2>
                         <div class="row">
                             <div class="col-sm-2 form-group">
                                 <label for="buyer_type">Purchase Type <span class="required-mark">*</span></label>
@@ -442,7 +448,7 @@
                 <!-- NEW: Vehicle Details Card -->
                 <div class="card mt-4">
                     <div class="card-body">
-                        <h5 class="mb-4">Vehicle Details</h5>
+                        <h2 class="mb-4">Vehicle Details</h2>
                         <div class="row">
                             <!-- Hidden vh_id -->
                             <input type="hidden" name="vh_id" id="vh_id" value="{{ $entry->vh_id }}">
@@ -522,7 +528,7 @@
                 <!-- Booking Details Card -->
                 <div class="card mt-4">
                     <div class="card-body">
-                        <h5 class="mb-4">Booking Details</h5>
+                        <h2 class="mb-4">Booking Details</h2>
                         <div class="row">
 
                             <!-- Booking Mode -->

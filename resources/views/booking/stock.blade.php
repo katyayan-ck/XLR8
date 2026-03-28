@@ -8,9 +8,9 @@
             {{-- HEADER --}}
             <div
                 class="card-header bg-gradient-success d-flex justify-content-between align-items-center flex-wrap gap-3">
-                <h3 class="card-title mb-0 fw-bold text-black text-nowrap">
+                <h2 class="card-title mb-0 fw-bold text-black text-nowrap">
                     Stock Report Dashboard
-                </h3>
+                </h2>
             </div>
 
             {{-- BODY --}}

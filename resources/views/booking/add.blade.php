@@ -102,13 +102,14 @@
                                 </div>
                             </div>
 
-                            <div class="col-sm-3">
+                            <div class="col-12 col-md-6 col-lg-3">
                                 <div class="form-group">
-                                    <label for="user">Collected By <span class="required-mark"
-                                            style="display: none;">*</span></label>
-                                    <select name="user" id="user" class="form-control select2" disabled>
+                                    <label for="user">
+                                        Collected By <span class="required-mark" style="display:none">*</span>
+                                    </label>
+
+                                    <select name="user" id="user" class="form-control select2 w-100" disabled>
                                         <option value="">Please Select...</option>
-                                        <!-- Options will be populated dynamically via JavaScript -->
                                     </select>
                                 </div>
                             </div>
@@ -147,17 +148,15 @@
                             <div class="col-sm-3">
                                 <div class="form-group">
                                     <label for="fdoc">Upload Image or PDF <span class="required-mark">*</span></label>
-                                    <input type="file" name="amountproof" id="fdoc" class="form-control"
-                                        accept="image/jpeg,image/png,application/pdf" onchange="handleProofUpload(this)"
-                                        required>
-                                    <small class="form-text text-muted">Max 2MB (JPG, PNG, PDF)</small>
+                                    <input type="file" name="amountproof" id="proofInput" class="form-control"
+                                        accept=".pdf,.jpg,.jpeg,.png" required>
+
+                                    <!-- Chip Preview -->
+                                    <div id="proofPreview" class="mt-3"></div>
                                 </div>
+
+
                             </div>
-
-                            <div class="col-sm-3 mt-1" id="proofChipContainer">
-                            </div>
-
-
                         </div>
                     </div>
                 </div>
@@ -183,7 +182,8 @@
                                         <option value="2">Daughter of</option>
                                         <option value="3">Married to</option>
                                         <option value="4">Guardian Name</option>
-                                        <option value="5" id="ownedByOption" style="display: none;">Owned By</option>
+                                        <option value="5" id="ownedByOption" style="display: none;">Owned By
+                                        </option>
                                     </select>
                                 </div>
                             </div>
@@ -262,7 +262,8 @@
                                     <div class="form-check mt-2">
                                         <input type="checkbox" id="notrequiredgst" name="notrequiredgst"
                                             class="form-check-input" checked>
-                                        <label for="notrequiredgst" class="form-check-label">GST Unregistered</label>
+                                        <label for="notrequiredgst" class="form-check-label">GST
+                                            Unregistered</label>
                                     </div>
                                 </div>
                             </div>
@@ -325,7 +326,8 @@
                         <div class="row">
                             <div class="col-sm-1">
                                 <div class="form-group">
-                                    <label><input type="checkbox" id="referredby" name="referredby"> Referred By</label>
+                                    <label><input type="checkbox" id="referredby" name="referredby"> Referred
+                                        By</label>
                                 </div>
                             </div>
 
@@ -627,7 +629,8 @@
                                     <select name="dsadetails" id="dsadetails" class="form-control form-select" disabled>
                                         <option value="" disabled selected>-- Select DSA --</option>
                                         @foreach($data['dsa_details'] ?? [] as $dsa)
-                                        <option value="{{ $dsa->id }}">{{ $dsa->name }} - {{ $dsa->mobile }}</option>
+                                        <option value="{{ $dsa->id }}">{{ $dsa->name }} - {{ $dsa->mobile }}
+                                        </option>
                                         @endforeach
                                     </select>
                                 </div>
@@ -751,31 +754,23 @@
 </div>
 
 <!-- Proof Preview Modal -->
-<div class="modal fade" id="proofPreviewModal" tabindex="-1" aria-labelledby="proofPreviewModalLabel"
-    aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-centered">
+<div class="modal fade" id="proofModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 class="modal-title" id="proofPreviewModalLabel">Document Preview</h2>
+                <h5 class="modal-title" id="proofModalFileName"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
 
+            <div class="modal-body text-center">
+                <iframe id="proofModalPreview" style="width:100%; height:500px;" frameborder="0"></iframe>
             </div>
-            <div class="modal-body text-center p-0" style="min-height: 60vh; background: #f8f9fa;">
-                <!-- Image Preview -->
-                <img id="modalProofImg" src="" class="img-fluid shadow align-items-center justify-content-center"
-                    style="display:inline-table; max-height:80vh; border-radius:8px;">
-                <!-- PDF Preview -->
-                <iframe id="modalProofPdf" style="display:none; width:100%; height:80vh; border:none;"
-                    sandbox="allow-scripts allow-same-origin"></iframe>
-                <!-- Fallback -->
-                <div id="modalNoPreview" class="d-flex align-items-center justify-content-center h-100 text-muted"
-                    style="display:none;">
-                    {{-- <p>No preview available for this file type.</p> --}}
-                </div>
-            </div>
+
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" id="modalDownloadBtn" class="btn btn-primary">
-                    <i class="fas fa-download me-1"></i> Download
+                <a id="proofModalDownload" class="btn btn-success" download>Download</a>
+
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    Close
                 </button>
             </div>
         </div>
@@ -944,7 +939,8 @@
         background-color: #e9ecef !important;
         opacity: 1;
     }
-    .page-header{
+
+    .page-header {
         display: block;
     }
 </style>
@@ -958,145 +954,59 @@
 <script>
     let uploadedFile = null; // global variable to hold the file for download
 
-function handleProofUpload(input) {
-    const file = input.files[0];
-    if (!file) return;
+    function handleProof(input) {
 
-    // Validation
-    const validTypes = ['image/jpeg', 'image/png', 'application/pdf'];
-    if (!validTypes.includes(file.type)) {
-        alert('Only JPG, PNG or PDF allowed!');
-        input.value = '';
-        return;
-    }
-    if (file.size > 2 * 1024 * 1024) {
-        alert('File must be less than 2MB!');
-        input.value = '';
-        return;
-    }
+    const previewDiv = document.getElementById('proofPreview');
+    previewDiv.innerHTML = '';
 
-    uploadedFile = file; // store for download
+    if (input.files && input.files[0]) {
 
-    const container = document.getElementById('proofChipContainer');
-    container.innerHTML = ''; // only one file allowed (replace old one)
+        const file = input.files[0];
 
-    const chip = document.createElement('div');
-    chip.className = 'proof-chip';
+        // file size validation
+        if (file.size > 2 * 1024 * 1024) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'File Too Large',
+                text: 'Maximum allowed file size is 2MB.'
+            });
 
-    // Icon
-    const icon = document.createElement('i');
-    icon.className = file.type === 'application/pdf'
-        ? 'fas fa-file-pdf text-danger'
-        : 'fas fa-file-image text-primary';
-
-    // File name
-    const nameSpan = document.createElement('span');
-    nameSpan.className = 'file-name';
-    nameSpan.textContent = file.name;
-
-    // Download button
-    const downloadBtn = document.createElement('button');
-    downloadBtn.type = 'button';
-    downloadBtn.className = 'btn-action btn-download';
-    downloadBtn.innerHTML = '<i class="fas fa-download"></i>';
-    downloadBtn.title = 'Download';
-    downloadBtn.onclick = function() {
-        if (uploadedFile) {
-            const url = URL.createObjectURL(uploadedFile);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = uploadedFile.name;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+            input.value = '';
+            return;
         }
-    };
 
-    // Remove button
-    const removeBtn = document.createElement('button');
-    removeBtn.type = 'button';
-    removeBtn.className = 'btn-action btn-remove';
-    removeBtn.innerHTML = '<i class="fas fa-times"></i>';
-    removeBtn.title = 'Remove';
-    removeBtn.onclick = function() {
-        input.value = '';
-        uploadedFile = null;
-        container.innerHTML = '';
-    };
+        const fileURL = URL.createObjectURL(file);
 
-    // Assemble chip
-    chip.appendChild(icon);
-    chip.appendChild(nameSpan);
-    chip.appendChild(downloadBtn);
-    chip.appendChild(removeBtn);
+        previewDiv.innerHTML = `
+            <span class="btn btn-outline-primary btn-sm
+                  d-inline-flex align-items-center gap-2 px-3 py-2"
+                  style="cursor:pointer"
+                  onclick="openProofModal('${fileURL}','${file.name.replace(/'/g,"\\'")}')">
 
-    // Make the entire chip clickable (except buttons)
-chip.style.cursor = 'pointer';
-chip.addEventListener('click', function(e) {
-    // अगर download या remove button पर क्लिक किया तो modal न खुलें
-    if (e.target.closest('.btn-action')) return;
+                <i class="la la-paperclip"></i>
+                <span class="fw-medium small">${file.name}</span>
 
-    const isPdf = uploadedFile.type === 'application/pdf';
-
-    // Reset modal content
-    document.getElementById('modalProofImg').style.display = 'none';
-    document.getElementById('modalProofPdf').style.display = 'none';
-    document.getElementById('modalNoPreview').style.display = 'none';
-
-    if (isPdf) {
-        const blob = new Blob([uploadedFile], { type: 'application/pdf' });
-        const url = URL.createObjectURL(blob);
-        const pdfFrame = document.getElementById('modalProofPdf');
-        pdfFrame.src = url;
-        pdfFrame.style.display = 'block';
-        // Store URL to clean up later
-        pdfFrame.dataset.pdfUrl = url;
-    } else if (uploadedFile.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const img = document.getElementById('modalProofImg');
-            img.src = e.target.result;
-            img.style.display = 'block';
-        };
-        reader.readAsDataURL(uploadedFile);
-    } else {
-        document.getElementById('modalNoPreview').style.display = 'flex';
+            </span>
+        `;
     }
-
-    // Set title
-    document.getElementById('proofPreviewModalLabel').textContent = 'Preview: ' + uploadedFile.name;
-
-    // Modal Download button
-    document.getElementById('modalDownloadBtn').onclick = function() {
-        if (uploadedFile) {
-            const url = URL.createObjectURL(uploadedFile);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = uploadedFile.name;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }
-    };
-
-    // Show modal using Bootstrap 4 syntax (your version is 4.6.2)
-    $('#proofPreviewModal').modal('show');
-});
-
-// Clean up PDF URL when modal closes (memory leak prevention)
-$('#proofPreviewModal').on('hidden.bs.modal', function () {
-    const pdfFrame = document.getElementById('modalProofPdf');
-    if (pdfFrame.dataset.pdfUrl) {
-        URL.revokeObjectURL(pdfFrame.dataset.pdfUrl);
-        pdfFrame.removeAttribute('data-pdf-url');
-        pdfFrame.src = '';
-    }
-});
-
-    container.appendChild(chip);
 }
+    function openProofModal(url, name) {
+
+    document.getElementById('proofModalFileName').innerText = name;
+    document.getElementById('proofModalDownload').href = url;
+    document.getElementById('proofModalPreview').src = url;
+
+    $('#proofModal').modal('show');
+}
+document.getElementById('proofInput')?.addEventListener('change', function() {
+    handleProof(this);
+});
+
+$('#proofModal').on('show.bs.modal', function () {
+    $(this).appendTo('body');
+});
+
+
 
 (function() {
     'use strict';
@@ -1573,9 +1483,9 @@ $('#financier').on('change', function() {
                 $('#dsadetails').next('.select2-container').addClass('select2-disabled-custom');
                 $('#dsadetails').val('').trigger('change'); // optional: clear when switching away
             }
-        
+
             toggleRequiredMark($('#dsadetails'), isDSA);
-        
+
             // Also update validation rules dynamically (good practice)
             $('#bookingForm').validate().settings.rules.dsadetails.required = isDSA;
         });
@@ -1597,7 +1507,7 @@ $('#financier').on('change', function() {
         $('#segmentid').on('change', function() {
             const segmentId = this.value;  // Numeric ID
             const segmentName = $(this).find(':selected').text();
-    
+
 
     $.ajax({
         url: '/xcl-v2/public/admin/get-models/' + segmentId,
@@ -1838,7 +1748,7 @@ $('#color').on('change', function() {
         const isField = isFieldSales || isFieldDSA;
         const isUsedCar = type == '4';
         const isReceipt = type == '1';
-        
+
 
         // User field
         $('#user').prop('disabled', !isField).prop('required', isField);
@@ -1892,7 +1802,7 @@ $('#color').on('change', function() {
 
             input.unmask().mask(inputMask, { placeholder: inputPlaceholder, reverse: true });
             attachDuplicateCheck(input, inputName, 'type1');
-            
+
             input.attr('name', inputName).attr('placeholder', inputPlaceholder).prop('required', isRequired);
             label.html(labelText + '<span class="required-mark">*</span>');
             group.show();
@@ -1907,7 +1817,7 @@ $('#color').on('change', function() {
 
             input.unmask();
             attachDuplicateCheck(input, inputName, 'type4');
-            
+
             input.attr('name', inputName).attr('placeholder', inputPlaceholder).prop('required', isRequired);
             label.html(labelText + '<span class="required-mark">*</span>');
             group.show();
@@ -1928,8 +1838,8 @@ $('#color').on('change', function() {
             receiptDatePicker?.disable();
         }
 
-       
-        
+
+
         if (isFieldDSA) {
         // Force + freeze Booking Source = DSA
         $('#bookingsource')
@@ -1946,7 +1856,7 @@ $('#color').on('change', function() {
                 .val(selectedUserId)
                 .prop('disabled', true)
                 .trigger('change');
-            
+
             $('#dsadetails').next('.select2-container').addClass('select2-disabled-custom');
         }
 
@@ -1958,7 +1868,7 @@ $('#color').on('change', function() {
             $('#dsadetails').prop('disabled', true);
             $('#dsadetails').next('.select2-container').addClass('select2-disabled-custom');
         });
-    } 
+    }
     else {
         // ── Not DSA field collection ───────────────────────
         $('#bookingsource')
@@ -1967,7 +1877,7 @@ $('#color').on('change', function() {
         $('#bookingsource').next('.select2-container').removeClass('select2-disabled-custom');
 
         $('#user').off('change.syncDSA');
-        
+
         // Important: DSA field control moved OUT from here
         // → now controlled only by #bookingsource change
     }
@@ -2214,19 +2124,19 @@ function toggleFinanceFields(mode) {
 $('#bookingForm').on('submit', function(e) {
     // Re-enable fields that are disabled but should be submitted
     $('#bookingsource, #dsadetails, #user').prop('disabled', false);
-    
+
     // Optional: if you want to keep UI disabled, disable again after submit (but not needed usually)
 });
 $(document).ready(function() {
 const initialBookingSource = $('#bookingsource').val();
     $('#dsadetails').prop('disabled', initialBookingSource !== 'DSA');
-    
+
     if (initialBookingSource !== 'DSA') {
         $('#dsadetails').next('.select2-container').addClass('select2-disabled-custom');
     } else {
         $('#dsadetails').next('.select2-container').removeClass('select2-disabled-custom');
     }
-    
+
     // Optional: trigger change so rules & UI update cleanly
     $('#bookingsource').trigger('change');
     // 1. Vehicle Registration No. (#registrationno)

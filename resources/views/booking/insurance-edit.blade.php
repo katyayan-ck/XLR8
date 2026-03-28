@@ -67,106 +67,108 @@
     @include(backpack_view('inc.alerts'))
 
     <!-- Invoice Details Card - Top (View Only) -->
-<div class="card card-body shadow-sm mb-4">
-    <h2 class="mb-3"><i class="la la-file-invoice text-primary"></i> Invoice Details (Pending Insurance / RTO)</h2>
-    <div class="row">
+    <div class="card card-body shadow-sm mb-4" style="border-radius:12px">
+        <h2 class="mb-3">
+            {{-- <i class="la la-file-invoice text-primary"></i> --}}
+            Invoice Details (Pending Insurance / RTO)</h2>
+        <div class="row">
 
-        <div class="col-md-3 form-group readonly-field">
-            <label class="readonly-label">XB No.</label>
-            <div class="readonly-value">
-                {{ $booking->sap_no ?? $booking->dms_no ?? $booking->id ?? '—' }}
+            <div class="col-md-3 form-group readonly-field">
+                <label class="readonly-label">XB No.</label>
+                <div class="readonly-value">
+                    {{ $booking->sap_no ?? $booking->dms_no ?? $booking->id ?? '—' }}
+                </div>
             </div>
-        </div>
 
-        <div class="col-md-3 form-group readonly-field">
-            <label class="readonly-label">Booking Date</label>
-            <div class="readonly-value">
-                {{ $booking->booking_date ? \Carbon\Carbon::parse($booking->booking_date)->format('d M Y') : '—' }}
+            <div class="col-md-3 form-group readonly-field">
+                <label class="readonly-label">Booking Date</label>
+                <div class="readonly-value">
+                    {{ $booking->booking_date ? \Carbon\Carbon::parse($booking->booking_date)->format('d M Y') : '—' }}
+                </div>
             </div>
-        </div>
 
-        <div class="col-md-3 form-group readonly-field">
-            <label class="readonly-label">DMS OTF No.</label>
-            <div class="readonly-value">
-                {{ $booking->dms_otf ?? '—' }}
+            <div class="col-md-3 form-group readonly-field">
+                <label class="readonly-label">DMS OTF No.</label>
+                <div class="readonly-value">
+                    {{ $booking->dms_otf ?? '—' }}
+                </div>
             </div>
-        </div>
 
-        <div class="col-md-3 form-group readonly-field">
-            <label class="readonly-label">Customer Name</label>
-            <div class="readonly-value">
-                {{ $booking->name ?? '—' }}
-                @if($booking->care_of)
-                <small class="text-muted d-block mt-1">(C/o: {{ $booking->care_of }})</small>
-                @endif
+            <div class="col-md-3 form-group readonly-field">
+                <label class="readonly-label">Customer Name</label>
+                <div class="readonly-value">
+                    {{ $booking->name ?? '—' }}
+                    @if($booking->care_of)
+                    <small class="text-muted d-block mt-1">(C/o: {{ $booking->care_of }})</small>
+                    @endif
+                </div>
             </div>
-        </div>
 
-        <div class="col-md-3 form-group readonly-field">
-            <label class="readonly-label">Branch</label>
-            <div class="readonly-value">
-                {{ $data['branch'] ?? '—' }}
+            <div class="col-md-3 form-group readonly-field">
+                <label class="readonly-label">Branch</label>
+                <div class="readonly-value">
+                    {{ $data['branch'] ?? '—' }}
+                </div>
             </div>
-        </div>
 
-        <div class="col-md-3 form-group readonly-field">
-            <label class="readonly-label">Location</label>
-            <div class="readonly-value">
-                @if($booking->location_id)
+            <div class="col-md-3 form-group readonly-field">
+                <label class="readonly-label">Location</label>
+                <div class="readonly-value">
+                    @if($booking->location_id)
                     {{ $booking->location?->name ?? '—' }}
-                @else
+                    @else
                     {{ $booking->location_other ?: '—' }}
-                @endif
+                    @endif
+                </div>
             </div>
-        </div>
 
-        <div class="col-md-4 form-group readonly-field">
-            <label class="readonly-label">Model</label>
-            <div class="readonly-value">
-                {{ $booking->model ?? '—' }}
+            <div class="col-md-4 form-group readonly-field">
+                <label class="readonly-label">Model</label>
+                <div class="readonly-value">
+                    {{ $booking->model ?? '—' }}
+                </div>
             </div>
-        </div>
 
-        <div class="col-md-4 form-group readonly-field">
-            <label class="readonly-label">Variant</label>
-            <div class="readonly-value">
-                {{ $booking->variant ?? '—' }}
+            <div class="col-md-4 form-group readonly-field">
+                <label class="readonly-label">Variant</label>
+                <div class="readonly-value">
+                    {{ $booking->variant ?? '—' }}
+                </div>
             </div>
-        </div>
 
-        <div class="col-md-4 form-group readonly-field">
-            <label class="readonly-label">Color</label>
-            <div class="readonly-value">
-                {{ $booking->color ?? '—' }}
+            <div class="col-md-4 form-group readonly-field">
+                <label class="readonly-label">Color</label>
+                <div class="readonly-value">
+                    {{ $booking->color ?? '—' }}
+                </div>
             </div>
-        </div>
 
-        <div class="col-md-3 form-group readonly-field">
-            <label class="readonly-label">Chassis No.</label>
-            <div class="readonly-value">
-                {{ $booking->chassis_no ?? $booking->chasis_no ?? '—' }}
+            <div class="col-md-3 form-group readonly-field">
+                <label class="readonly-label">Chassis No.</label>
+                <div class="readonly-value">
+                    {{ $booking->chassis_no ?? $booking->chasis_no ?? '—' }}
+                </div>
             </div>
-        </div>
 
-        <div class="col-md-3 form-group readonly-field">
-            <label class="readonly-label">Invoice No.</label>
-            <div class="readonly-value">
-                {{ $booking->inv_no ?? $booking->dms_invoice_number ?? '—' }}
+            <div class="col-md-3 form-group readonly-field">
+                <label class="readonly-label">Invoice No.</label>
+                <div class="readonly-value">
+                    {{ $booking->inv_no ?? $booking->dms_invoice_number ?? '—' }}
+                </div>
             </div>
-        </div>
 
-        <div class="col-md-3 form-group readonly-field">
-            <label class="readonly-label">Invoice Date</label>
-            <div class="readonly-value">
-                {{ $booking->inv_date ? \Carbon\Carbon::parse($booking->inv_date)->format('d M Y') : '—' }}
+            <div class="col-md-3 form-group readonly-field">
+                <label class="readonly-label">Invoice Date</label>
+                <div class="readonly-value">
+                    {{ $booking->inv_date ? \Carbon\Carbon::parse($booking->inv_date)->format('d M Y') : '—' }}
+                </div>
             </div>
-        </div>
 
+        </div>
     </div>
-</div>
 
     <!-- Insurance Edit Form Card -->
-    <div class="card card-body shadow-sm mb-4">
+    <div class="card card-body shadow-sm mb-4" style="border-radius:12px">
         <h2 class="mb-3">Insurance Details</h2>
 
         <form method="POST" action="{{ route('booking.insurance.update', $booking->id) }}"

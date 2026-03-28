@@ -69,7 +69,7 @@
 @section('content')
 
 <!-- Booking Information Card (Same style as DMS Edit) -->
-<div class="card card-body shadow-sm mb-4">
+<div class="card card-body shadow-sm mb-4" style="border-radius:12px">
     <h2 class="mb-3">Booking & Vehicle Information (Read-only)</h2>
 
     <div class="row">
@@ -131,7 +131,7 @@
 <form id="dms-form" method="POST" action="{{ route('dms.update', $booking->id) }}">
     @csrf
     @method('PUT')
-    <div class="card card-body shadow-sm">
+    <div class="card card-body shadow-sm" style="border-radius:12px">
         <h2 class="mb-3">Pending DMS</h2>
         <div class="row">
 
