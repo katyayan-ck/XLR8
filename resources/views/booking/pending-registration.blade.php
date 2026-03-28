@@ -228,59 +228,6 @@
             ])
         },
         {
-            headerName: 'Booking Detail',
-            headerClass: 'ag-header-center',
-            children: getCols([
-                'b_type',               // Purchase type details
-                'consultant'            // Referred BY
-            ])
-        },
-        {
-            headerName: 'DMS Booking Details',
-            headerClass: 'ag-header-center',
-            children: getCols([
-                'dms_no',
-                'dms_otf',
-                'otf_date',
-                'dms_so'
-            ])
-        },
-        {
-            headerName: 'Stock',
-            headerClass: 'ag-header-center',
-            children: getCols([
-                'livecount',
-                'stockcount'
-            ])
-        },
-        {
-            headerName: 'INSURANCE',
-            headerClass: 'ag-header-center',
-            children: getCols([
-                'insurance_company',
-                'insurance_amount',
-                'insurance_date'
-            ])
-        },
-        {
-            headerName: 'RTO',
-            headerClass: 'ag-header-center',
-            children: getCols([
-                'rto_number',
-                'rto_status',
-                'rto_date'
-            ])
-        },
-        {
-            headerName: 'DO DETAILS',
-            headerClass: 'ag-header-center',
-            children: getCols([
-                'do_number',
-                'do_date',
-                'delivery_status'
-            ])
-        },
-        {
             headerName: 'Action',
             headerClass: 'ag-header-center',
             children: getCols(['action']).map(col => {

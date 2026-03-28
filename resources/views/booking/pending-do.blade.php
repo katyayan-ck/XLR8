@@ -215,7 +215,7 @@
             headerClass: 'ag-header-center',
             children: getCols([
                 'fin_mode',
-                'Financier',
+                'financier',
                 'loan_status'
             ])
         },

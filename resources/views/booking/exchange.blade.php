@@ -193,6 +193,9 @@
         // Vehicle - Y
         'model',
         'variant',
+        'color',
+        'seating',
+
 
         // Booking Detail - Y
         'consultant',           // Sales Consultant
@@ -200,9 +203,9 @@
         'b_type',               // Purchase Type
         'exist_oem1',           // Brand Make 1
         'vh1_detail', // Model Variant 1
-        'used_vehicle_exp_price',           // Used Vehicle Expected Price - Y
-        'used_vehicle_off_price',            // Used Vehicle Offered Price - Y
-        'new_vehicle_exc_bonus',           // New Vehicle Exchange Bonus - Y                'price_gap'            // Price Gap
+        'expected_price',           // Used Vehicle Expected Price - Y
+        'offered_price',            // Used Vehicle Offered Price - Y
+        'exchange_bonus',           // New Vehicle Exchange Bonus - Y                'price_gap'            // Price Gap
         'price_gap',
 
         // Action (always visible)
@@ -237,7 +240,7 @@
                 'receipt_date',
                 'name',
                 'mobile',
-                'alternate_mobile',
+                'alt_mobile',
                 'pan_no',
                 'adhar_no',
                 'gstn',
@@ -262,14 +265,14 @@
             headerClass: 'ag-header-center',
             children: getCols([
                 'consultant',               // Sales Consultant - Y
-                'delivery_date_type',
+                'del_type',
                 'del_date',            // Delivery Date - Y
-                'b_type',                   // Purchase Type - Y
+                'buyer_type',                   // Purchase Type - Y
                 'exist_oem1',               // Brand Make 1 - Y
                 'vh1_detail',     // Model Variant 1 - Y
-                'used_vehicle_exp_price',           // Used Vehicle Expected Price - Y
-                'used_vehicle_off_price',            // Used Vehicle Offered Price - Y
-                'new_vehicle_exc_bonus',           // New Vehicle Exchange Bonus - Y
+                'expected_price',           // Used Vehicle Expected Price - Y
+                'offered_price',            // Used Vehicle Offered Price - Y
+                'exchange_bonus',           // New Vehicle Exchange Bonus - Y
                 'price_gap'                 // Price Gap - Y
             ])
         },

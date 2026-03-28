@@ -559,7 +559,7 @@
             </div>
         </div>
 
-        <div class="card card-body mt-3 shadow-sm" style="border-radius: 12px">
+        <div class="card card-body mt-3 shadow-sm mb-2" style="border-radius: 12px">
             <h2 class="mb-3  ">DMS Booking Details</h2>
             <div class="row g-3">
                 <div class="col-md-3 form-group">
@@ -676,7 +676,7 @@
 
     </div>
     @if ($booking->status == 1 || $booking->status == 6 || $booking->status == 8)
-    <div class="card mt-4 shadow-sm" style="border-radius: 12px">
+    <div class="card mt-3 shadow-sm" style="border-radius: 12px">
         <div class="card-header">
             <h2 class="mb-0 fw-bold">
                 {{-- <i class="la la-cogs me-2"></i> --}}
@@ -1191,7 +1191,7 @@
 
                 <!-- Proof Images -->
                 <!-- Account Proof -->
-                <div class="col-sm-4">
+                {{-- <div class="col-sm-4">
                     <label class="small fw-bold">Account Proof</label>
                     @php
                     // Use whatever URL is already in $data (controller already tried to set it)
@@ -1248,8 +1248,33 @@
                     <span class="badge bg-secondary-subtle text-secondary mt-2">N/A (not uploaded or path
                         missing)</span>
                     @endif
-                </div>
+                </div> --}}
 
+                <!-- Refund Queue Proofs – using same modal & same JS function -->
+                @foreach([
+                ['label' => 'Account Proof', 'key' => 'acc_proof'],
+                ['label' => 'Aadhaar Image', 'key' => 'aadhar'],
+                ['label' => 'PAN Image', 'key' => 'pan'],
+                ] as $proof)
+                <div class="col-sm-4">
+                    <label class="small fw-bold">{{ $proof['label'] }}</label>
+                    @php
+                    $url = $data[$proof['key']] ?? '';
+                    $fileName = $url ? basename($url) : '';
+                    @endphp
+                    @if($url)
+                    <span class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2 px-3 py-2 mt-2"
+                        style="cursor:pointer;" onclick="openPaymentProof('{{ $url }}', '{{ addslashes($fileName) }}')">
+                        <i class="la la-paperclip"></i>
+                        <span class="fw-medium small text-truncate" style="max-width:160px;">
+                            {{ Str::limit($fileName, 22) }}
+                        </span>
+                    </span>
+                    @else
+                    <span class="badge bg-secondary-subtle text-secondary mt-2">Not uploaded</span>
+                    @endif
+                </div>
+                @endforeach
                 <!-- Restore Button -->
                 <div class="col-sm-12 text-center mt-4">
                     <form id="restoreForm" method="POST" action="{{ route('statusave', $booking->id) }}">
@@ -1289,7 +1314,7 @@
                     <!-- Mode of Payment -->
                     <div class="col-sm-4">
                         <label for="mode">{{ __('Mode of Payment') }} <span class="text-danger">*</span></label>
-                        <select class="form-control" name="mode" required>
+                        <select class="form-control form-select" name="mode" required>
                             <option value="">{{ __('Select Mode') }}</option>
                             <option value="Cash">{{ __('Cash') }}</option>
                             <option value="Cheque">{{ __('Cheque') }}</option>
@@ -1956,6 +1981,17 @@
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
 <script>
+    function openPaymentProof(url, fileName = 'Proof File') {
+    document.getElementById('paymentProofFileName').textContent = fileName;
+    const downloadBtn = document.getElementById('paymentProofDownload');
+    downloadBtn.href = url;
+    downloadBtn.download = fileName;
+    const frame = document.getElementById('paymentProofPreviewFrame');
+    frame.src = url;
+    frame.style.display = 'block';
+    const modal = new bootstrap.Modal(document.getElementById('paymentProofModal'));
+    modal.show();
+}
     function openPaymentProofModal(url, fileName)
 {
     document.getElementById('paymentProofFileName').innerText = fileName;

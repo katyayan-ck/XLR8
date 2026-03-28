@@ -347,6 +347,7 @@ class BookingCrudController extends CrudController
                 'bookings.exist_oem1',  // Added from Exchange/Insurance/Rto
                 'bookings.exist_oem2',  // If exists in model, added
                 'bookings.vh1_detail',  // Added
+                'bookings.vh2_detail',  // Added
                 'bookings.registration_no',  // Added
                 'bookings.make_year',  // Added for vehicle mfg year
                 'bookings.odo_reading',  // Added
@@ -358,10 +359,12 @@ class BookingCrudController extends CrudController
                 'bookings.variant',
                 'bookings.color',
                 'bookings.vh_id',
+                'bookings.registration_no',
                 'bookings.seating',
                 'bookings.person_id',
                 'bookings.name',
                 'bookings.care_of',
+                'bookings.care_of_type',
                 'bookings.mobile',
                 'bookings.alt_mobile',
                 'bookings.pan_no',
@@ -373,6 +376,11 @@ class BookingCrudController extends CrudController
                 'bookings.dms_so',
                 'bookings.cpd',
                 'bookings.chasis_no',
+                'bookings.r_name',
+                'bookings.r_mobile',
+                'bookings.r_model',
+                'bookings.r_variant',
+                'bookings.r_chassis',
                 'bookings.del_type',
                 'bookings.del_date',
                 'bookings.fin_mode',
@@ -398,8 +406,21 @@ class BookingCrudController extends CrudController
                 'bookings.created_at',
                 'bookings.created_by',
                 'bookings.updated_at',
-                'bookings.updated_by'
+                'bookings.updated_by',
+                
+
+
             ]);
+        $query->leftJoin('xcelr8_refunds as ref', function ($join) {
+            $join->on('bookings.id', '=', DB::raw('CAST(ref.entity_id AS UNSIGNED)'))
+                ->where('ref.entity_type', 'booking');
+        })->addSelect([
+            'ref.amount as refund_amount',
+            'ref.status as refund_status',
+            'ref.req_date as refund_req_date',
+            'ref.ref_date as refund_ref_date',
+            // agar aur fields chahiye to add kar sakte ho
+        ]);
 
         // Optional Joins (already good, no change needed – all controllers use these)
         if (!empty($options['withFinance'])) {
@@ -529,7 +550,7 @@ class BookingCrudController extends CrudController
                     'ref.created_by as refund_created_by'
                 ]);
         }
-
+        //dd($query->get()->pluck('b_source', 'id')->toArray());
         return $query->orderBy('bookings.id', 'DESC');
     }
 
@@ -564,7 +585,12 @@ class BookingCrudController extends CrudController
             $financierRecord = XlFinancier::find($booking->financier);
             $financierName = $financierRecord ? $financierRecord->name : 'N/A';
         }
+        $refundRecord = \App\Models\Xl_Refunds::where('entity_id', $booking->id)
+            ->where('entity_type', 'booking')
+            ->latest('created_at')
+            ->first();
 
+        $refundAmount = $refundRecord ? (float) $refundRecord->amount : 0;
         $liveCount = Booking::where('model', $booking->model)
             ->where('variant', $booking->variant)
             ->where('color', $booking->color)
@@ -599,11 +625,22 @@ class BookingCrudController extends CrudController
             'cpd'                     => $booking->cpd ? Carbon::parse($booking->cpd)->format('d-M-Y') : 'N/A',
             'del_date'                => $booking->del_date ? Carbon::parse($booking->del_date)->format('d-M-Y') : 'N/A',
             'otf_date'                => $booking->otf_date ? Carbon::parse($booking->otf_date)->format('d-M-Y') : 'N/A',
+            'inv_date'                => $booking->inv_date ? Carbon::parse($booking->inv_date)->format('d-M-Y') : 'N/A',
 
             // ─── Customer Details ──────────────────────────────────
+
             'name'                    => $booking->name ?? 'N/A',
+            'col_by'                    => $booking->col_by ?? 'N/A',
             'care_of'                 => $booking->care_of ?? 'N/A',
+            'care_of_type'                 => $booking->care_of_type ?? 'N/A',
+            'customer_age'            => $booking->c_dob
+                ? $this->calculateAgeFromDob($booking->c_dob)
+                : 'N/A',
             'mobile'                  => $booking->mobile ?? 'N/A',
+            'alt_mobile'                  => $booking->alt_mobile ?? 'N/A',
+            'gender'        => $booking->gender ?? 'N/A',
+            'occ'       => $booking->occ ?? 'N/A',
+            'c_dob'     => $booking->c_dob ?? 'N/A',
 
             'pan_no'                  => $booking->pan_no ?? 'N/A',
             'adhar_no' => !empty(trim($booking->adhar_no ?? '')) && strlen(trim($booking->adhar_no ?? '')) > 3
@@ -621,26 +658,100 @@ class BookingCrudController extends CrudController
             'variant'               => $booking->variant ?? 'N/A',
             'color'                 => $booking->color ?? 'N/A',
             'booking_amount'        => $booking->booking_amount,
+            'seating'               => $booking->seating,
 
             'consultant'            => $consultantName,
             'branch_name'           => $branchName,
             'location_name'         => $locationName,
-            'days_count'            => $daysOld,
+            'days_count'            => (int) round($daysOld),
             'b_type'                => $booking->b_type ?? 'N/A',
+            'buyer_type'                => $booking->buyer_type ?? 'N/A',
+            'b_cat'                => $booking->b_cat ?? 'N/A',
             'b_mode'                => $booking->b_mode ?? 'N/A',
             'b_source'              => $booking->b_source ?? 'N/A',
+            'exist_oem1'              => CommonHelper::enumValueById($booking->exist_oem1) ?? 'N/A',
+            'exist_oem2'              => CommonHelper::enumValueById($booking->exist_oem2) ?? 'N/A',
+            'vh1_detail'              => $booking->vh1_detail ?? 'N/A',
+            'vh2_detail'              => $booking->vh2_detail ?? 'N/A',
             'col_type'              => match ((int)$booking->col_type) {
                 1 => 'Receipt',
                 2 => 'Field (Sales)',
                 3 => 'Field (DSA)',
                 default => 'Unknown'
             },
+            'registration_no'   => $booking->registration_no ?? 'N/A',
+            'vehicle_reg_no'    => $booking->registration_no ?? 'N/A',
+            'make_year'    => $booking->make_year ?? 'N/A',
+            'odo_reading'    => $booking->odo_reading ?? 'N/A',
+            'exchange_purchase_type' => $exchange_purchase_type ?? 'N/A',
+            'expected_price'    => $booking->expected_price ?? 'N/A',
+            'offered_price'    => $booking->offered_price ?? 'N/A',
+            'exchange_bonus'    => $booking->exchange_bonus ?? 'N/A',
+            'price_gap'         => ($booking->expected_price ?? 0)
+                - (($booking->offered_price ?? 0) + ($booking->exchange_bonus ?? 0)),
             'col_by'                => $collectedByName,
             'dsa_name'              => $dsaName,
+            'r_name'              => $booking->r_name ?? 'N/A',
+            'r_mobile'              => $booking->r_mobile ?? 'N/A',
+            'r_model'               => $booking->r_model ?? 'N/A',
+            'r_variant'             => $booking->r_variant ?? 'N/A',
+            'r_chassis'             => $booking->r_chassis ?? 'N/A',
             'fin_mode'              => $booking->fin_mode ?? 'N/A',
-            'financier' => $financierName,
+            'financier'             => $financierName,
+            // 'financier_short_name'  => $financierRecord ? ($financierRecord->short_name ?? 'N/A') : 'N/A',
             'loan_status'           => $booking->loan_status ?? 'N/A',
+            'insurance_source'      => $booking->insurance_source ?? 'N/A',
+            'insurance_company'     => $booking->insurance_insurer_id
+                ? (XlInsurer::find($booking->insurance_insurer_id)?->name ?? 'N/A')
+                : 'N/A',
+            'insurance_short_name'  => $booking->insurance_insurer_id
+                ? (XlInsurer::find($booking->insurance_insurer_id)?->short_name ?? 'N/A')
+                : 'N/A',
+            'policy_no'             => $booking->insurance_pol_no ?? 'N/A',
+            'policy_date'           => $booking->insurance_pol_date
+                ? Carbon::parse($booking->insurance_pol_date)->format('d-M-Y')
+                : 'N/A',
+
+            'policy_type'           => match ((int)($booking->insurance_pol_type ?? 0)) {
+                1 => 'Normal',
+                2 => 'Nil Dep',
+                3 => 'Nil Dep + Cons.',
+                4 => 'Nil Dep + Cons. + Extra Add-On',
+                default => 'N/A'
+            },
+
+            'rto_sale_type'         => match ((int)($booking->rto_sale_type ?? 0)) {
+                1 => 'Within State',
+                2 => 'Outside State',
+                default => 'N/A'
+            },
+
+            'rto_permit'            => match ((int)($booking->rto_permit ?? 0)) {
+                1 => 'Private - U/C (4 Wheeler)',
+                2 => 'Private - BH (4 Wheeler)',
+                3 => 'Private - EV (4 Wheeler)',
+                4 => 'Goods - G (4 Wheeler)',
+                5 => 'Goods - G 3 Ton+ (4 Wheeler)',
+                6 => 'Goods - G (3 Wheeler)',
+                7 => 'Goods - G EV (3 Wheeler)',
+                8 => 'Taxi - T (4 Wheeler)',
+                9 => 'Passenger - P (3 Wheeler)',
+                10 => 'Passenger - P EV (3 Wheeler)',
+                11 => 'Ambulance (Misc.)',
+                default => 'N/A'
+            },
+
+            'rto_body_type'         => match ((int)($booking->rto_body_type ?? 0)) {
+                1 => 'Complete',
+                2 => 'CBC',
+                default => 'N/A'
+            },
+
             'sap_no'                => $booking->sap_no ?? 'N/A',
+            'used_vehicle_exp_price' => $used_vehicle_exp_price ?? 'N/A',
+            'dealer_inv_no'                => $booking->dealer_inv_no ?? 'N/A',
+            'inv_no'                => $booking->inv_no ?? 'N/A',
+            'dealer_inv_date'                => $booking->dealer_inv_date ?? 'N/A',
             'dms_no'                => $booking->dms_no ?? 'N/A',
             'dms_otf'               => $booking->dms_otf ?? 'N/A',
             'dms_so'                => $booking->dms_so ?? 'N/A',
@@ -650,6 +761,8 @@ class BookingCrudController extends CrudController
             'chasis_no'             => $booking->chasis_no ?? 'N/A',
             'del_type'              => $booking->del_type ?? 'N/A',
             'invoice_no'            => $invoiceNo,
+            'refund_amount'         => $refundAmount,
+
             // listing mein add hoga
             // Extra fields jo kabhi chahiye to yahan daal dena
             'pan_no'                => $booking->pan_no ?? 'N/A',
@@ -729,178 +842,151 @@ class BookingCrudController extends CrudController
     {
         $columns = [
 
-            // Pinned left – hamesha dikhe
+
             ['headerName' => 'S.No.',       'field' => 'serial_no',     'width' => 80,  'sortable' => false, 'filter' => false],
             ['headerName' => 'XB No.',      'field' => 'booking_no',     'width' => 140,  'sortable' => true],
-
-
             ['headerName' => 'Entry Date',         'field' => 'created_at',            'width' => 110, 'type' => 'date'],
             ['headerName' => 'Booking Date',       'field' => 'booking_date',          'width' => 120, 'type' => 'date'],
+            ['headerName' => 'Booking Age',       'field' => 'days_count',     'width' => 100, 'type' => 'number', 'cellClass' => 'text-right'],
+            ['headerName' => 'Invoice No.',       'field' => 'inv_no',          'width' => 120],
+            ['headerName' => 'Invoice Date',       'field' => 'inv_date',          'width' => 120, 'type' => 'date'],
+            ['headerName' => 'Dealer Invoice No.',       'field' => 'dealer_inv_no',          'width' => 120],
+            ['headerName' => 'Dealer Invoice Date',       'field' => 'dealer_inv_date',          'width' => 120, 'type' => 'date'],
             ['headerName' => 'Cancellation Date',        'field' => 'cancel_date',           'width' => 110, 'type' => 'date'],
             ['headerName' => 'Refund Request Date',    'field' => 'refund_request_date',   'width' => 130, 'type' => 'date'],
             ['headerName' => 'Refunded Date',      'field' => 'refund_date',           'width' => 120, 'type' => 'date'],
             ['headerName' => 'Refund Reject Date', 'field' => 'refund_rejection_date', 'width' => 140, 'type' => 'date'],
-            ['headerName' => 'Invoice Date',       'field' => 'inv_date',          'width' => 120, 'type' => 'date'],
-            ['headerName' => 'Dealer Invoice Date',       'field' => 'dealer_inv_date',          'width' => 120, 'type' => 'date'],
+            ['headerName' => 'Customer Type',   'field' => 'b_type',         'width' => 110],
+            ['headerName' => 'Customer Category',  'field' => 'b_cat',         'width' => 180, 'filter' => true],
+            ['headerName' => 'Collection Type', 'field' => 'col_type',       'width' => 150],
+            ['headerName' => 'Collection By', 'field' => 'col_by',       'width' => 150],
+            ['headerName' => 'Booking Amount',         'field' => 'booking_amount', 'width' => 120, 'type' => 'number'],
+            ['headerName' => 'Amount to Refund', 'field' => 'refund_amount', 'width' => 140, 'type' => 'number', 'cellClass' => 'text-right'],
             ['headerName' => 'Receipt No.',       'field' => 'receipt_no',          'width' => 120],
-            ['headerName' => 'Invoice No.',       'field' => 'inv_no',          'width' => 120],
-            ['headerName' => 'Dealer Invoice No.',       'field' => 'dealer_inv_no',          'width' => 120],
             ['headerName' => 'Receipt Date',       'field' => 'receipt_date',          'width' => 120, 'type' => 'date'],
-            ['headerName' => 'CPD',                'field' => 'cpd',                   'width' => 100, 'type' => 'date'],
-            ['headerName' => 'Delivery Date',      'field' => 'del_date',              'width' => 120, 'type' => 'date'],
-            ['headerName' => 'OTF Date',      'field' => 'otf_date',              'width' => 120, 'type' => 'date'],
-
-
-            // ─── Customer Details ────────────────────────────────────────
             ['headerName' => 'Customer Name',  'field' => 'name',         'width' => 180, 'filter' => true],
+            ['headerName' => 'Care Of Type',        'field' => 'care_of_type',      'width' => 140],
             ['headerName' => 'Care Of',        'field' => 'care_of',      'width' => 140],
             ['headerName' => 'Mobile No.',         'field' => 'mobile',       'width' => 120],
             ['headerName' => 'Alternate Mobile No.',         'field' => 'alt_mobile',       'width' => 120],
+            ['headerName' => 'Gender',  'field' => 'gender',         'width' => 180, 'filter' => true],
+            ['headerName' => 'Occupation',        'field' => 'occ',      'width' => 140],
             ['headerName' => 'PAN No.',         'field' => 'pan_no',       'width' => 110],
             ['headerName' => 'Aadhaar No.',     'field' => 'adhar_no',     'width' => 130],
             ['headerName' => 'GSTIN',           'field' => 'gstn',         'width' => 120],
-            // Vehicle
+            ['headerName' => 'Customer D.O.B',       'field' => 'c_dob',          'width' => 120, 'type' => 'date'],
+            ['headerName' => 'Customer Age',      'field' => 'customer_age',  'width' => 110, 'cellClass' => 'text-center'],
+
+            ['headerName' => 'Branch',         'field' => 'branch_name',    'width' => 140, 'filter' => true],
+            ['headerName' => 'Location',       'field' => 'location_name',  'width' => 160, 'filter' => true],
             ['headerName' => 'Segment',          'field' => 'segment',          'width' => 140],
             ['headerName' => 'Model',          'field' => 'model',          'width' => 140],
             ['headerName' => 'Variant',        'field' => 'variant',        'width' => 150],
             ['headerName' => 'Color',          'field' => 'color',          'width' => 100],
-            ['headerName' => 'Chassis No.',        'field' => 'chasis_no',      'width' => 130],
             ['headerName' => 'Seating',        'field' => 'seating',      'width' => 130],
+            ['headerName' => 'Chassis No.',        'field' => 'chasis_no',      'width' => 130],
+            ['headerName' => 'Booking Status',    'field' => 'status',    'width' => 130],
+            ['headerName' => 'Booking Mode',        'field' => 'b_mode',      'width' => 140],
+            ['headerName' => 'Online Book Ref No.',     'field' => 'online_bk_ref_no', 'width' => 130],
+            ['headerName' => 'Booking Source',  'field' => 'b_source',         'width' => 180, 'filter' => true],
+            ['headerName' => 'DSA Name',  'field' => 'dsa_name',         'width' => 180, 'filter' => true],
+
+            ['headerName' => 'Sales Consultant',     'field' => 'consultant',     'width' => 140],
+            ['headerName' => 'Delivery Date Type',     'field' => 'del_type',     'width' => 140],
+            ['headerName' => 'Delivery Date',      'field' => 'del_date',              'width' => 120, 'type' => 'date'],
+            ['headerName' => 'Finance Mode',   'field' => 'fin_mode',         'width' => 140],
+            ['headerName' => 'Financier',          'field' => 'financier',        'width' => 180, 'filter' => true],
+            ['headerName' => 'Financier Short',    'field' => 'financier_short_name', 'width' => 150],
+            ['headerName' => 'Loan Status',        'field' => 'loan_status',      'width' => 140, 'cellClass' => 'text-center'],
+            ['headerName' => 'Purchase Type',   'field' => 'buyer_type',         'width' => 140],
+            ['headerName' => 'Brand Make 1',        'field' => 'exist_oem1',      'width' => 130],
             ['headerName' => 'Model Variant 1',        'field' => 'vh1_detail',      'width' => 130],
+            ['headerName' => 'Brand Make 2',        'field' => 'exist_oem2',      'width' => 130],
+            ['headerName' => 'Model Variant 2',        'field' => 'vh2_detail',      'width' => 130],
+            ['headerName' => 'Vehicle Registration No.',        'field' => 'registration_no',      'width' => 130],
+            ['headerName' => 'Vehicle Manufacturing Year',        'field' => 'make_year',      'width' => 130],
+            ['headerName' => 'Vehicle Odometer Reading',        'field' => 'odo_reading',      'width' => 130],
+            ['headerName' => 'Used Vehicle Expected Price',       'field' => 'expected_price',     'width' => 100, 'type' => 'number', 'cellClass' => 'text-right'],
+            ['headerName' => 'Used Vehicle Offered Price',       'field' => 'offered_price',     'width' => 100, 'type' => 'number', 'cellClass' => 'text-right'],
+            ['headerName' => 'Used Vehicle Exchange Bonus',       'field' => 'exchange_bonus',     'width' => 100, 'type' => 'number', 'cellClass' => 'text-right'],
+            [
+                'headerName' => 'Price Gap',
+                'field'      => 'price_gap',
+                'width'      => 140,
+                'type'       => 'numericColumn',
+                'cellClass'  => 'text-right fw-bold',
+                'valueFormatter' => "params.value != null ? '₹ ' + Math.round(params.value).toLocaleString('en-IN') : 'N/A'",
+            ],
+
+            ['headerName' => 'Customer Name',                'field' => 'r_name',                   'width' => 100, 'type' => 'date'],
+            ['headerName' => 'Referred Mobile',     'field' => 'r_mobile',          'width' => 130],
+            ['headerName' => 'Referred Model',      'field' => 'r_model',           'width' => 140],
+            ['headerName' => 'Referred Variant',    'field' => 'r_variant',         'width' => 150],
+            ['headerName' => 'Referred Chassis',    'field' => 'r_chassis',         'width' => 140],
+
+            ['headerName' => 'DMS Booking No.',         'field' => 'dms_no',         'width' => 110],
+            ['headerName' => 'DMS OTF No.',        'field' => 'dms_otf',        'width' => 110],
+            ['headerName' => 'DMS OTF Date',      'field' => 'otf_date',              'width' => 120, 'type' => 'date'],
+            ['headerName' => 'DMS SO No.',         'field' => 'dms_so',         'width' => 110],
+
+            ['headerName' => 'Live Order',     'field' => 'livecount',   'width' => 130, 'type' => 'number'],
+            ['headerName' => 'Stock In Hand',    'field' => 'stockcount',  'width' => 130, 'type' => 'number'],
+
+            ['headerName' => 'Insurance Source',   'field' => 'insurance_source',  'width' => 160, 'filter' => true],
+            ['headerName' => 'Insurance Company',  'field' => 'insurance_company', 'width' => 180, 'filter' => true],
+            ['headerName' => 'Insurance Short Name',    'field' => 'insurance_short_name', 'width' => 140, 'filter' => true],
+
+            ['headerName' => 'Policy No.',           'field' => 'policy_no',         'width' => 160, 'filter' => true],
+            ['headerName' => 'Policy Date',          'field' => 'policy_date',       'width' => 130, 'type' => 'date'],
+            ['headerName' => 'Policy Type',          'field' => 'policy_type',       'width' => 180, 'filter' => true],
+            ['headerName' => 'Sale Type',        'field' => 'rto_sale_type',     'width' => 160, 'filter' => true],
+            ['headerName' => 'RTO Permit',           'field' => 'rto_permit',        'width' => 220, 'filter' => true],
+            ['headerName' => 'RTO Body Type',        'field' => 'rto_body_type',     'width' => 160, 'filter' => true],
+
+            ['headerName' => 'CPD',                'field' => 'cpd',                   'width' => 100, 'type' => 'date'],
+
+
+
+
+
+            // ─── Customer Details ────────────────────────────────────────
+
+
+
+
+
+
+            ['headerName' => 'Customer Type',  'field' => 'customer_type',         'width' => 180, 'filter' => true],
+
+
+            ['headerName' => 'Care Of Name',        'field' => 'care_of_name',      'width' => 140],
+
+            // Vehicle
+
 
             // Amount & Finance
-            ['headerName' => 'Booking Amount',         'field' => 'booking_amount', 'width' => 120, 'type' => 'number'],
-            ['headerName' => 'Finance Mode',   'field' => 'fin_mode',       'width' => 130],
-            ['headerName' => 'Financier Name',      'field' => 'financier',      'width' => 140],
-            ['headerName' => 'Loan File Status',    'field' => 'loan_status',    'width' => 130],
+            ['headerName' => 'Loan Amount',         'field' => 'booking_amount', 'width' => 120, 'type' => 'number'],
+            ['headerName' => 'Loan Amount(Dealer Entry)',         'field' => 'loan_amount_payout', 'width' => 120, 'type' => 'number'],
+
+            ['headerName' => 'Product Category',    'field' => 'finance_payout_category',    'width' => 130],
 
             // People & Source
-            ['headerName' => 'Sales Consultant',     'field' => 'consultant',     'width' => 140],
-            ['headerName' => 'Branch',         'field' => 'branch_name',    'width' => 140, 'filter' => true],
-            ['headerName' => 'Location',       'field' => 'location_name',  'width' => 160, 'filter' => true],
-            ['headerName' => 'Booking Type',   'field' => 'b_type',         'width' => 110],
-            ['headerName' => 'Booking Source',         'field' => 'b_source',       'width' => 110],
-            ['headerName' => 'Collection Type', 'field' => 'col_type',       'width' => 150],
             ['headerName' => 'Collected By',   'field' => 'col_by',         'width' => 140],
 
 
-            ['headerName' => 'Booking Age',       'field' => 'days_count',     'width' => 100, 'type' => 'number', 'cellClass' => 'text-right'],
-            ['headerName' => 'Used Vehicle Expected Price',       'field' => 'used_vehicle_exp_price',     'width' => 100, 'type' => 'number', 'cellClass' => 'text-right'],
-            ['headerName' => 'Used Vehicle Offered Price',       'field' => 'used_vehicle_off_price',     'width' => 100, 'type' => 'number', 'cellClass' => 'text-right'],
-            ['headerName' => 'Used Vehicle Exchange Bonus',       'field' => 'new_vehicle_exc_bonus',     'width' => 100, 'type' => 'number', 'cellClass' => 'text-right'],
-            ['headerName' => 'Price Gap',       'field' => 'price_gap',     'width' => 100, 'type' => 'number', 'cellClass' => 'text-right'],
 
             // DMS / Refs
             ['headerName' => 'SAP Booking No.',         'field' => 'sap_no',         'width' => 110],
-            ['headerName' => 'DMS Booking No.',         'field' => 'dms_no',         'width' => 110],
-            ['headerName' => 'DMS OTF No.',        'field' => 'dms_otf',        'width' => 110],
-            ['headerName' => 'DMS SO No.',         'field' => 'dms_so',         'width' => 110],
-            ['headerName' => 'Online Reference No.',     'field' => 'online_bk_ref_no', 'width' => 130],
             // Yeh do lines update kar do
-            ['headerName' => 'Live Order',     'field' => 'livecount',   'width' => 130, 'type' => 'number'],
-            ['headerName' => 'Stock In Hand',    'field' => 'stockcount',  'width' => 130, 'type' => 'number'],
+            ['headerName' => 'Do Number',     'field' => 'do_number', 'width' => 130],
+            ['headerName' => 'Expected Payout %',     'field' => 'expected_payout_pct', 'width' => 130],
+
+
             // Action – right pinned
         ];
 
         return array_merge($columns, $extraColumns);
     }
-    // private function getAgGridColumns(array $extraColumns = []): array
-    // {
-    //     return [
-
-    //         // PRIMARY
-    //         [
-    //             'headerName' => 'Primary',
-    //             'children' => [
-
-    //                 ['headerName' => 'S.No.', 'field' => 'serial_no', 'width' => 80, 'pinned' => 'left'],
-    //                 ['headerName' => 'XB No.', 'field' => 'booking_no', 'width' => 140, 'pinned' => 'left'],
-    //                 ['headerName' => 'Entry Date', 'field' => 'created_at', 'type' => 'date'],
-    //                 ['headerName' => 'Booking Date', 'field' => 'booking_date', 'type' => 'date'],
-    //                 ['headerName' => 'Booking Age', 'field' => 'days_count', 'type' => 'number'],
-
-    //             ]
-    //         ],
-
-    //         // CUSTOMER
-    //         [
-    //             'headerName' => 'Customer',
-    //             'children' => [
-
-    //                 ['headerName' => 'Collection Type', 'field' => 'col_type'],
-    //                 ['headerName' => 'Collected By', 'field' => 'col_by'],
-    //                 ['headerName' => 'Booking Amount', 'field' => 'booking_amount', 'type' => 'number'],
-    //                 ['headerName' => 'Receipt Date', 'field' => 'receipt_date', 'type' => 'date'],
-    //                 ['headerName' => 'Customer Name', 'field' => 'name'],
-    //                 ['headerName' => 'Care Of', 'field' => 'care_of'],
-    //                 ['headerName' => 'Mobile', 'field' => 'mobile'],
-    //                 ['headerName' => 'PAN', 'field' => 'pan_no'],
-    //                 ['headerName' => 'Aadhar', 'field' => 'adhar_no'],
-    //                 ['headerName' => 'GSTIN', 'field' => 'gstn'],
-    //                 ['headerName' => 'Branch', 'field' => 'branch_name'],
-    //                 ['headerName' => 'Location', 'field' => 'location_name'],
-
-    //             ]
-    //         ],
-
-    //         // VEHICLE
-    //         [
-    //             'headerName' => 'Vehicle',
-    //             'children' => [
-
-    //                 ['headerName' => 'Segment', 'field' => 'segment'],
-    //                 ['headerName' => 'Model', 'field' => 'model'],
-    //                 ['headerName' => 'Variant', 'field' => 'variant'],
-    //                 ['headerName' => 'Color', 'field' => 'color'],
-    //                 ['headerName' => 'Seating', 'field' => 'seating'],
-    //                 ['headerName' => 'Accessories Amount', 'field' => 'accessory_amount'],
-    //                 ['headerName' => 'Allotted Chassis', 'field' => 'chasis_no'],
-
-    //             ]
-    //         ],
-
-    //         // BOOKING DETAIL
-    //         [
-    //             'headerName' => 'Booking Detail',
-    //             'children' => [
-
-    //                 ['headerName' => 'Booking Type', 'field' => 'b_type'],
-    //                 ['headerName' => 'Booking Source', 'field' => 'b_source'],
-    //                 ['headerName' => 'Sales Consultant', 'field' => 'consultant'],
-    //                 ['headerName' => 'Delivery Date', 'field' => 'del_date'],
-    //                 ['headerName' => 'Finance Mode', 'field' => 'fin_mode'],
-    //                 ['headerName' => 'Financier', 'field' => 'financier'],
-    //                 ['headerName' => 'Loan File Status', 'field' => 'loan_status'],
-
-    //             ]
-    //         ],
-
-    //         // DMS
-    //         [
-    //             'headerName' => 'DMS Booking Details',
-    //             'children' => [
-
-    //                 ['headerName' => 'DMS Booking No', 'field' => 'dms_no'],
-    //                 ['headerName' => 'DMS OTF No', 'field' => 'dms_otf'],
-    //                 ['headerName' => 'DMS OTF Date', 'field' => 'otf_date'],
-    //                 ['headerName' => 'DMS SO No', 'field' => 'dms_so'],
-
-    //             ]
-    //         ],
-
-    //         // STOCK
-    //         [
-    //             'headerName' => 'Stock',
-    //             'children' => [
-
-    //                 ['headerName' => 'Live Order', 'field' => 'livecount'],
-    //                 ['headerName' => 'Stock In Hand', 'field' => 'stockcount'],
-
-    //             ]
-    //         ],
-
-    //     ];
-    // }
 
     private function getStatusBadge($status)
     {
@@ -1039,6 +1125,23 @@ class BookingCrudController extends CrudController
 
 
         return view('booking.list', $this->data);
+    }
+
+    /**
+     * Calculate age from DOB
+     */
+    private function calculateAgeFromDob($dob)
+    {
+        if (!$dob) return 'N/A';
+
+        try {
+            $birthDate = Carbon::parse($dob);
+            $age = $birthDate->diffInYears(Carbon::now());
+            return (int) $age;
+            // return $age . ' Years';
+        } catch (\Exception $e) {
+            return 'N/A';
+        }
     }
 
     public function hold()
@@ -1306,63 +1409,7 @@ class BookingCrudController extends CrudController
         return view('booking.list', $this->data);
     }
 
-    // Yeh helper method sab jagah data ko same tarike se format karega
-    private function mapBookingsForList($bookings)
-    {
-        return $bookings->map(function ($booking) {
-            $consultant = User::find($booking->consultant);
-            $consultantName = $consultant?->name ?? 'Unknown';
 
-            $collectedByUser = $booking->col_by ? User::find($booking->col_by) : null;
-            $collectedByName = $collectedByUser?->name ?? 'N/A';
-
-            $statusBadge = $this->getStatusBadge($booking->status ?? 8);
-
-            $bookingNo = $booking->sap_no
-                ? 'SAP: ' . $booking->sap_no
-                : ($booking->dms_no ? 'DMS: ' . $booking->dms_no : 'N/A');
-
-            $action = '<div class="btn-group" role="group">
-            <a href="' . backpack_url("booking/{$booking->id}/edit") . '" class="btn btn-sm btn-link text-primary me-3" title="Edit">
-                <i class="la la-edit"></i>
-            </a>
-            <a href="' . backpack_url("booking/{$booking->id}/show") . '" class="btn btn-sm btn-link text-info me-2" title="View">
-                <i class="la la-eye"></i>
-            </a>
-        </div>';
-
-            $booking->id             = $booking->id;
-            $booking->booking_no     = $bookingNo;
-            $booking->booking_date   = $booking->booking_date ? Carbon::parse($booking->booking_date)->format('d-m-Y') : '-';
-            $booking->name           = $booking->name ?? '-';
-            $booking->mobile         = $booking->mobile ?? '-';
-            $booking->model          = $booking->model ?? '-';
-            $booking->variant        = $booking->variant ?? '-';
-            $booking->color          = $booking->color ?? '-';
-            $booking->booking_amount = $booking->booking_amount ? number_format($booking->booking_amount) : '0';
-            $booking->booking_source = $booking->b_source ?? '-';
-            $booking->collection_type = match ((int)$booking->col_type) {
-                1 => 'Receipt',
-                2 => 'Dealer',
-                3 => 'DSA',
-                default => 'N/A'
-            };
-            $booking->collected_by   = $collectedByName;
-            $booking->dsa_name       = $booking->dsa_id ?? '-';
-            $booking->fin_mode       = $booking->fin_mode ?? '-';
-            $booking->financier      = $booking->financier ?? '-';
-            $booking->consultant     = $consultantName;
-            $booking->branch_name    = $booking->branch?->name ?? '-';
-            $booking->location_name  = $booking->location?->name ?? '-';
-            $booking->b_mode         = $booking->b_mode ?? '-';
-            $booking->b_type         = $booking->b_type ?? '-';
-            $booking->status         = $statusBadge;
-            $booking->days_count     = (int) Carbon::parse($booking->created_at)->diffInDays(now());
-            $booking->action         = $action;
-
-            return $booking;
-        });
-    }
 
 
 
@@ -4330,7 +4377,7 @@ class BookingCrudController extends CrudController
             <div class="text-center">
                 <a href="' . route('finance.retailedit', $t->id) . '"
                    class="btn btn-primary btn-sm py-1 px-2"
- >
+                    >
                     Process
                 </a>
             </div>';
@@ -4374,106 +4421,106 @@ class BookingCrudController extends CrudController
     }
 
 
-    public function finRetailed(Request $request)
-    {
-        $this->crud->hasAccessOrFail('list');
+    // public function finRetailed(Request $request)
+    // {
+    //     $this->crud->hasAccessOrFail('list');
 
-        $this->data['crud'] = $this->crud;
-        $this->data['title'] = 'Finance Retail';
+    //     $this->data['crud'] = $this->crud;
+    //     $this->data['title'] = 'Finance Retail';
 
-        // ────────────────────────────────────────────────
-        // Query – getBaseQuery() se start karo
-        // ────────────────────────────────────────────────
-        $query = $this->getBaseQuery();
+    //     // ────────────────────────────────────────────────
+    //     // Query – getBaseQuery() se start karo
+    //     // ────────────────────────────────────────────────
+    //     $query = $this->getBaseQuery();
 
-        // Retail filter
-        $query->where('bookings.status', 2);
-        $query->where('bookings.retail', 1);
+    //     // Retail filter
+    //     $query->where('bookings.status', 2);
+    //     $query->where('bookings.retail', 1);
 
-        $query->orderBy('bookings.id', 'DESC');
+    //     $query->orderBy('bookings.id', 'DESC');
 
-        $paginatedBookings = $query->paginate(50);
+    //     $paginatedBookings = $query->paginate(50);
 
-        // ────────────────────────────────────────────────
-        // Preloads
-        // ────────────────────────────────────────────────
-        $lookups = $this->getCommonLookups();
-        extract($lookups);
+    //     // ────────────────────────────────────────────────
+    //     // Preloads
+    //     // ────────────────────────────────────────────────
+    //     $lookups = $this->getCommonLookups();
+    //     extract($lookups);
 
-        $saleConsultants = $lookups['saleConsultants'] ?? [];
-        $financiers = $lookups['financiers'] ?? [];
+    //     $saleConsultants = $lookups['saleConsultants'] ?? [];
+    //     $financiers = $lookups['financiers'] ?? [];
 
-        // ────────────────────────────────────────────────
-        // Mapping – action button tumhara original
-        // ────────────────────────────────────────────────
-        $gridData = $paginatedBookings->map(function ($t, $index) use (
-            $paginatedBookings,
-            $segments,
-            $saleConsultants,
-            $financiers
-        ) {
-            $row = $this->mapBookingForGrid($t);
+    //     // ────────────────────────────────────────────────
+    //     // Mapping – action button tumhara original
+    //     // ────────────────────────────────────────────────
+    //     $gridData = $paginatedBookings->map(function ($t, $index) use (
+    //         $paginatedBookings,
+    //         $segments,
+    //         $saleConsultants,
+    //         $financiers
+    //     ) {
+    //         $row = $this->mapBookingForGrid($t);
 
-            $row->serial_no = ($paginatedBookings->currentPage() - 1) * $paginatedBookings->perPage() + $index + 1;
+    //         $row->serial_no = ($paginatedBookings->currentPage() - 1) * $paginatedBookings->perPage() + $index + 1;
 
-            // Finance-specific fields
-            $row->fsc = optional($saleConsultants->firstWhere('id', $t->consultant))->name ?? 'N/A';
-            $row->financier = optional($financiers->firstWhere('id', $t->financier))->name ?? 'N/A';
+    //         // Finance-specific fields
+    //         $row->fsc = optional($saleConsultants->firstWhere('id', $t->consultant))->name ?? 'N/A';
+    //         $row->financier = optional($financiers->firstWhere('id', $t->financier))->name ?? 'N/A';
 
-            // Location logic
-            $location = $t->location_id && $t->location_id > 0
-                ? (X_Location::find($t->location_id)->name ?? 'N/A')
-                : ($t->location_other ?? 'N/A');
+    //         // Location logic
+    //         $location = $t->location_id && $t->location_id > 0
+    //             ? (X_Location::find($t->location_id)->name ?? 'N/A')
+    //             : ($t->location_other ?? 'N/A');
 
-            $row->location = $location;
+    //         $row->location = $location;
 
-            // Action button (tumhara original)
-            $row->action = '
-            <div class="text-center">
-                <a href="' . route('finance.view', $t->id) . '"
-                   class="btn btn-info btn-sm"
-                   title="View Finance">
-                    <i class="fas fa-eye"></i> View
-                </a>
-            </div>';
+    //         // Action button (tumhara original)
+    //         $row->action = '
+    //         <div class="text-center">
+    //             <a href="' . route('finance.view', $t->id) . '"
+    //                class="btn btn-info btn-sm"
+    //                title="View Finance">
+    //                 <i class="fas fa-eye"></i> View
+    //             </a>
+    //         </div>';
 
-            return $row;
-        })->values();
+    //         return $row;
+    //     })->values();
 
-        // ────────────────────────────────────────────────
-        // Columns – sirf reusable wala call
-        // ────────────────────────────────────────────────
-        $columns = $this->getAgGridColumns();
+    //     // ────────────────────────────────────────────────
+    //     // Columns – sirf reusable wala call
+    //     // ────────────────────────────────────────────────
+    //     $columns = $this->getAgGridColumns();
 
-        // Action column add agar missing hai (duplicate avoid)
-        $hasAction = collect($columns)->contains('field', 'action');
-        if (!$hasAction) {
-            $columns[] = [
-                'field'         => 'action',
-                'headerName'    => 'Actions',
-                'width'         => 150,
-                'pinned'        => 'right',
-                'sortable'      => false,
-                'filter'        => false,
-                'cellRenderer'  => 'htmlRenderer',
-                'cellClass'     => 'text-center p-0',
-                'autoHeight'    => true,
-            ];
-        }
+    //     // Action column add agar missing hai (duplicate avoid)
+    //     $hasAction = collect($columns)->contains('field', 'action');
+    //     if (!$hasAction) {
+    //         $columns[] = [
+    //             'field'         => 'action',
+    //             'headerName'    => 'Actions',
+    //             'width'         => 150,
+    //             'pinned'        => 'right',
+    //             'sortable'      => false,
+    //             'filter'        => false,
+    //             'cellRenderer'  => 'htmlRenderer',
+    //             'cellClass'     => 'text-center p-0',
+    //             'autoHeight'    => true,
+    //         ];
+    //     }
 
-        $gridConfig = [
-            'columns' => $columns,
-            'data'    => $gridData,
-        ];
+    //     $gridConfig = [
+    //         'columns' => $columns,
+    //         'data'    => $gridData,
+    //     ];
 
-        $this->data['gridConfig'] = $gridConfig;
+    //     $this->data['gridConfig'] = $gridConfig;
 
-        if ($gridData->isEmpty()) {
-            session()->flash('info', 'No retail finance bookings found.');
-        }
+    //     if ($gridData->isEmpty()) {
+    //         session()->flash('info', 'No retail finance bookings found.');
+    //     }
 
-        return view('booking.finance-retailed', $this->data);
-    }
+    //     return view('booking.finance-retailed', $this->data);
+    // }
 
 
     // 1. Pending Payout
@@ -4862,7 +4909,7 @@ class BookingCrudController extends CrudController
             $row->booking_amount = number_format($t->booking_amount ?? 0);
             $row->paid_amount = number_format($paid);
             $row->balance = number_format($balance);
-            $row->receipt_no = $t->receipt_no ?? '<span class="text-danger">Missing</span>';
+            $row->receipt_no = $t->receipt_no ?? 'Missing';
 
             $row->action = '<a href="' . route('booking.pending-edit', $t->id) . '#pending"
                             class="btn btn-primary btn-sm py-1 px-2" title="Add/Edit Payment">
@@ -4913,7 +4960,7 @@ class BookingCrudController extends CrudController
         // ────────────────────────────────────────────────
         $query = $this->getBaseQuery();
 
-        $query->where('status', 2); // Invoiced
+        $query->where('bookings.status', 2); // Invoiced
 
         // Already insured bookings exclude karo
         $insuredBookingIds = DB::table('xcelr8_booking_insurance')
@@ -5018,11 +5065,11 @@ class BookingCrudController extends CrudController
         // ────────────────────────────────────────────────
         $query = $this->getBaseQuery();
 
-        $query->where('status', 2); // Invoiced
+        $query->where('bookings.status', 2); // Invoiced
 
         // Already RTO processed bookings exclude karo
         $rtoDoneIds = DB::table('xcelr8_booking_rto')
-            ->where('status', 2)
+            ->where('status', 2)   // ← yahan apna table ka status column use karo
             ->pluck('bid')
             ->toArray();
 
@@ -5125,7 +5172,7 @@ class BookingCrudController extends CrudController
         // ────────────────────────────────────────────────
         $query = $this->getBaseQuery();
 
-        $query->where('status', 2); // Invoiced
+        $query->where('bookings.status', 2); // Invoiced
 
         // Already delivered bookings exclude karo
         $deliveredIds = DB::table('xcelr8_booking_delivered')
@@ -5290,7 +5337,7 @@ class BookingCrudController extends CrudController
         // ────────────────────────────────────────────────
         $query = $this->getBaseQuery();
 
-        $query->where('status', 2); // Invoiced
+        $query->where('bookings.status', 2); // Invoiced
         $query->whereNotNull('del_type'); // Delivery type set hai
         $query->whereNull('del_date'); // Delivery date abhi nahi (pending DO)
 
@@ -5420,7 +5467,7 @@ class BookingCrudController extends CrudController
 
             // Invoice fields – pending ke liye default values
             $row->inv_date = '---';
-            $row->dealer_inv_date = '---';
+            // $row->dealer_inv_date = '---';
             $row->inv_no = '<span class="text-danger">Pending</span>';
 
             // Action button – tumhara original
@@ -7815,82 +7862,74 @@ class BookingCrudController extends CrudController
         return view('booking.pending-refund', $this->data);
     }
 
+
     public function refundView($id)
     {
         $entry = Booking::findOrFail($id);
-        $booking = Booking::findOrFail($id);
+        $booking = $entry; // same object
 
-        // Ensure it's refund requested
         if ($entry->status != 4) {
             abort(404, 'This booking is not in refund requested status.');
         }
 
-        // Refund data fetch (tumhara code)
         $ref = Xl_Refunds::where('entity_type', 'booking')
             ->where('entity_id', $id)
+            ->latest()           // latest wala better hai multiple records ke case mein
             ->first();
 
-        $data = []; // ya existing $data array
+        $data = [];
 
         if ($ref) {
-            $data['acc_proof'] = $ref->getFirstMediaUrl('acc-proof') ?: '';
-            $data['aadhar']    = $ref->getFirstMediaUrl('aadhar')    ?: '';
-            $data['pan']       = $ref->getFirstMediaUrl('pan')       ?: '';
+            // ------------------ Yahan change karo ------------------
+
+            // Option A: Agar teeno files ek hi collection 'refund-documents' mein hain
+            $docs = $ref->getMedia('refund-documents');
+
+            $data['acc_proof']   = $docs[0]?->getUrl() ?? '';   // pehla file → account proof
+            $data['aadhar']      = $docs[1]?->getUrl() ?? '';   // doosra → aadhaar
+            $data['pan']         = $docs[2]?->getUrl() ?? '';   // teesra → pan
+
+            // Option B: Agar order guaranteed nahi hai to filename se match kar sakte ho
+            // (agar file names mein pattern hai jaise account.jpg, aadhaar.pdf etc)
+            /*
+            foreach ($ref->getMedia('refund-documents') as $media) {
+                $name = strtolower($media->file_name);
+                if (str_contains($name, 'account') || str_contains($name, 'bank')) {
+                    $data['acc_proof'] = $media->getUrl();
+                } elseif (str_contains($name, 'adhar') || str_contains($name, 'aadhar') || str_contains($name, 'aadhaar')) {
+                    $data['aadhar'] = $media->getUrl();
+                } elseif (str_contains($name, 'pan')) {
+                    $data['pan'] = $media->getUrl();
+                }
+            }
+            */
+
             $data['pay_proof'] = $ref->getFirstMediaUrl('pay-proof') ?: '';
 
-            $refundDetails = Xl_Refunds::where('entity_id', $id)
-                ->select(
-                    'id',
-                    'entity_type',
-                    'entity_id',
-                    'bank_name',
-                    'branch_name',
-                    'account_type',
-                    'account_number',
-                    'holder_name',
-                    'ifsc_code',
-                    'req_date',
-                    'amount',
-                    'details',
-                    'ref_date',
-                    'mode',
-                    'transaction_details',
-                    'remark'
-                )
-                ->first();
+            // Refund details
+            $data['refund'] = [
+                'remaining_amount'   => $ref->amount ?? 0,
+                'bank_name'          => $ref->bank_name ?? 'N/A',
+                'branch_name'        => $ref->branch_name ?? 'N/A',
+                'account_type'       => $ref->account_type ?? 'N/A',
+                'account_number'     => $ref->account_number ?? 'N/A',
+                'holder_name'        => $ref->holder_name ?? 'N/A',
+                'ifsc_code'          => $ref->ifsc_code ?? 'N/A',
+                'details'            => $ref->details ?? 'N/A',
+                'req_date'           => $ref->req_date ? Carbon::parse($ref->req_date)->format('d-M-Y') : 'N/A',
+                'ref_date'           => $ref->ref_date ? Carbon::parse($ref->ref_date)->format('d-M-Y') : 'N/A',
+                'mode'               => $ref->mode ?? 'N/A',
+                'transaction_details' => $ref->transaction_details ?? 'N/A',
+                'remark'             => $ref->remark ?? 'N/A',
+            ];
 
-            if ($refundDetails) {
-                $data['refund'] = $refundDetails->toArray();
-                // Deduction = total amount - refunded amount
-                $data['deduction'] = ($entry->booking_amount ?? 0) - ($refundDetails->amount ?? 0);
-                $data['amount']    = $entry->booking_amount ?? 0; // original booking amount
-            }
+            $data['amount']    = $entry->booking_amount ?? 0;
+            $data['deduction'] = $data['amount'] - ($ref->amount ?? 0);
         }
 
-        // Pass booking + refund data
-        return view('booking.show', compact('entry', 'data', 'booking'));
+        return view('booking.show', compact('entry', 'booking', 'data'));
     }
 
-    // public function refundView($id)
-    // {
-    //     $this->crud->hasAccessOrFail('show');
-    //     $this->crud->getEntry($id);
-
-    //     $viewData = $this->getFullBookingData($id, 'show');
-
-    //     return response()->json([
-    //         'success' => true,
-    //         'booking_id' => $id,
-    //         'status' => $viewData->getData()['booking']->status ?? 'missing',
-    //         'refund_found' => isset($viewData->getData()['refund']) ? 'YES' : 'NO',
-    //         'deduction' => $viewData->getData()['deduction'] ?? 'not set',
-    //         'remaining' => $viewData->getData()['refund']['remaining_amount'] ?? 'not set',
-    //         'acc_proof' => $viewData->getData()['acc_proof'] ?? 'EMPTY',
-    //         'aadhar'    => $viewData->getData()['aadhar'] ?? 'EMPTY',
-    //         'pan'       => $viewData->getData()['pan'] ?? 'EMPTY',
-    //         'full_data_keys' => array_keys($viewData->getData()),
-    //     ]);
-    // }
 
     public function rejected(Request $request)
     {

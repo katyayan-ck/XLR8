@@ -195,16 +195,17 @@
         'color',
         'seating',
 
+
         // Booking Detail - Y
         'consultant',           // Sales Consultant
         'del_date',        // Delivery Date
-        'b_type',               // Purchase Type
+        'buyer_type',               // Purchase Type
         'exist_oem1',           // Brand Make 1
         'vh1_detail', // Model Variant 1
-        'used_vehicle_exp_price',       // Used Vehicle Expected Price
-        'used_vehicle_off_price',        // Used Vehicle Offered Price
-        'new_vehicle_exc_bonus',       // New Vehicle Exchange Bonus
-        'price_gap',            // Price Gap
+        'expected_price',           // Used Vehicle Expected Price - Y
+        'offered_price',            // Used Vehicle Offered Price - Y
+        'exchange_bonus',           // New Vehicle Exchange Bonus - Y                'price_gap'            // Price Gap
+        'price_gap',
 
         // Action (always visible)
         'action'
@@ -263,15 +264,15 @@
             headerClass: 'ag-header-center',
             children: getCols([
                 'consultant',               // Sales Consultant - Y
-                'delivery_date_type',
+                'del_type',
                 'del_date',            // Delivery Date - Y
-                'b_type',                   // Purchase Type - Y
+                'buyer_type',                   // Purchase Type - Y
                 'exist_oem1',               // Brand Make 1 - Y
                 'vh1_detail',     // Model Variant 1 - Y
-                'used_vehicle_exp_price',           // Used Vehicle Expected Price - Y
-                'used_vehicle_off_price',            // Used Vehicle Offered Price - Y
-                'new_vehicle_exc_bonus',           // New Vehicle Exchange Bonus - Y
-                'price_gap'                  // Price Gap - Y
+                'expected_price',           // Used Vehicle Expected Price - Y
+                'offered_price',            // Used Vehicle Offered Price - Y
+                'exchange_bonus',           // New Vehicle Exchange Bonus - Y
+                'price_gap'                 // Price Gap - Y
             ])
         },
         {
@@ -279,7 +280,7 @@
             headerClass: 'ag-header-center',
             children: getCols(['action']).map(col => {
                 col.pinned = 'right';
-                col.cellRenderer = 'htmlRenderer';  // Ensures HTML renders properly
+                col.cellRenderer = 'htmlRenderer';  // ← Ensures HTML renders properly
                 col.autoHeight = true;
                 col.cellClass = 'text-center p-0';
                 return col;

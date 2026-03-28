@@ -185,6 +185,7 @@
         // Vehicle - Y
         'model',
         'variant',
+        'color',
         'chasis_no',            // Allotted Chassis No.
 
         // Action (usually always visible)
@@ -203,6 +204,7 @@
                 'booking_no',
                 'created_at',
                 'booking_date',
+                'days_count',
                 'inv_no',               // Invoice No.
                 'inv_date'              // Invoice Date
             ]).map(col => {
