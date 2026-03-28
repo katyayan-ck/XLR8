@@ -278,39 +278,39 @@ class BookingCrudController extends CrudController
             ->get() ?? [];
 
 
-        $refund = Xl_Refunds::where('entity_type', 'booking')
-            ->where('entity_id', $id)
-            ->latest('id')
-            ->first();
+        // $refund = Xl_Refunds::where('entity_type', 'booking')
+        //     ->where('entity_id', $id)
+        //     ->latest('id')
+        //     ->first();
 
-        if ($refund) {
+        // if ($refund) {
 
-            $data['amount']    = $booking->booking_amount ?? 0;
-            $data['deduction'] = $data['amount'] - ($refund->amount ?? 0);
+        //     $data['amount']    = $booking->booking_amount ?? 0;
+        //     $data['deduction'] = $data['amount'] - ($refund->amount ?? 0);
 
-            $data['refund'] = [
-                'remaining_amount'   => $refund->amount ?? 0,
-                'bank_name'          => $refund->bank_name ?? 'N/A',
-                'branch_name'        => $refund->branch_name ?? 'N/A',
-                'account_type'       => $refund->account_type ?? 'N/A',
-                'account_number'     => $refund->account_number ?? 'N/A',
-                'holder_name'        => $refund->holder_name ?? 'N/A',
-                'ifsc_code'          => $refund->ifsc_code ?? 'N/A',
-                'details'            => $refund->details ?? 'N/A',
-                'req_date'   => $refund->req_date ? \Carbon\Carbon::parse($refund->req_date)->format('d-M-Y') : 'N/A',
-                'ref_date'   => $refund->ref_date ? \Carbon\Carbon::parse($refund->ref_date)->format('d-M-Y') : 'N/A',
-                'mode'               => $refund->mode ?? 'N/A',
-                'transaction_details' => $refund->transaction_details ?? 'N/A',
-                'remark'             => $refund->remark ?? 'N/A',
-            ];
+        //     $data['refund'] = [
+        //         'remaining_amount'   => $refund->amount ?? 0,
+        //         'bank_name'          => $refund->bank_name ?? 'N/A',
+        //         'branch_name'        => $refund->branch_name ?? 'N/A',
+        //         'account_type'       => $refund->account_type ?? 'N/A',
+        //         'account_number'     => $refund->account_number ?? 'N/A',
+        //         'holder_name'        => $refund->holder_name ?? 'N/A',
+        //         'ifsc_code'          => $refund->ifsc_code ?? 'N/A',
+        //         'details'            => $refund->details ?? 'N/A',
+        //         'req_date'   => $refund->req_date ? \Carbon\Carbon::parse($refund->req_date)->format('d-M-Y') : 'N/A',
+        //         'ref_date'   => $refund->ref_date ? \Carbon\Carbon::parse($refund->ref_date)->format('d-M-Y') : 'N/A',
+        //         'mode'               => $refund->mode ?? 'N/A',
+        //         'transaction_details' => $refund->transaction_details ?? 'N/A',
+        //         'remark'             => $refund->remark ?? 'N/A',
+        //     ];
 
-            // Fetch proofs using exact collection names from your DB
-            $data['acc_proof'] = $refund->getFirstMediaUrl('acc-proof')   ?: '';
-            $data['aadhar']    = $refund->getFirstMediaUrl('aadhar')      ?: '';
-            $data['pan']       = $refund->getFirstMediaUrl('pan')         ?: '';
-            // If you also have refund proof (pay-proof)
-            $data['pay_proof'] = $refund->getFirstMediaUrl('pay-proof')   ?: '';
-        }
+        //     // Fetch proofs using exact collection names from your DB
+        //     $data['acc_proof'] = $refund->getFirstMediaUrl('acc-proof')   ?: '';
+        //     $data['aadhar']    = $refund->getFirstMediaUrl('aadhar')      ?: '';
+        //     $data['pan']       = $refund->getFirstMediaUrl('pan')         ?: '';
+        //     // If you also have refund proof (pay-proof)
+        //     $data['pay_proof'] = $refund->getFirstMediaUrl('pay-proof')   ?: '';
+        // }
 
         $comm    = $data['comm'];
         //dd($refundDetails);
@@ -9744,5 +9744,25 @@ class BookingCrudController extends CrudController
         $this->data['gridConfig'] = $gridConfig;
 
         return view('booking.pending-actions', $this->data);
+    }
+    public function checkFieldPayment($id)
+    {
+        $booking = Booking::findOrFail($id);
+
+        if (!in_array($booking->col_type, [2, 3])) {
+            return response()->json(['success' => true]); // not field collection → always allow
+        }
+
+        $totalPaid = Bookingamount::where('bid', $booking->id)->sum('amount') ?? 0;
+
+        if ($booking->booking_amount > $totalPaid) {
+            return response()->json([
+                'success'    => false,
+                'total_paid' => (float) $totalPaid,
+                'message'    => 'Insufficient payment for field collection booking'
+            ]);
+        }
+
+        return response()->json(['success' => true]);
     }
 }
