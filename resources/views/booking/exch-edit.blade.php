@@ -220,7 +220,8 @@
             </div>
 
         </form>
-        <div class="card bg-light border-0 shadow-sm mb-4">
+
+        <div class="card bg-light border-0  mb-4 mt-4">
 
             <h1 class="mb-2 mt-2 " style="margin-left: 15px">Booking & Customer Information (Read-only)</h5>
 
@@ -317,7 +318,16 @@
                             <input type="text" class="form-control is-valid" value="{{ $data['location'] ?? 'N/A' }}"
                                 readonly>
                         </div>
+                    </div>
+                </div>
 
+        </div>
+        <div class="card bg-light border-0  mb-4 mt-4">
+
+            <h1 class="mb-2 mt-2 " style="margin-left: 15px">Reffered by Details (Read-only)</h5>
+
+                <div class="card-body">
+                    <div class="row g-3">
                         {{-- Referred By Details --}}
                         <div class="col-sm-4">
                             <label class="form-label">Referred By (Customer Name)</label>
@@ -344,7 +354,16 @@
                             <input type="text" class="form-control is-valid" value="{{ $booking->r_chassis ?? 'N/A' }}"
                                 readonly>
                         </div>
+                    </div>
+                </div>
+        </div>
 
+        <div class="card bg-light border-0  mb-4 mt-4">
+
+            <h1 class="mb-2 mt-2 " style="margin-left: 15px">Vehicles Details (Read-only)</h5>
+
+                <div class="card-body">
+                    <div class="row g-3">
                         {{-- Vehicle Details --}}
                         <div class="col-sm-3">
                             <label class="form-label">Segment <span class="text-red">*</span></label>
@@ -383,7 +402,15 @@
                             <input type="text" class="form-control is-valid"
                                 value="{{ $booking->chasis_no ?? ($data['bchasis'] ?? 'N/A') }}" readonly>
                         </div>
+                    </div>
+                </div>
+        </div>
 
+        <div class="card bg-light border-0  mb-4 mt-4">
+
+            <h1 class="mb-2 mt-2 " style="margin-left: 15px">Vehicles Details (Read-only)</h5>
+                <div class="card-body">
+                    <div class="row g-3">
                         {{-- Booking Details --}}
                         <div class="col-sm-2">
                             <label class="form-label">Booking Mode <span class="text-red">*</span></label>
@@ -498,52 +525,48 @@
                             <input type="text" class="form-control is-valid" value="{{ $booking->dms_so ?? 'N/A' }}"
                                 readonly>
                         </div>
-
-                       
                     </div>
-                     {{-- Booking Journey (Remarks) --}}
-                        
                 </div>
         </div>
-        <div class="card bg-light border-0 shadow-sm mb-4">
-
-            <h1 class="mb-2 mt-2 " style="margin-left: 15px">Booking Journey</h1>
-            <div class="col-sm-12 table-responsive">
-                            
-                            <table id="tasks_history" class="table table-striped table-bordered table-hover"
-                                width="100%">
-                                <thead>
-                                    <tr>
-                                        <th width="10%">{{ __('DateTime') }}</th>
-                                        <th width="20%">{{ __('Done By') }}</th>
-                                        <th>{{ __('Details') }}</th>
-                                        <th width="10%">{{ __('Image') }}</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach ($comm['status'] as $row)
-                                    <tr>
-                                        <td>{{ $row['timestamp'] }}</td>
-                                        <td>{{ $row['actor'] }}</td>
-                                        <td>{{ $row['details'] }} : {{ $row['action'] }}</td>
-                                        <td>
-                                            @if ($row['image'] == false)
-                                            {{ __('-None-') }}
-                                            @else
-                                            <a href="{{ $row['image'] }}" target="_BLANK"><img src="{{ $row['image'] }}"
-                                                    class="img-fluid" width="100" /></a>
-                                            @endif
-                                        </td>
-                                    </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
-        </div>
-
-        
 
 
+    </div>
+    {{-- Booking Journey (Remarks) --}}
+
+</div>
+<div class="card shadow-sm">
+    <h2 class="mb-2 mt-2 " style="margin-left: 15px">Booking Journey</h2>
+
+
+    <table id="tasks_history" class="table table-striped table-bordered table-hover" width="100%">
+        <thead>
+            <tr>
+                <th width="10%">{{ __('DateTime') }}</th>
+                <th width="20%">{{ __('Done By') }}</th>
+                <th>{{ __('Details') }}</th>
+                <th width="10%">{{ __('Image') }}</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach ($comm['status'] as $row)
+            <tr>
+                <td>{{ $row['timestamp'] }}</td>
+                <td>{{ $row['actor'] }}</td>
+                <td>{{ $row['details'] }} : {{ $row['action'] }}</td>
+                <td>
+                    @if ($row['image'] == false)
+                    {{ __('-None-') }}
+                    @else
+                    <a href="{{ $row['image'] }}" target="_BLANK"><img src="{{ $row['image'] }}" class="img-fluid"
+                            width="100" /></a>
+                    @endif
+                </td>
+            </tr>
+            @endforeach
+        </tbody>
+    </table>
+</div>
+</div>
 
 </div>
 </div>

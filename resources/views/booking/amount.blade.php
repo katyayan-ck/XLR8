@@ -10,10 +10,10 @@
         <div class="col-12 mb-4">
             <div class="card">
                 <div class="card-header text-black">
-                    <h3 class="mb-0">
-                        <i class="la la-info-circle me-1"></i>
+                    <h2 class="mb-0">
+                        {{-- <i class="la la-info-circle me-1"></i> --}}
                         Booking Summary
-                    </h3>
+                    </h2>
                 </div>
                 <div class="card-body">
                     <div class="row g-3">
@@ -59,10 +59,10 @@
         <div class="col-12">
             <div class="card shadow-sm">
                 <div class="card-header bg-gradient-primary text-black">
-                    <h3 class="mb-0">
-                        <i class="la la-rupee-sign me-1"></i>
+                    <h2 class="mb-0">
+                        {{-- <i class="la la-rupee-sign me-1"></i> --}}
                         Add Receipt of Received Amount
-                    </h3>
+                    </h2>
                 </div>
 
                 <div class="card-body">

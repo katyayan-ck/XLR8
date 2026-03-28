@@ -20,9 +20,9 @@
             {{-- HEADER --}}
             <div
                 class="card-header bg-gradient-success d-flex justify-content-between align-items-center flex-wrap gap-3">
-                <h3 class="card-title mb-0 fw-bold text-black">
+                <h2 class="card-title mb-0 fw-bold text-black">
                     {{ request('rto_type', 'pending') === 'closed' ? 'Closed' : 'Pending' }} RTO Dashboard
-                </h3>
+                </h2>
 
                 {{-- <div class="d-flex align-items-center gap-3 flex-wrap">
                     <div class="d-flex align-items-center gap-2">
@@ -56,7 +56,7 @@
                         <button id="btnDefaultHeaders" class="btn btn-secondary btn-sm">Default Headers</button>
 
                         <div class="position-relative">
-                            <button id="btnCustomiseHeaders" class="btn btn-success btn-sm">
+                            <button id="btnCustomiseHeaders" class="btn btn-danger btn-sm">
                                 Customise Headers
                             </button>
 
@@ -102,7 +102,7 @@
                 </div>
 
                 {{-- GRID --}}
-                <div id="myGrid" class="ag-theme-quartz" style="height: calc(110vh - 260px); width: 100%;"></div>
+                <div id="myGrid" class="ag-theme-quartz" style="height: calc(93vh - 260px); width: 100%;"></div>
             </div>
 
             @if(session('info'))
@@ -117,10 +117,34 @@
 
 @push('after_styles')
 <link rel="stylesheet" href="https://unpkg.com/ag-grid-community/styles/ag-theme-quartz.css">
+
 <style>
-    /* Header center */
-    .ag-theme-quartz .center-header .ag-header-cell-label {
+    /* Center child column headers */
+    .ag-theme-quartz .center-header .ag-header-cell-label,
+    .ag-theme-quartz .ag-header-cell-label {
         justify-content: center !important;
+        text-align: center !important;
+    }
+
+    /* Center GROUP / parent headers */
+    .ag-theme-quartz .ag-header-group-cell-label {
+        justify-content: center !important;
+        text-align: center !important;
+        width: 100% !important;
+    }
+
+    .ag-theme-quartz .ag-header-group-cell {
+        text-align: center !important;
+    }
+
+    /* Pinned columns visual cue */
+    .ag-pinned-left-cols-container .ag-header-cell,
+    .ag-pinned-left-cols-container .ag-header-group-cell,
+    .ag-pinned-right-cols-container .ag-header-cell,
+    .ag-pinned-right-cols-container .ag-header-group-cell {
+        background-color: #d4edda !important;
+        /* light green for RTO success theme */
+        font-weight: 600;
     }
 </style>
 @endpush
@@ -132,222 +156,374 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
 
 <script>
-    const gridConfig = @json($gridConfig ?? []);
+    // ────────────────────────────────────────────────
+    // ALL_COLUMNS from controller → $gridConfig['columns']
+    // ────────────────────────────────────────────────
+    const ALL_COLUMNS = @json($gridConfig['columns'] ?? []);
+
+    function getCols(fields) {
+        return ALL_COLUMNS.filter(col => fields.includes(col.field));
+    }
 
     let gridApi;
 
+    // ────────────────────────────────────────────────
+    // Default visible fields → only Y marked ones
+    // ────────────────────────────────────────────────
     const DEFAULT_VISIBLE_FIELDS = [
-    'serial_no',
-    'booking_no',
-    'created_at',
-    'name',
-    'booking_date',
-    'mobile',
-    'segment',
-    'model',
-    'variant',
-    'booking_amount',
-    'action'
-];
+        // Primary - Y
+        'serial_no',
+        'booking_no',
+        'created_at',           // Entry Date
+        'booking_date',
+        'inv_no',               // Invoice No.
+        'inv_date',             // Invoice Date
 
+        // Customer - Y
+        'name',                 // Customer Name
+        'branch_name',
+        'location_name',
 
-    const columnDefs = (gridConfig.columns || []).map(col => ({
-        headerName: col.headerName,
-        field: col.field,
-        sortable: true,
-        filter: true,
-        resizable: true,
-        pinned: col.pinned || false,
-        width: col.width || 150,
-        cellRenderer: col.field === 'action' ? params => params.value || '' : null,
-        cellClass: col.cellClass || '',
-    }));
+        // Vehicle - Y
+        'model',
+        'variant',
+        'color',
+        'chasis_no',            // Allotted Chassis No.
+
+        // Action (usually always visible)
+        'action'
+    ];
+
+    // ────────────────────────────────────────────────
+    // Grouped columns with pinning & centering
+    // ────────────────────────────────────────────────
+    const columnGroups = [
+        {
+            headerName: 'Primary',
+            headerClass: 'ag-header-center',
+            children: getCols([
+                'serial_no',
+                'booking_no',
+                'created_at',
+                'booking_date',
+                'days_count',
+                'inv_no',               // Invoice No.
+                'inv_date'              // Invoice Date
+            ]).map(col => {
+                if (col.field === 'serial_no' || col.field === 'booking_no') {
+                    col.pinned = 'left';
+                }
+                return col;
+            })
+        },
+        {
+            headerName: 'Customer',
+            headerClass: 'ag-header-center',
+            children: getCols([
+                'receipt_no',
+                'receipt_date',
+                'name',
+                'pan_no',
+                'adhar_no',
+                'gstn',
+                'branch_name',
+                'location_name'
+            ])
+        },
+        {
+            headerName: 'Vehicle',
+            headerClass: 'ag-header-center',
+            children: getCols([
+                'segment',
+                'model',
+                'variant',
+                'color',
+                'seating',
+                'chasis_no'             // Allotted Chassis No.
+            ])
+        },
+        {
+            headerName: 'Action',
+            headerClass: 'ag-header-center',
+            children: getCols(['action']).map(col => {
+                col.pinned = 'right';
+                return col;
+            })
+        }
+    ];
 
     const gridOptions = {
-    columnDefs,
-    rowData: gridConfig.data || [],
-    pagination: true,
-    paginationPageSize: 50,
-    rowHeight: 30,
-    defaultColDef: {
-    sortable: true,
-    filter: true,
-    resizable: true,
-    headerClass: 'center-header',
-    cellStyle: { textAlign: 'center' }
-},
+        columnDefs: columnGroups,
+        rowData: @json($gridConfig['data'] ?? []),
+        pagination: true,
+        paginationPageSize: 50,
+        paginationPageSizeSelector: [20, 50, 100, 200],
+        rowHeight: 30,
+        animateRows: true,
 
-    onGridReady: params => {
-    gridApi = params.api;
+        defaultColDef: {
+            sortable: true,
+            filter: true,
+            resizable: true,
+            headerClass: 'center-header',
+            cellStyle: { textAlign: 'center' },
+            suppressHeaderMenuButton: false,
+        },
 
-    const allCols = gridApi.getColumnDefs().map(c => c.field);
-    gridApi.setColumnsVisible(allCols, false);
-    gridApi.setColumnsVisible(DEFAULT_VISIBLE_FIELDS, true);
+        components: {
+            htmlRenderer: params => params.value || '',
+        },
 
-    // 🔥 AUTO WIDTH
-    setTimeout(() => {
-        const allColumnIds = [];
-        gridApi.getAllDisplayedColumns().forEach(column => {
-            allColumnIds.push(column.getColId());
-        });
-        gridApi.autoSizeColumns(allColumnIds);
-    }, 300);
-}
-};
-    document.getElementById('btnAllHeaders')?.addEventListener('click', () => {
-    const allCols = gridApi.getColumnDefs().map(c => c.field);
-    gridApi.setColumnsVisible(allCols, true);
+        onGridReady: params => {
+            gridApi = params.api;
 
-    setTimeout(() => {
-        const allColumnIds = [];
-        gridApi.getAllDisplayedColumns().forEach(column => {
-            allColumnIds.push(column.getColId());
-        });
-        gridApi.autoSizeColumns(allColumnIds);
-    }, 200);
-});
+            // Hide all → show defaults
+            const allFields = [];
+            columnGroups.forEach(group => {
+                if (group.children) {
+                    group.children.forEach(child => {
+                        if (child.field) allFields.push(child.field);
+                    });
+                }
+            });
 
-document.getElementById('btnDefaultHeaders')?.addEventListener('click', () => {
-    const allCols = gridApi.getColumnDefs().map(c => c.field);
-    gridApi.setColumnsVisible(allCols, false);
-    gridApi.setColumnsVisible(DEFAULT_VISIBLE_FIELDS, true);
+            gridApi.setColumnsVisible(allFields, false);
+            gridApi.setColumnsVisible(DEFAULT_VISIBLE_FIELDS, true);
 
-    setTimeout(() => {
-        const allColumnIds = [];
-        gridApi.getAllDisplayedColumns().forEach(column => {
-            allColumnIds.push(column.getColId());
-        });
-        gridApi.autoSizeColumns(allColumnIds);
-    }, 200);
-});
+            setTimeout(() => {
+                const visibleIds = gridApi.getAllDisplayedColumns().map(c => c.getColId());
+                gridApi.autoSizeColumns(visibleIds, false);
+            }, 400);
+        }
+    };
+
+    // ────────────────────────────────────────────────
+    // Customise Headers – grouped + selection sync
+    // ────────────────────────────────────────────────
     function openColumnBubble() {
-    const tbody = document.getElementById('columnBubbleBody');
-    tbody.innerHTML = '';
+        const bubble = document.getElementById('columnBubble');
+        const tbody  = document.getElementById('columnBubbleBody');
+        if (!gridApi || !bubble || !tbody) return;
 
-    const state = gridApi.getColumnState();
+        tbody.innerHTML = '';
 
-    gridApi.getColumnDefs().forEach(col => {
-        if (!col.field || col.field === 'action') return;
+        columnGroups.forEach(group => {
+            const groupName = group.headerName;
+            const children  = group.children || [];
 
-        const visible = !state.find(s => s.colId === col.field)?.hide;
+            if (groupName === 'Action') return;
 
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td><input type="checkbox" ${visible ? 'checked' : ''}></td>
-            <td>${col.headerName}</td>
-        `;
+            // Group row
+            const groupTr = document.createElement('tr');
+            groupTr.style.background = '#f0f0f0';
 
-        tr.querySelector('input').addEventListener('change', e => {
-            gridApi.applyColumnState({
-                state: [{ colId: col.field, hide: !e.target.checked }]
+            const groupCheckTd = document.createElement('td');
+            groupCheckTd.style.width = '30px';
+            groupCheckTd.className = 'text-center';
+
+            const groupCheckbox = document.createElement('input');
+            groupCheckbox.type = 'checkbox';
+
+            const fields = children.map(c => c.field).filter(Boolean);
+            const visibleCount = fields.filter(f => {
+                const col = gridApi.getColumn(f);
+                return col && col.isVisible();
+            }).length;
+
+            groupCheckbox.checked = visibleCount === fields.length && visibleCount > 0;
+            groupCheckbox.indeterminate = visibleCount > 0 && visibleCount < fields.length;
+
+            if (groupName === 'Primary') {
+                groupCheckbox.checked = true;
+                groupCheckbox.disabled = true;
+            }
+
+            groupCheckbox.addEventListener('change', () => {
+                gridApi.setColumnsVisible(fields, groupCheckbox.checked);
+                tbody.querySelectorAll(`tr[data-group="${groupName}"] input`)
+                    .forEach(cb => cb.checked = groupCheckbox.checked);
+            });
+
+            groupCheckTd.appendChild(groupCheckbox);
+
+            const groupLabelTd = document.createElement('td');
+            groupLabelTd.colSpan = 2;
+            groupLabelTd.innerHTML = `<strong>${groupName}</strong>`;
+
+            groupTr.appendChild(groupCheckTd);
+            groupTr.appendChild(groupLabelTd);
+            tbody.appendChild(groupTr);
+
+            // Child rows
+            children.forEach(child => {
+                if (!child.field) return;
+
+                const tr = document.createElement('tr');
+                tr.dataset.group = groupName;
+
+                const tdCheck = document.createElement('td');
+                tdCheck.style.paddingLeft = '40px';
+                tdCheck.className = 'text-center';
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+
+                const col = gridApi.getColumn(child.field);
+                checkbox.checked = col ? col.isVisible() : false;
+
+                if (groupName === 'Primary') {
+                    checkbox.disabled = true;
+                    checkbox.checked = true;
+                }
+
+                checkbox.addEventListener('change', () => {
+                    gridApi.setColumnsVisible([child.field], checkbox.checked);
+                });
+
+                tdCheck.appendChild(checkbox);
+
+                const tdLabel = document.createElement('td');
+                tdLabel.innerText = child.headerName;
+
+                tr.appendChild(tdCheck);
+                tr.appendChild(tdLabel);
+                tbody.appendChild(tr);
             });
         });
 
-        tbody.appendChild(tr);
+        bubble.style.display = 'block';
+    }
+
+    // ────────────────────────────────────────────────
+    // Event Listeners
+    // ────────────────────────────────────────────────
+    document.getElementById('btnCustomiseHeaders')?.addEventListener('click', e => {
+        e.stopPropagation();
+        openColumnBubble();
     });
 
-    document.getElementById('columnBubble').style.display = 'block';
-}
+    document.getElementById('closeColumnBubble')?.addEventListener('click', () => {
+        document.getElementById('columnBubble').style.display = 'none';
+    });
 
+    document.getElementById('columnBubble')?.addEventListener('click', e => e.stopPropagation());
+
+    document.addEventListener('click', () => {
+        const bubble = document.getElementById('columnBubble');
+        if (bubble) bubble.style.display = 'none';
+    });
+
+    document.getElementById('btnAllHeaders')?.addEventListener('click', () => {
+        const allFields = [];
+        columnGroups.forEach(group => {
+            if (group.children) {
+                group.children.forEach(c => {
+                    if (c.field) allFields.push(c.field);
+                });
+            }
+        });
+        gridApi.setColumnsVisible(allFields, true);
+        setTimeout(() => {
+            const visibleIds = gridApi.getAllDisplayedColumns().map(c => c.getColId());
+            gridApi.autoSizeColumns(visibleIds, false);
+        }, 200);
+    });
+
+    document.getElementById('btnDefaultHeaders')?.addEventListener('click', () => {
+        const allFields = [];
+        columnGroups.forEach(group => {
+            if (group.children) {
+                group.children.forEach(c => {
+                    if (c.field) allFields.push(c.field);
+                });
+            }
+        });
+
+        gridApi.setColumnsVisible(allFields, false);
+        gridApi.setColumnsVisible(DEFAULT_VISIBLE_FIELDS, true);
+
+        setTimeout(() => {
+            const visibleIds = gridApi.getAllDisplayedColumns().map(c => c.getColId());
+            gridApi.autoSizeColumns(visibleIds, false);
+        }, 200);
+    });
 
     document.addEventListener('DOMContentLoaded', () => {
         const gridDiv = document.querySelector('#myGrid');
         gridApi = agGrid.createGrid(gridDiv, gridOptions);
 
-        document.getElementById('btnCustomiseHeaders')
-    ?.addEventListener('click', e => {
-        e.stopPropagation();
-        openColumnBubble();
-    });
-
-document.getElementById('closeColumnBubble')
-    ?.addEventListener('click', () => {
-        document.getElementById('columnBubble').style.display = 'none';
-    });
-
-document.getElementById('columnBubble')
-    ?.addEventListener('click', e => e.stopPropagation());
-
-document.addEventListener('click', () => {
-    document.getElementById('columnBubble').style.display = 'none';
-});
-
-
-        // Quick Search
         document.getElementById('quickFilter')?.addEventListener('input', e => {
             gridApi.setGridOption('quickFilterText', e.target.value);
         });
 
-        // Reset
         document.getElementById('resetAll')?.addEventListener('click', () => {
             gridApi.setFilterModel(null);
             gridApi.setGridOption('quickFilterText', '');
             document.getElementById('quickFilter').value = '';
         });
 
-        // Listen to RTO type change → redirect with new param
+        // RTO Status switch (Pending ↔ Closed)
         document.getElementById('rto_type')?.addEventListener('change', function() {
             const url = new URL(window.location);
             url.searchParams.set('rto_type', this.value);
-            // Optional: remove old time filter if you had it
-            // url.searchParams.delete('status_filter');
             window.location = url;
         });
 
-        // Excel Export (exclude action column)
+        // Excel Export – visible columns only
         document.getElementById('exportCsv')?.addEventListener('click', () => {
-    const visibleColumns = gridApi.getAllDisplayedColumns()
-        .map(c => c.getColDef())
-        .filter(c => c.field && c.field !== 'action');
+            const visibleColumns = gridApi.getAllDisplayedColumns()
+                .map(col => col.getColDef())
+                .filter(col => col.field && col.field !== 'action');
 
-    const rows = [];
-    gridApi.forEachNodeAfterFilterAndSort(node => {
-        const row = {};
-        visibleColumns.forEach(col => {
-            row[col.headerName] = node.data[col.field];
+            const rows = [];
+            gridApi.forEachNodeAfterFilterAndSort(node => {
+                const row = {};
+                visibleColumns.forEach(col => {
+                    row[col.headerName] = node.data[col.field] ?? '';
+                });
+                rows.push(row);
+            });
+
+            const worksheet = XLSX.utils.json_to_sheet(rows);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Pending RTO');
+            XLSX.writeFile(workbook, `pending-rto-${new Date().toISOString().slice(0,10)}.xlsx`);
         });
-        rows.push(row);
-    });
 
-    const ws = XLSX.utils.json_to_sheet(rows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Report');
-    XLSX.writeFile(wb, 'RTO_Report.xlsx');
-});
+        // PDF Export – visible columns only
+        document.getElementById('exportPdf')?.addEventListener('click', () => {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('l', 'pt', 'a4');
 
+            const visibleColumns = gridApi.getAllDisplayedColumns()
+                .map(col => col.getColDef())
+                .filter(col => col.field && col.field !== 'action');
 
-        // PDF Export
-        document.getElementById('exportExcel')?.addEventListener('click', () => {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF('l', 'pt', 'a4');
+            const exportCols = visibleColumns.map(col => ({
+                header: col.headerName,
+                dataKey: col.field
+            }));
 
-    const visibleColumns = gridApi.getAllDisplayedColumns()
-        .map(c => c.getColDef())
-        .filter(c => c.field && c.field !== 'action');
+            const rows = [];
+            gridApi.forEachNodeAfterFilterAndSort(node => {
+                const row = {};
+                visibleColumns.forEach(col => {
+                    row[col.field] = node.data[col.field];
+                });
+                rows.push(row);
+            });
 
-    const cols = visibleColumns.map(c => ({
-        header: c.headerName,
-        dataKey: c.field
-    }));
+            doc.text('Pending RTO Report', 40, 30);
+            doc.autoTable({
+                columns: exportCols,
+                body: rows,
+                startY: 50,
+                styles: { fontSize: 8 },
+                headStyles: { fillColor: [40, 167, 69] },
+            });
 
-    const rows = [];
-    gridApi.forEachNodeAfterFilterAndSort(node => {
-        const r = {};
-        visibleColumns.forEach(c => r[c.field] = node.data[c.field]);
-        rows.push(r);
-    });
-
-    doc.text('Report', 40, 30);
-    doc.autoTable({
-        columns: cols,
-        body: rows,
-        startY: 50,
-        styles: { fontSize: 8 }
-    });
-
-    doc.save('RTO_Report.pdf');
-});
-
+            doc.save('pending-rto.pdf');
+        });
     });
 </script>
 @endpush

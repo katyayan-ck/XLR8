@@ -43,10 +43,9 @@
             "app/Helpers/XpricingHelper.php",
             "app/Helpers/CommonHelper.php",
             "app/Helpers/XCommonHelper.php",
-            "app/Helpers/ChatHelper.php"  
+            "app/Helpers/ChatHelper.php"
         ]
     },
-    
     "autoload-dev": {
         "psr-4": {
             "Tests\\": "tests/"

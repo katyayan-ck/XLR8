@@ -18,6 +18,12 @@
                                     style="height:20px;">
                             </a> --}}
                         </a>
+                            {{-- <Payment Details (Locked)> --}}
+                                {{-- </Payment> --}}
+                            <a href="https://insightechindia.in" rel="noopener" target="_blank">
+                                <img src="{{ asset('images/ins_logo_full.png') }}" alt="Insightech Logo"
+                                    style="height:20px;">
+                            </a>
                     </li>
                 </ul>
             </div>

@@ -75,7 +75,7 @@
     </div>
     @endif
 
-    <div class="card card-body shadow-sm mb-4">
+    <div class="card card-body shadow-sm mb-4" style="border-radius: 12px">
         <h2 class="mb-3">Booking Information (Read-only)</h2>
         <div class="row">
 
@@ -144,7 +144,7 @@
     </div>
 
     <!-- Card 1: Receipt Log -->
-    <div class="card card-body shadow-sm mb-4">
+    <div class="card card-body shadow-sm mb-4" style="border-radius: 12px">
         <h2 class="mb-3">Receipt Logs</h2>
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -202,7 +202,7 @@
 
     <!-- Card 2: Add Receipt (only if col_type 2 or 3 and pending amount > 0) -->
     @if (in_array($booking->col_type, [2, 3]) && $booking->booking_amount > ($data['total_amount'] ?? 0))
-    <div class="card card-body shadow-sm mb-4" id="receipt-card">
+    <div class="card card-body shadow-sm mb-4" id="receipt-card" style="border-radius: 12px">
         <h2 class="mb-3">Add New Receipt</h2>
         <div class="card-body">
             <form id="receipt-form" method="POST" action="{{ route('booking.add-receipt.store', $booking->id) }}"
@@ -290,7 +290,7 @@
     @endif
 
     <!-- Card 3: Pending Data Form -->
-    <div class="card card-body shadow-sm mb-4" id="pending-data-card">
+    <div class="card card-body shadow-sm mb-4" id="pending-data-card" style="border-radius: 12px">
         <h2 class="mb-3">Pending Data</h2>
         <div class="card-body">
             <form id="pending-form" method="POST" action="{{ route('booking.pending-update', $booking->id) }}"
