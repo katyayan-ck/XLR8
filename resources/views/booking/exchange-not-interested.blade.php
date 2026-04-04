@@ -517,7 +517,7 @@
         });
 
         // PDF Export
-        document.getElementById('exportPdf')?.addEventListener('click', () => {
+        document.getElementById('exportExcel')?.addEventListener('click', () => {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF('l', 'pt', 'a4');
 

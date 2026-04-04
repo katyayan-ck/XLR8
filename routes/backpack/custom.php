@@ -358,4 +358,13 @@ Route::group([
         ->middleware('admin');
     Route::get('booking/{id}/check-field-payment', 'BookingCrudController@checkFieldPayment')
         ->name('booking.check-field-payment');
+
+    Route::get('finance/do/edit/{id}', 'BookingCrudController@doEdit')
+        ->name('finance.do.edit');
+
+    Route::put('finance/do/update/{id}', 'BookingCrudController@doUpdate')
+        ->name('finance.do.update');
+
+    Route::get('booking/{id}/check-field-payment', 'BookingCrudController@checkFieldPayment')
+        ->name('booking.check-field-payment');
 });

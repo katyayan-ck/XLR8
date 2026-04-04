@@ -209,7 +209,9 @@
                 enctype="multipart/form-data">
                 @csrf
                 <input type="hidden" name="bid" value="{{ $booking->id }}">
-
+                @if(request()->has('pending_flag') || request()->get('pending_flag') == 1)
+                    <input type="hidden" name="pending_flag" value="1">
+                @endif
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label class="fw-bold">Booking Amount</label>

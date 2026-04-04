@@ -420,8 +420,7 @@
 
                             <div class="col-sm-2">
                                 <div class="form-group">
-                                    <label for="enummaster2">Brand Make 2 <span class="required-mark"
-                                            style="display: none;">*</span></label>
+                                    <label for="enummaster2">Brand Make 2</label>
                                     <select name="enummaster2" id="enummaster2" class="form-control form-select"
                                         disabled>
                                         <option value="" disabled selected>-- Select Brand Make 2 --</option>
@@ -434,8 +433,7 @@
 
                             <div class="col-sm-3">
                                 <div class="form-group">
-                                    <label for="vehicledetails2">Model Variant 2 <span class="required-mark"
-                                            style="display: none;">*</span></label>
+                                    <label for="vehicledetails2">Model Variant 2</label>
                                     <input type="text" name="vehicledetails2" id="vehicledetails2" class="form-control"
                                         disabled>
                                 </div>
@@ -810,6 +808,28 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <style>
+    /* Your existing styles + small improvement for required mark */
+    .required-mark {
+        color: #dc3545;
+        margin-left: 2px;
+    }
+
+    /* Prevent required mark from flashing/hiding */
+    label .required-mark {
+        display: inline !important;
+    }
+
+    /* Numeric input styling */
+    input.numeric-only {
+        -moz-appearance: textfield;
+    }
+    input.numeric-only::-webkit-outer-spin-button,
+    input.numeric-only::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+</style>
+<style>
     .proof-chip {
         display: inline-flex;
         align-items: center;
@@ -864,10 +884,7 @@
         box-shadow: 0 0 5px rgba(220, 53, 69, 0.5);
     }
 
-    .required-mark {
-        color: #dc3545;
-        margin-left: 2px;
-    }
+
 
     .proof-chip {
         transition: all 0.2s ease;
@@ -1020,6 +1037,7 @@ $('#proofModal').on('show.bs.modal', function () {
         setInitialState();
         bindEventListeners();
         initUppercaseInputs();
+        initNumericOnlyFields();
 
         // Customer Category change → Care Of toggle
         $('#customercat').on('change', function() {
@@ -1046,24 +1064,30 @@ $('#proofModal').on('show.bs.modal', function () {
     function initFlatpickr() {
     // 1. Customer DOB
     flatpickr('#customerdob', {
-        dateFormat: 'd-M-Y',
-        maxDate: 'today',
-        allowInput: false,
-        onChange: function(selectedDates, dateStr, instance) {
-            const dob = selectedDates[0];
-            if (dob) {
-                const age = calculateAge(dob);
-                $('#customerage').val(age);
-                $('#hiddencustomerdob').val(instance.formatDate(dob, 'Y-m-d'));
-                if (age < 18) {
-                    alert('Customer age is below 18. Please reselect the date.');
-                    instance.clear();
-                    $('#customerage').val('');
-                    $('#hiddencustomerdob').val('');
+            dateFormat: 'd-M-Y',
+            maxDate: 'today',
+            allowInput: false,
+            onChange: function(selectedDates, dateStr, instance) {
+                const dob = selectedDates[0];
+                if (dob) {
+                    const age = calculateAge(dob);
+                    $('#customerage').val(age);
+                    $('#hiddencustomerdob').val(instance.formatDate(dob, 'Y-m-d'));
+
+                    if (age < 18) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Age Restriction',
+                            text: `Customer age is ${age} years, which is below 18. Please select a valid date.`,
+                            confirmButtonColor: '#3085d6'
+                        });
+                        instance.clear();
+                        $('#customerage').val('');
+                        $('#hiddencustomerdob').val('');
+                    }
                 }
             }
-        }
-    });
+        });
 
     // 2. Booking Date
     const bookingPicker = flatpickr('#bookingdate', {
@@ -1111,6 +1135,52 @@ $('#proofModal').on('show.bs.modal', function () {
     window.deliveryPicker = deliveryPicker;
 }
 
+function initNumericOnlyFields() {
+        const numericFields = [
+            '#manufacturingyear',
+            '#odometerreading',
+            '#expectedprice',
+            '#offeredprice',
+            '#exchangebonus'
+        ];
+
+        numericFields.forEach(selector => {
+            const $field = $(selector);
+
+            $field.addClass('numeric-only');
+
+            // Allow only numbers (and decimal for prices)
+            $field.on('input', function() {
+                let val = this.value;
+
+                if (this.id === 'manufacturingyear' || this.id === 'odometerreading') {
+                    // Only integers
+                    val = val.replace(/[^0-9]/g, '');
+                } else {
+                    // Prices → allow decimal
+                    val = val.replace(/[^0-9.]/g, '');
+                    // Prevent multiple decimals
+                    const parts = val.split('.');
+                    if (parts.length > 2) val = parts[0] + '.' + parts.slice(1).join('');
+                }
+
+                this.value = val;
+            });
+
+            // Prevent non-numeric keys (extra safety)
+            $field.on('keypress', function(e) {
+                if (this.id === 'manufacturingyear' || this.id === 'odometerreading') {
+                    if (!/[0-9]/.test(e.key)) {
+                        e.preventDefault();
+                    }
+                } else {
+                    if (!/[0-9.]/.test(e.key)) {
+                        e.preventDefault();
+                    }
+                }
+            });
+        });
+    }
     // Calculate age based on date of birth
     function calculateAge(dob) {
         const today = new Date();
@@ -1248,12 +1318,12 @@ $('#proofModal').on('show.bs.modal', function () {
                 },
                 enummaster2: {
                     required: function() {
-                        return $('#buyertype').val() === 'Additional Buy';
+                        return false; // Never mandatory for Additional Buy (as per new requirement)
                     }
                 },
                 vehicledetails2: {
                     required: function() {
-                        return $('#buyertype').val() === 'Additional Buy';
+                        return false;
                     }
                 },
                 registrationno: {
@@ -1401,6 +1471,7 @@ function setInitialState() {
     togglePurchaseFields($('#buyertype').val());
 
     initFlatpickr();
+    $('#customernamelabel').html('Customer Name <span class="required-mark">*</span>');
 
 }
 
@@ -1510,7 +1581,7 @@ $('#financier').on('change', function() {
 
 
     $.ajax({
-        url: '/xcl-v2/public/admin/get-models/' + segmentId,
+        url: '../get-models/' + segmentId,
         method: 'GET',
         success: function(data) {
             populateSelect($('#model'), data, 'name', 'id');
@@ -1524,7 +1595,7 @@ $('#financier').on('change', function() {
 $('#model').on('change', function() {
     const modelId = this.value;
     $.ajax({
-        url: '/xcl-v2/public/admin/get-variants/' + modelId,
+        url: '../get-variants/' + modelId,
         method: 'GET',
         success: function(data) {
             populateSelect($('#variant'), data, 'name', 'id');
@@ -1547,7 +1618,7 @@ $('#variant').on('change', function() {
     if (!variantId) return;
 
     $.ajax({
-        url: '/xcl-v2/public/admin/get-colors/' + variantId,  // Consistent URL (adjust if needed to /admin/)
+        url: '../get-colors/' + variantId,  // Consistent URL (adjust if needed to /admin/)
         method: 'GET',
         success: function(data) {
             console.log('Raw colors data:', data);
@@ -1577,7 +1648,7 @@ $('#variant').on('change', function() {
 
     if (segmentName && modelId && variantId) {
         $.ajax({
-            url: '/xcl-v2/public/admin/get-accessories/' + segmentNumericId + '/' + modelId + '/' + variantId,
+            url: '../get-accessories/' + segmentNumericId + '/' + modelId + '/' + variantId,
             method: 'GET',
             success: function(data) {
                 populateSelect($('#accessories'), data, 'name', 'id', null, function(option, item) {
@@ -1612,7 +1683,7 @@ $('#color').on('change', function() {
     }
 
     $.ajax({
-    url: '/xcl-v2/public/admin/get-chassis-numbers/' + encodeURIComponent(modelCode.trim()),
+    url: '../get-chassis-numbers/' + encodeURIComponent(modelCode.trim()),
     method: 'GET',
     success: function(data) {
         console.log('Chassis Numbers Received:', data);
@@ -1675,7 +1746,7 @@ $('#color').on('change', function() {
             if (!branchId) return;
 
             $.ajax({
-                url: '/xcl-v2/public/admin/branchlocations/' + branchId + '/',  // Match your current route exactly
+                url: '../branchlocations/' + branchId + '/',  // Match your current route exactly
                 method: 'GET',
                 success: function(data) {
                     populateSelect($('#location'), data, 'name', 'id', '<option value="0">OTHER</option>');

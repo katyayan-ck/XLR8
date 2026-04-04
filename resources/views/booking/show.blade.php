@@ -133,549 +133,7 @@
 <div class="container-fluid">
     @include(backpack_view('inc.alerts'))
     <div class="row">
-        <div class="col-md-12">
-            {{-- < class="card mt-3 shadow-sm"> --}}
-                {{-- <div class="card-header bg-primary text-black">
-                    <h2 class="mb-0 fw-bold">Booking Details (View Only)</h2>
-                </div> --}}
-                <div class="card-body">
-                    <div class="card card-body mt-3 shadow-sm" style="border-radius: 12px">
-                        <!-- Payment Details -->
-                        <h2 class="mb-3  ">Payment Details</h2>
-                        <div class="row g-3">
-                            <div class="col-sm-3">
-                                <label class="small fw-bold">Customer Type</label>
-                                <input type="text" class="form-control" value="{{ ucfirst($booking->b_type ?? 'N/A') }}"
-                                    readonly>
-                            </div>
-                            <div class="col-sm-3">
-                                <label class="small fw-bold">Customer Category</label>
-                                <input type="text" class="form-control" value="{{ ucfirst($booking->b_cat ?? 'N/A') }}"
-                                    readonly>
-                            </div>
-                            <div class="col-sm-3">
-                                <label class="small fw-bold">Booking Date</label>
-                                <input type="text" class="form-control"
-                                    value="{{ $booking->booking_date ? \Carbon\Carbon::parse($booking->booking_date)->format('d-M-Y') : 'N/A' }}"
-                                    readonly>
-                            </div>
-                            <div class="col-sm-3">
-                                <label class="small fw-bold">Collection Type</label>
-                                <input type="text" class="form-control" id="col_type"
-                                    value="{{ $booking->col_type == 1 ? 'Receipt' : ($booking->col_type == 2 ? 'Field Collection (By Sales Team)' : ($booking->col_type == 3 ? 'Field Collection (By DSA)' : 'Used Car Purchased')) }}"
-                                    readonly>
-                            </div>
-                            <div class="col-sm-4">
-                                <label class="small fw-bold">Collected By</label>
-                                <input type="text" class="form-control"
-                                    value="{{ \App\Models\User::find($booking->col_by)?->name ?? 'N/A' }}" readonly>
-                            </div>
-                            <div class="col-sm-4">
-                                <label class="small fw-bold">Booking Amount</label>
-                                <input type="text" class="form-control"
-                                    value="₹ {{ number_format($booking->booking_amount ?? 0) }}" readonly>
-                            </div>
-                            <div class="col-sm-4">
-                                <label class="small fw-bold">
-                                    {{ in_array($booking->col_type, [1,4])
-                                    ? ($booking->col_type == 1 ? 'Receipt No.' : 'Voucher No.')
-                                    : 'Receipt/Voucher No.' }}
-                                </label>
-                                <input type="text" class="form-control" value="{{ $booking->receipt_no ?? 'N/A' }}"
-                                    readonly>
-                            </div>
-                            <div class="col-sm-4">
-                                <label class="small fw-bold">Receipt/Voucher Date</label>
-                                <input type="text" class="form-control"
-                                    value="{{ $booking->receipt_date ? \Carbon\Carbon::parse($booking->receipt_date)->format('d-M-Y') : 'N/A' }}"
-                                    readonly>
-                            </div>
-
-                            <!-- Payment Proof -->
-                            {{-- <div class="col-sm-4">
-                                <label class="small fw-bold">Payment Proof (Image/PDF)</label>
-                                <div class="border rounded bg-light p-3 text-center" style="min-height: 180px;">
-                                    @php
-                                    $payment = $booking->bookingAmounts()->latest()->first();
-                                    $hasMedia = $payment && $payment->hasMedia('amount-proof');
-                                    $media = $hasMedia ? $payment->getFirstMedia('amount-proof') : null;
-                                    $fileUrl = $hasMedia ? $media->getUrl() : null;
-                                    @endphp
-                                    @if($hasMedia)
-                                    @if($media->mime_type === 'application/pdf')
-                                    <i class="la la-file-pdf text-danger" style="font-size: 70px;"></i>
-                                    <p class="small text-muted mt-2 mb-1">{{ basename($media->file_name) }}</p>
-                                    @else
-                                    <img src="{{ $fileUrl }}" class="img-thumbnail border shadow-sm"
-                                        style="max-height: 110px; max-width: 100%; object-fit: cover; border-radius: 8px;"
-                                        onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                                    <div style="display:none;" class="text-danger small mt-2">
-                                        <i class="la la-exclamation-triangle"></i> Image load failed
-                                    </div>
-                                    @endif
-                                    <div class="mt-3">
-                                        <a href="{{ $fileUrl }}" target="_blank" class="btn btn-primary btn-sm px-4">
-                                            <i class="la la-external-link-alt"></i> Open Full Size
-                                        </a>
-                                    </div>
-                                    @else
-                                    <div class="text-muted small mt-5">No payment proof uploaded</div>
-                                    @endif
-                                </div>
-                            </div> --}}
-
-                            <!-- Payment Proof - 100% add.blade.php jaisa -->
-                            <div class="col-sm-3">
-                                <label class="small fw-bold">Payment Proof</label>
-
-                                @php
-                                $payment = $booking->bookingAmounts()->latest()->first();
-                                $hasProof = $payment && $payment->hasMedia('amount-proof');
-                                $media = $hasProof ? $payment->getFirstMedia('amount-proof') : null;
-                                $fileUrl = $hasProof ? $media->getUrl() : null;
-                                $fileName = $hasProof ? $media->file_name : null;
-                                $isPdf = $hasProof && str_contains($media?->mime_type ?? '', 'pdf');
-                                @endphp
-
-                                @if($hasProof)
-                                <div class="mt-2" id="paymentProofPreview">
-
-                                    <span
-                                        class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2 px-3 py-2"
-                                        style="cursor:pointer;"
-                                        onclick="openPaymentProofModal('{{ $fileUrl }}','{{ addslashes($fileName) }}')">
-
-                                        <i class="la la-paperclip"></i>
-
-                                        <span class="fw-medium small">
-                                            {{ Str::limit($fileName, 28) }}
-                                        </span>
-
-                                    </span>
-
-                                </div>
-                                <i
-                                    class="{{ $isPdf ? 'fas fa-file-pdf text-danger' : 'fas fa-file-image text-primary' }} fs-4 me-2"></i>
-                                {{-- <span class="file-name text-truncate" title="{{ $fileName }}">
-                                    {{ Str::limit($fileName, 24) }}
-                                </span> --}}
-                                <button type="button" class="btn-action btn-download ms-2" title="Download"
-                                    onclick="event.stopPropagation(); downloadFile('{{ $fileUrl }}', '{{ addslashes($fileName) }}')">
-                                    <i class="fas fa-download"></i>
-                                </button>
-                            </div>
-                        </div>
-                        @else
-                        <div class="badge bg-secondary-subtle text-secondary px-3 py-2 mt-2">
-                            No proof uploaded
-                        </div>
-                        @endif
-                    </div>
-                </div>
-        </div>
-
-        <div class="card card-body mt-3 shadow-sm" style="border-radius: 12px">
-            <!-- Customer Details -->
-            <h2 class="mb-3  ">Customer Details</h2>
-            <div class="row g-3">
-                <div class="col-sm-3">
-                    <label class="small fw-bold">Customer Name</label>
-                    <input type="text" class="form-control" value="{{ $booking->name ?? 'N/A' }}" readonly>
-                </div>
-                <div class="col-sm-3">
-                    <label class="small fw-bold">Care Of</label>
-                    <input type="text" class="form-control" id="title" name="title" value="{{ $booking->care_of_type == 5
-                                                ? 'Owned By'
-                                                : ($booking->care_of_type == 1
-                                                    ? 'Son of'
-                                                    : ($booking->care_of_type == 2
-                                                        ? 'Daughter of'
-                                                        : ($booking->care_of_type == 3
-                                                            ? 'Married'
-                                                            : ($booking->care_of_type == 4
-                                                                ? 'Guardian Name'
-                                                                : 'N/A')))) }}" readonly>
-                </div>
-                <div class="col-sm-3">
-                    <label class="small fw-bold">Care Of Name</label>
-                    <input type="text" class="form-control" value="{{ $booking->care_of ?? 'N/A' }}" readonly>
-                </div>
-                <div class="col-sm-3">
-                    <label class="small fw-bold">Contact No.</label>
-                    <input type="text" class="form-control" value="{{ $booking->mobile ?? 'N/A' }}" readonly>
-                </div>
-                <div class="col-sm-3">
-                    <label class="small fw-bold">Alternate Contact No.</label>
-                    <input type="text" class="form-control" value="{{ $booking->alt_mobile ?? 'N/A' }}" readonly>
-                </div>
-                <div class="col-sm-3">
-                    <label class="small fw-bold">Gender</label>
-                    <input type="text" class="form-control" value="{{ ucfirst($booking->gender ?? 'N/A') }}" readonly>
-                </div>
-                <div class="col-sm-3">
-                    <label class="small fw-bold">Occupation</label>
-                    <input type="text" class="form-control" value="{{ match($booking->occ ?? '') {
-                                    'Agriculture'                  => 'Agriculture',
-                                    'Business'                     => 'Business',
-                                    'Salaried (Govt.)'             => 'Salaried (Govt.)',
-                                    'Salaried (Pvt.)'              => 'Salaried (Pvt.)',
-                                    'Self Employed (Professional)' => 'Self Employed (Professional)',
-                                    'Pensioner'                    => 'Pensioner',
-                                    'Other'                        => 'Other',
-                                    default                        => 'N/A'
-                                } }}" readonly>
-                </div>
-                <div class="col-sm-3">
-                    <label class="small fw-bold">PAN Card No.</label>
-                    <input type="text" class="form-control" value="{{ $booking->pan_no ?? 'N/A' }}" readonly>
-                </div>
-                <div class="col-sm-4">
-                    <label class="small fw-bold">Aadhar No.</label>
-                    <input type="text" class="form-control" value="{{ $booking->adhar_no ?? 'N/A' }}" readonly>
-                </div>
-                <div class="col-sm-4">
-                    <label class="small fw-bold">GSTN</label>
-                    <input type="text" class="form-control"
-                        value="{{ $booking->gstn && trim($booking->gstn) !== '0' ? trim($booking->gstn) : 'N/A' }}"
-                        readonly>
-                </div>
-                <div class="col-sm-4">
-                    <label class="small fw-bold">Customer D.O.B.</label>
-
-                    <input type="text" class="form-control"
-                        value="{{ $booking->receipt_date ? \Carbon\Carbon::parse($booking->c_dob)->format('d-M-Y') : 'N/A' }}"
-                        readonly>
-                </div>
-
-                <div class="col-sm-4">
-                    <label class="small fw-bold">Branch</label>
-                    <input type="text" class="form-control" value="{{ $booking->branch?->name ?? 'N/A' }}" readonly>
-                </div>
-                <div class="col-sm-4">
-                    <label class="small fw-bold">Location</label>
-                    <input type="text" class="form-control"
-                        value="{{ $booking->location ? ($booking->location->name . ' - ' . ($booking->location->abbr ?? 'N/A')) : 'N/A' }}"
-                        readonly>
-                </div>
-                <div class="col-sm-4">
-                    <label class="small fw-bold">Other Location</label>
-                    <input type="text" class="form-control" value="{{ $booking->locationother ?? 'N/A' }}" readonly>
-                </div>
-            </div>
-        </div>
-
-        <div class="card card-body mt-3 shadow-sm" style="border-radius: 12px">
-            <!-- Referred By Details -->
-            <h2 class="mb-3  ">Referred By Details</h2>
-            <div class="row g-3">
-
-                <div class="col-sm-3">
-                    <label class="small fw-bold">Referred Customer Name</label>
-                    <input type="text" class="form-control" value="{{ $booking->r_name ?? 'N/A' }}" readonly>
-                </div>
-                <div class="col-sm-3">
-                    <label class="small fw-bold">Referred Mobile No.</label>
-                    <input type="text" class="form-control" value="{{ $booking->r_mobile ?? 'N/A' }}" readonly>
-                </div>
-                <div class="col-sm-2">
-                    <label class="small fw-bold">Existing Model</label>
-                    <input type="text" class="form-control" value="{{ $booking->r_model ?? 'N/A' }}" readonly>
-                </div>
-                <div class="col-sm-2">
-                    <label class="small fw-bold">Variant</label>
-                    <input type="text" class="form-control" value="{{ $booking->r_variant ?? 'N/A' }}" readonly>
-                </div>
-                <div class="col-sm-2">
-                    <label class="small fw-bold">Chassis/Regn. No.</label>
-                    <input type="text" class="form-control" value="{{ $booking->r_chassis ?? 'N/A' }}" readonly>
-                </div>
-            </div>
-        </div>
-
-        <div class="card card-body mt-3 shadow-sm" style="border-radius: 12px">
-            <!-- Purchase Type Details -->
-            <h2 class="mb-3">Purchase Type Details</h2>
-            <div class="row g-3">
-                <div class="col-sm-3">
-                    <label class="small fw-bold">Purchase Type</label>
-                    <input type="text" class="form-control" id="buyer_type" name="buyer_type"
-                        value="{{ $booking->buyer_type ?? 'N/A' }}" readonly>
-                </div>
-                {{-- <div class="col-sm-3">
-                    <label class="small fw-bold">Brand Make 1</label>
-                    <input type="text" class="form-control" id="enum_master1" name="enum_master1" value="{{ $make1 }}"
-                        readonly> {{-- Fix: $data['make1'] -> $make1
-                </div> --}}
-                <div class="col-sm-3">
-                    <label class="small fw-bold">Model Variant 1</label>
-                    <input type="text" class="form-control" value="{{ $booking->vh1_detail ?? 'N/A' }}" readonly>
-                </div>
-                {{-- <div class="col-sm-3">
-                    <label class="small fw-bold">Brand Make 1</label>
-                    <input type="text" class="form-control" id="enum_master1" name="enum_master1" value="{{ $make2 }}"
-                        readonly> Fix: $data['make1'] -> $make1
-                </div> --}}
-                <div class="col-sm-3">
-                    <label class="small fw-bold">Model Variant 2</label>
-                    <input type="text" class="form-control" value="{{ $booking->vh2_detail ?? 'N/A' }}" readonly>
-                </div>
-                <div class="col-sm-3">
-                    <label class="small fw-bold">Vehicle Registration No.</label>
-                    <input type="text" class="form-control" value="{{ $booking->registration_no ?? 'N/A' }}" readonly>
-                </div>
-                <div class="col-sm-3">
-                    <label class="small fw-bold">Manufacturing Year</label>
-                    <input type="text" class="form-control" value="{{ $booking->make_year ?? 'N/A' }}" readonly>
-                </div>
-                <div class="col-sm-3">
-                    <label class="small fw-bold">Odometer Reading</label>
-                    <input type="text" class="form-control" value="{{ $booking->odo_reading ?? 'N/A' }}" readonly>
-                </div>
-                <div class="col-sm-3">
-                    <label class="small fw-bold">Expected Price</label>
-                    <input type="text" class="form-control" value="₹ {{ number_format($booking->expected_price ?? 0) }}"
-                        readonly>
-                </div>
-                <div class="col-sm-3">
-                    <label class="small fw-bold">Offered Price</label>
-                    <input type="text" class="form-control" value="₹ {{ number_format($booking->offered_price ?? 0) }}"
-                        readonly>
-                </div>
-                <div class="col-sm-3">
-                    <label class="small fw-bold">Exchange Bonus</label>
-                    <input type="text" class="form-control" value="₹ {{ number_format($booking->exchange_bonus ?? 0) }}"
-                        readonly>
-                </div>
-                <div class="col-sm-3">
-                    <label class="small fw-bold">Price Gap</label>
-                    <input type="text" class="form-control" id="difference" name="difference"
-                        value="{{ $booking->expected_price - ($booking->offered_price + $booking->exchange_bonus) ?? 'N/A' }}"
-                        readonly>
-                </div>
-            </div>
-        </div>
-
-
-        <div class="card card-body mt-3 shadow-sm" style="border-radius: 12px">
-            <!-- Vehicle Details -->
-            <h2 class="mb-3  ">Vehicle Details</h2>
-            <div class="row g-3">
-
-                <div class="col-sm-3">
-                    <label class="small fw-bold">Segment</label>
-                    <input type="text" class="form-control" value="{{ $booking->segment_name ?? 'N/A' }}" readonly>
-                </div>
-                <div class="col-sm-3">
-                    <label class="small fw-bold">Model</label>
-                    <input type="text" class="form-control" value="{{ $booking->model ?? 'N/A' }}" readonly>
-                </div>
-                <div class="col-sm-3">
-                    <label class="small fw-bold">Variant</label>
-                    <input type="text" class="form-control" value="{{ $booking->variant ?? 'N/A' }}" readonly>
-                </div>
-                <div class="col-sm-3">
-                    <label class="small fw-bold">Color</label>
-                    <input type="text" class="form-control" value="{{ $booking->color ?? 'N/A' }}" readonly>
-                </div>
-                <div class="col-sm-3">
-                    <label class="small fw-bold">Seating</label>
-                    <input type="text" class="form-control" value="{{ $booking->seating ?? 'N/A' }}" readonly>
-                </div>
-                <div class="col-sm-5">
-                    <label class="small fw-bold">Accessories</label>
-                    <input type="text" class="form-control"
-                        value="{{ $booking->accessories ? str_replace(',', ', ', $booking->accessories) : 'N/A' }}"
-                        readonly>
-                </div>
-                <div class="col-sm-2">
-                    <label class="small fw-bold">Accessories Amount</label>
-                    <input type="text" class="form-control" value="₹ {{ number_format($booking->apack_amount ?? 0) }}"
-                        readonly>
-                </div>
-                <div class="col-sm-2">
-                    <label class="small fw-bold">Allotted Chassis No.</label>
-                    <input type="text" class="form-control" value="{{ $booking->chassis ?? 'N/A' }}" readonly>
-                </div>
-            </div>
-        </div>
-
-
-        <div class="card card-body mt-3 shadow-sm" style="border-radius: 12px">
-            <!-- Booking Type & Source -->
-            <h2 class="mb-3  ">Booking Type & Source</h2>
-            <div class="row g-3">
-                <div class="col-sm-3">
-                    <label class="small fw-bold">Booking Mode</label>
-                    <input type="text" class="form-control" value="{{ ucfirst($booking->b_mode ?? 'N/A') }}" readonly>
-                </div>
-                <div class="col-sm-3">
-                    <label class="small fw-bold">Online Booking Ref No.</label>
-                    <input type="text" class="form-control" value="{{ $booking->online_bk_ref_no ?? 'N/A' }}" readonly>
-                </div>
-                <div class="col-sm-3">
-                    <label class="small fw-bold">Booking Source</label>
-                    <input type="text" class="form-control" value="{{ ucfirst($booking->b_source ?? 'N/A') }}" readonly>
-                </div>
-                {{-- <div class="col-sm-3">
-                    <label class="small fw-bold">DSA</label>
-                    <input type="text" class="form-control" value="{{ $dsaname }}" readonly>
-                </div> --}}
-                {{-- <div class="col-sm-3">
-                    <label class="small fw-bold">Sales Consultant</label>
-                    <input type="text" class="form-control" id="saleconsultant_display" value="{{
-                                        optional(collect($saleconsultants)->firstWhere('id', $booking->consultant))['name'] ?? 'N/A'
-                                    }} - ({{
-                                        optional(collect($saleconsultants)->firstWhere('id', $booking->consultant))['emp_code'] ?? 'N/A'
-                                    }})" readonly>
-                </div> --}}
-                <div class="col-sm-3">
-                    <label class="small fw-bold">Delivery Date Type</label>
-                    <input type="text" class="form-control" value="{{ ucfirst($booking->del_type ?? 'N/A') }}" readonly>
-                </div>
-                <div class="col-sm-3">
-                    <label class="small fw-bold">Expected Delivery Date</label>
-                    <input type="text" class="form-control"
-                        value="{{ $booking->receipt_date ? \Carbon\Carbon::parse($booking->del_date)->format('d-M-Y') : 'N/A' }}"
-                        readonly>
-
-                </div>
-
-                <div class="col-sm-3">
-                    <label class="small fw-bold">Finance Mode</label>
-                    <input type="text" class="form-control" value="{{ ucfirst($booking->fin_mode ?? 'N/A') }}" readonly>
-                </div>
-                <div class="col-sm-3">
-                    <label class="small fw-bold">Financier</label>
-                    <input type="text" class="form-control"
-                        value="{{ \App\Models\XlFinancier::find($booking->financier)?->name ?? 'N/A' }}" readonly>
-                </div>
-
-                <div class="col-sm-3">
-                    <label class="small fw-bold">Loan File Status</label>
-                    <input type="text" class="form-control" value="{{ ucfirst($booking->loan_status ?? 'N/A') }}"
-                        readonly>
-                </div>
-
-            </div>
-        </div>
-
-        <div class="card card-body mt-3 shadow-sm mb-2" style="border-radius: 12px">
-            <h2 class="mb-3  ">DMS Booking Details</h2>
-            <div class="row g-3">
-                <div class="col-md-3 form-group">
-                    <label>
-                        DMS Booking No.
-
-                    </label>
-                    <input type="text" class="form-control" value="{{ $booking->dms_no ?? 'N/A' }}" readonly>
-                </div>
-
-                <div class="col-md-3 form-group">
-                    <label>
-                        DMS OTF No.
-
-                    </label>
-                    <input type="text" class="form-control" value="{{ $booking->dms_otf ?? 'N/A' }}" readonly>
-                </div>
-
-                <div class="col-md-3 form-group">
-                    <label>
-                        DMS OTF Date
-
-                    </label>
-
-                    <input type="text" class="form-control"
-                        value="{{ $booking->otf_date ? \Carbon\Carbon::parse($booking->otf_date)->format('d-M-Y') : 'N/A' }}"
-                        readonly>
-
-                </div>
-
-
-                <div class="col-md-3 form-group">
-                    <label>
-                        DMS SO No.
-
-                    </label>
-                    <input type="text" class="form-control" value="{{ $booking->dms_so ?? 'N/A' }}" readonly>
-                </div>
-
-            </div>
-        </div>
-
-    </div>
-
-    <div class="card card-body mt-2 shadow-sm" style="border-radius: 12px">
-
-        <div class="card-header">
-
-            <h2>{{ __('Booking Journey (Remarks)') }}</h2>
-
-        </div>
-
-        {{-- <div class="card-body"> --}}
-
-            <div class="row">
-
-                <div class="col-sm-12 table-responsive">
-
-                    <table id="tasks_history" class="table table-striped table-bordered table-hover" width="100%">
-
-                        <thead>
-
-                            <tr>
-
-                                <th width="10%">{{ __('DateTime') }}</th>
-
-                                <th width="20%">{{ __('Done By') }}</th>
-
-                                <th>{{ __('Details') }}</th>
-
-                                <th width="10%">{{ __('Image') }}</th>
-
-                            </tr>
-
-                        </thead>
-
-                        <tbody>
-
-
-                            {{--
-                            @foreach ($comm['status'] as $row)
-                            <tr>
-
-                                <td> {{ $row['timestamp'] }} </td>
-
-                                <td> {{ $row['actor'] }} </td>
-
-                                <td> {{ $row['details'] }} : {{ $row['action'] }} </td>
-
-                                <td>
-
-                                    @if ($row['image'] == false)
-                                    {{ __('-None-') }}
-                                    @else
-                                    <a href="{{ $row['image'] }}" target="_BLANK"><img src="{{ $row['image'] }}"
-                                            class="img-fluid" width="100" /></a>
-                                    @endif
-
-                                </td>
-
-                            </tr>
-                            @endforeach --}}
-
-                        </tbody>
-
-                    </table>
-
-                </div>
-
-            </div>
-
-            {{--
-        </div> --}}
-
-    </div>
-    @if ($booking->status == 1 || $booking->status == 6 || $booking->status == 8)
+            @if ($booking->status == 1 || $booking->status == 6 || $booking->status == 8)
     <div class="card mt-3 shadow-sm" style="border-radius: 12px">
         <div class="card-header">
             <h2 class="mb-0 fw-bold">
@@ -801,168 +259,7 @@
     </div>
     @endif
 
-    {{-- @if ($booking->status == 3)
-    <div class="card mt-4 shadow-sm">
-        <div class="card-header bg-danger text-black">
-            <h2 class="mb-0 fw-bold">
-                <i class="la la-exclamation-triangle me-2"></i>
-                Actions for Cancelled Booking
-            </h2>
-        </div>
-        <div class="card-body">
-            <form method="POST" action="{{ route('request-refund', $booking->id) }}" enctype="multipart/form-data">
-                @csrf
-
-                <div class="row g-3">
-                    <!-- Booking Amount (readonly) -->
-                    <div class="col-md-4">
-                        <label for="booking_amount" class="form-label fw-bold">Booking Amount</label>
-                        <input type="text" class="form-control" name="booking_amount"
-                            value="{{$booking->booking_amount ?? 'N/A' }}" readonly>
-                        <input type="hidden" name="id" value="{{ $booking->id }}">
-                    </div>
-
-                    <!-- Deduction -->
-                    <div class="col-md-4">
-                        <label for="deduction" class="form-label fw-bold">
-                            Deduction <span class="text-danger">*</span>
-                        </label>
-                        <input type="text" class="form-control" name="deduction" id="deduction" value="0" required
-                            oninput="calculateRemaining()">
-                    </div>
-
-                    <!-- Remaining Amount -->
-                    <div class="col-md-4">
-                        <label for="remaining_amount" class="form-label fw-bold">Remaining Amount</label>
-                        <input type="text" class="form-control" name="remaining_amount" id="remaining_amount"
-                            value="{{ $booking->amount ?? 'N/A' }}" readonly>
-                    </div>
-
-                    <!-- Bank Name -->
-                    <div class="col-md-4">
-                        <label for="bank_name" class="form-label fw-bold">
-                            Bank Name <span class="text-danger">*</span>
-                        </label>
-                        <input type="text" class="form-control" name="bank_name" id="bank_name" required>
-                    </div>
-
-                    <!-- Branch Name -->
-                    <div class="col-md-4">
-                        <label for="branch_name" class="form-label fw-bold">
-                            Branch Name <span class="text-danger">*</span>
-                        </label>
-                        <input type="text" class="form-control" name="branch_name" id="branch_name" required>
-                    </div>
-
-                    <!-- Account Type -->
-                    <div class="col-md-4">
-                        <label for="account_type" class="form-label fw-bold">
-                            Account Type <span class="text-danger">*</span>
-                        </label>
-                        <select name="account_type" id="account_type" class="form-control" required>
-                            <option value="savings">Savings</option>
-                            <option value="current">Current</option>
-                        </select>
-                    </div>
-
-                    <!-- Account Number -->
-                    <div class="col-md-6">
-                        <label for="account_number" class="form-label fw-bold">
-                            Account Number <span class="text-danger">*</span>
-                        </label>
-                        <input type="text" class="form-control" name="account_number" id="account_number" required>
-                    </div>
-
-                    <!-- Account Holder Name -->
-                    <div class="col-md-6">
-                        <label for="holder_name" class="form-label fw-bold">
-                            Account Holder Name <span class="text-danger">*</span>
-                        </label>
-                        <input type="text" class="form-control" name="holder_name" id="holder_name" required>
-                    </div>
-
-                    <!-- IFSC Code -->
-                    <div class="col-md-3">
-                        <label for="ifsc_code" class="form-label fw-bold">
-                            IFSC Code <span class="text-danger">*</span>
-                        </label>
-                        <input type="text" class="form-control" name="ifsc_code" id="ifsc_code" required>
-                    </div>
-
-                    <!-- Upload Account Image -->
-                    <div class="col-md-3">
-                        <label for="ac_proof" class="form-label fw-bold">Upload Account Image <span
-                                class="text-danger">*</span></label>
-                        <input class="form-control" type="file" name="acc_proof" id="ac_proof"
-                            accept=".jpg,.jpeg,.png,.pdf" required>
-                        <small class="form-text text-muted">Max 2MB • jpg, png, pdf</small>
-
-                        <!-- Chip yahan aayegi -->
-                        <div id="ac_proof_chip" class="mt-2"></div>
-                    </div>
-
-                    <!-- Reason for Deduction -->
-                    <div class="col-md-6">
-                        <label for="deduction_reason" class="form-label fw-bold">
-                            Reason for Deduction <span class="text-danger">*</span>
-                        </label>
-                        <textarea class="form-control" name="deduction_reason" id="deduction_reason"
-                            required></textarea>
-                    </div>
-
-                    <!-- Upload Aadhar Image -->
-                    <div class="col-md-3">
-                        <label for="aadhar_proof" class="form-label fw-bold">Upload Aadhar Image <span
-                                class="text-danger">*</span></label>
-                        <input class="form-control" type="file" name="aadhar" id="aadhar_proof"
-                            accept=".jpg,.jpeg,.png,.pdf" required>
-                        <small class="form-text text-muted">Max 2MB • jpg, png, pdf</small>
-
-                        <div id="aadhar_proof_chip" class="mt-2"></div>
-                    </div>
-
-                    <!-- Upload PAN Image -->
-                    <div class="col-md-3">
-                        <label for="pan_proof" class="form-label fw-bold">Upload PAN Image <span
-                                class="text-danger">*</span></label>
-                        <input class="form-control" type="file" name="pan" id="pan_proof" accept=".jpg,.jpeg,.png,.pdf"
-                            required>
-                        <small class="form-text text-muted">Max 2MB • jpg, png, pdf</small>
-
-                        <div id="pan_proof_chip" class="mt-2"></div>
-                    </div>
-
-                    <!-- Restore Button -->
-                    <div class="row mt-3 justify-content-center">
-                        <div class="col-auto text-center">
-                            <button type="button" class="btn btn-success btn-lg px-5 shadow me-4 me-md-5"
-                                id="activateButton">
-                                <i class="la la-undo me-1"></i> Restore Booking
-                            </button>
-
-                            <button type="submit" form="activateForm" class="btn btn-primary btn-lg px-5 shadow">
-                                Process for Refund
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Hidden form same as before -->
-                    <form id="activateForm" method="POST" action="{{ route('statusave', $booking->id) }}"
-                        style="display:none;">
-                        @csrf
-                        <input type="hidden" name="status" value="{{ $booking->pending == 0 ? 1 : 8 }}">
-                    </form>
-                </div>
-            </form>
-
-            <!-- Hidden Restore Form -->
-            <form id="activateForm" method="POST" action="{{ route('statusave', $booking->id) }}" style="display:none;">
-                @csrf
-                <input type="hidden" name="status" value="1">
-            </form>
-        </div>
-    </div>
-    @endif --}}
+    
     @if ($booking->status == 3)
     <div class="card mt-4 shadow-sm" style="border-radius: 12px">
         <div class="card-header text-black">
@@ -1100,8 +397,7 @@
 
                     <!-- Action buttons -->
                     <div class="col-12 mt-4 text-center">
-                        <button type="button" class="btn btn-success btn-lg px-5 me-4"
-                            onclick="if(confirm('Restore this cancelled booking?')) document.getElementById('activateForm').submit();">
+                        <button type="button" class="btn btn-success btn-lg px-5 me-4" id="restoreCancelledBtn">
                             <i class="la la-undo"></i> Restore Booking
                         </button>
 
@@ -1189,66 +485,7 @@
                         value="{{ $data['refund']['req_date'] ?? 'N/A' }}" readonly>
                 </div>
 
-                <!-- Proof Images -->
-                <!-- Account Proof -->
-                {{-- <div class="col-sm-4">
-                    <label class="small fw-bold">Account Proof</label>
-                    @php
-                    // Use whatever URL is already in $data (controller already tried to set it)
-                    $accUrl = $data['acc_proof'] ?? '';
-                    $accName = $accUrl ? basename($accUrl) : null;
-                    $isPdf = $accUrl && str_contains($accUrl, '.pdf');
-                    @endphp
-                    @if($accUrl && $accUrl !== '')
-                    <span class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2 px-3 py-2 mt-2"
-                        style="cursor:pointer"
-                        onclick="openProofPreview('{{ $accUrl }}','{{ $isPdf ? 'pdf' : 'image' }}','{{ addslashes($accName) }}')">
-                        <i class="la la-paperclip"></i>
-                        <span class="fw-medium small">{{ Str::limit($accName, 28) }}</span>
-                    </span>
-                    @else
-                    <span class="badge bg-secondary-subtle text-secondary mt-2">N/A (not uploaded or path
-                        missing)</span>
-                    @endif
-                </div>
-                <div class="col-sm-4">
-                    <label class="small fw-bold">Aadhaar Image</label>
-                    @php
-                    $aadharUrl = $data['aadhar'] ?? '';
-                    $aadharName = $aadharUrl ? basename($aadharUrl) : null;
-                    $isPdf = $aadharUrl && str_contains($aadharUrl, '.pdf');
-                    @endphp
-                    @if($aadharUrl && $aadharUrl !== '')
-                    <span class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2 px-3 py-2 mt-2"
-                        style="cursor:pointer"
-                        onclick="openProofPreview('{{ $aadharUrl }}','{{ $isPdf ? 'pdf' : 'image' }}','{{ addslashes($aadharName) }}')">
-                        <i class="la la-paperclip"></i>
-                        <span class="fw-medium small">{{ Str::limit($aadharName, 28) }}</span>
-                    </span>
-                    @else
-                    <span class="badge bg-secondary-subtle text-secondary mt-2">N/A (not uploaded or path
-                        missing)</span>
-                    @endif
-                </div>
-                <div class="col-sm-4">
-                    <label class="small fw-bold">PAN Image</label>
-                    @php
-                    $panUrl = $data['pan'] ?? '';
-                    $panName = $panUrl ? basename($panUrl) : null;
-                    $isPdf = $panUrl && str_contains($panUrl, '.pdf');
-                    @endphp
-                    @if($panUrl && $panUrl !== '')
-                    <span class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2 px-3 py-2 mt-2"
-                        style="cursor:pointer"
-                        onclick="openProofPreview('{{ $panUrl }}','{{ $isPdf ? 'pdf' : 'image' }}','{{ addslashes($panName) }}')">
-                        <i class="la la-paperclip"></i>
-                        <span class="fw-medium small">{{ Str::limit($panName, 28) }}</span>
-                    </span>
-                    @else
-                    <span class="badge bg-secondary-subtle text-secondary mt-2">N/A (not uploaded or path
-                        missing)</span>
-                    @endif
-                </div> --}}
+                
 
                 <!-- Refund Queue Proofs – using same modal & same JS function -->
                 @foreach([
@@ -1372,7 +609,7 @@
     </div>
 
     <!-- Rejection Card (Hidden by default) -->
-    <div class="card mt-4" style="border-radius: 12px" id="rejectionCard" style="display: none;">
+    <div class="card mt-4" id="rejectionCard" style="border-radius: 12px; display: none;">
         <div class="card-header  text-black">
             <h2 class="mb-0">{{ __('Reject Refund Request') }}</h2>
         </div>
@@ -1486,7 +723,7 @@
     <!-- Edit Refund Details Form -->
     <form action="{{ route('editRefund', $booking->id) }}" method="POST" id="refundForm" enctype="multipart/form-data">
         @csrf
-        <div class="card mt-4" id="refund-details-card">
+        <div class="card mt-4" id="refund-details-card" style="border-radius: 12px">
             <div class="card-header position-relative">
                 <h2 class="mb-0">{{ __('Edit Refund Details') }}</h2>
                 <button type="button" class="btn btn-sm btn-light position-absolute top-0 end-0 m-2"
@@ -1495,7 +732,7 @@
                 </button>
             </div>
             <div class="card-body">
-                <div class="row g-3">
+                <div class="row">
                     <!-- Booking Amount -->
                     <div class="col-sm-4">
                         <label>{{ __('Booking Amount') }}</label>
@@ -1564,42 +801,29 @@
                             value="{{ $data['refund']['ifsc_code'] ?? '' }}" required>
                     </div>
 
-                    <!-- Account Proof -->
-                    <div class="col-sm-4">
-                        <label class="small fw-bold">Account Proof</label>
+                    <!-- Account Proof - FIXED -->
+                        <div class="col-sm-4">
+                            <label class="small fw-bold">Account Proof</label>
 
-                        @php
-                        $file = $data['acc_proof'] ?? null;
-                        $fileName = $file ? basename($file) : null;
-                        $isPdf = $file && str_contains($file,'.pdf');
-                        @endphp
+                            @php
+                            $url = $data['acc_proof'] ?? '';
+                            $fileName = $url ? basename($url) : '';
+                            @endphp
 
-                        @if($file)
-
-                        <div class="mt-2">
-
+                            @if($url)
                             <span
-                                class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2 px-3 py-2"
-                                style="cursor:pointer"
-                                onclick="openProofPreview('{{ $file }}','{{ $isPdf ? 'pdf':'image' }}','{{ addslashes($fileName) }}')">
-
+                                class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2 px-3 py-2 mt-2"
+                                style="cursor:pointer;"
+                                onclick="openPaymentProof('{{ $url }}', '{{ addslashes($fileName) }}')">
                                 <i class="la la-paperclip"></i>
-
-                                <span class="fw-medium small">
-                                    {{ Str::limit($fileName,28) }}
+                                <span class="fw-medium small text-truncate" style="max-width:160px;">
+                                    {{ Str::limit($fileName, 22) }}
                                 </span>
-
                             </span>
-
+                            @else
+                            <span class="badge bg-secondary-subtle text-secondary mt-2">Not uploaded</span>
+                            @endif
                         </div>
-
-                        @else
-                        <span class="badge bg-secondary-subtle text-secondary mt-2">
-                            No proof uploaded
-                        </span>
-                        @endif
-
-                    </div>
 
                     <!-- Details -->
                     <div class="col-sm-4">
@@ -1685,177 +909,511 @@
 
     @endif
     @if ($booking->status == 5)
-    <!-- Refund Details Card -->
-    <div class="card mt-4" style="border-radius: 12px" id="refund-details-card">
-        <div class="card-header position-relative">
-            <h2 class="mb-0">{{ __('Refund Details') }}</h2>
+        <!-- Refund Details Card -->
+        <div class="card mt-4" style="border-radius: 12px" id="refund-details-card">
+            <div class="card-header position-relative">
+                <h2 class="mb-0">{{ __('Refund Details') }}</h2>
+                <button type="button" class="btn btn-sm btn-light position-absolute top-0 end-0 m-2"
+                    id="toggle-edit-refund">
+                    <i class="ik ik-edit" id="edit-icon"></i>
+                </button>
+            </div>
+            <div class="card-body">
+                <form id="refund-details-form" method="POST" action="{{ route('update-refunded', $booking->id) }}"
+                    enctype="multipart/form-data">
+                    @csrf
+                    @method('PUT')
 
-            <button type="button" class="btn btn-sm btn-light position-absolute top-0 end-0 m-2"
-                id="toggle-edit-refund">
-                <i class="ik ik-edit" id="edit-icon"></i>
-            </button>
-
-        </div>
-        <div class="card-body">
-            <form id="refund-details-form" method="POST" action="{{ route('update-refunded', $booking->id) }}"
-                enctype="multipart/form-data">
-                @csrf
-                @method('PUT')
-                <!-- Agar route PUT hai to yeh zaroori -->
-
-                <div class="row g-3">
-                    <!-- Refund Date -->
-                    {{-- <div class="col-sm-4">
-                        <label>{{ __('Refund Date') }}</label>
-                        <input type="text" class="form-control" name="ref_date" id="ref_date"
-                            value="{{ $data['refund']['ref_date'] ? \Carbon\Carbon::parse($data['refund']['ref_date'])->format('d-M-Y') : 'N/A' }}"
-                            readonly>
-                        <input type="hidden" name="hidden_ref" id="hidden_ref"
-                            value="{{ $data['refund']['ref_date'] ?? now()->format('Y-m-d') }}">
-                        <input type="hidden" name="booking_id" value="{{ $booking->id }}">
-                    </div> --}}
-
-                    <!-- Mode of Payment -->
-                    <div class="col-sm-3">
-                        <label>{{ __('Mode of Payment') }}</label>
-                        <select class="form-control" name="mode" id="mode" disabled>
-                            <option value="Cash" {{ ($data['refund']['mode'] ?? '' )=='Cash' ? 'selected' : '' }}>
-                                Cash</option>
-                            <option value="Online" {{ ($data['refund']['mode'] ?? '' )=='Online' ? 'selected' : '' }}>
-                                Online</option>
-                            <option value="Cheque" {{ ($data['refund']['mode'] ?? '' )=='Cheque' ? 'selected' : '' }}>
-                                Cheque</option>
-                        </select>
-                    </div>
-
-                    <!-- Transaction Details -->
-                    <div class="col-sm-3">
-                        <label>{{ __('Transaction Details') }}</label>
-                        <input type="text" class="form-control" name="transaction_details"
-                            value="{{ $data['refund']['transaction_details'] ?? 'N/A' }}" readonly>
-                    </div>
-
-                    <!-- Remarks -->
-                    <div class="col-sm-6">
-                        <label>{{ __('Remarks') }}</label>
-                        <input type="text" class="form-control" name="remark"
-                            value="{{ $data['refund']['remark'] ?? 'N/A' }}" readonly>
-                    </div>
-
-                    <!-- Payment Proof -->
-                    {{-- <div class="col-sm-2">
-                        <label>{{ __('Payment Proof') }}</label>
-                        @if ($data['pay_proof'])
-                        <a href="{{ $data['pay_proof'] }}" target="_blank">
-                            <img src="{{ $data['pay_proof'] }}" class="img-fluid" width="100" alt="Payment Proof"
-                                id="payproof">
-                        </a>
-                        @else
-                        <p class="text-muted">N/A</p>
-                        @endif
-                        <input type="file" class="form-control mt-2" name="pay_proof" id="pay_proof"
-                            accept=".jpg,.jpeg,.png,.pdf" style="display:none;" onchange="previewPAY()">
-                    </div> --}}
-
-                    <!-- Edit / Update Buttons (only for UID 6) -->
-
-                    <div class="col-sm-12 mt-3 text-end">
-                        <button type="button" class="btn btn-primary" id="editRefundButton">
-                            {{ __('Edit') }}
-                        </button>
-                        <button type="submit" class="btn btn-success" id="updateRefundButton" style="display:none;">
-                            {{ __('Update') }}
-                        </button>
-                    </div>
-
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Add Remarks Card -->
-    <div class="card mt-4" style="border-radius: 12px" id="remark-card">
-        <div class="card-header position-relative">
-            <h2 class="mb-0">{{ __('Add Remarks') }}</h2>
-            <button type="button" class="btn btn-sm btn-light position-absolute top-0 end-0 m-2" id="toggle-remark">
-                <i class="ik ik-minus" id="remark-icon"></i>
-            </button>
-        </div>
-        <div class="card-body">
-            <form class="forms-sample" method="POST" action="{{ route('booking.followup.store') }}"
-                enctype="multipart/form-data">
-                @csrf
-                <div class="row g-3">
-                    <div class="col-sm-9">
-                        <label>{{ __('Remarks') }} <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" name="remark" id="remark" required>
-                        <input type="hidden" name="id" value="{{ $booking->id }}">
-                    </div>
-
-                    {{-- <div class="col-sm-3">
-                        <label>{{ __('Upload Image/PDF') }}</label>
-                        <input type="file" class="form-control" name="fdoc" id="fdoc" accept=".jpg,.jpeg,.png,.pdf"
-                            onchange="previewLeft()">
-                        <small class="text-muted">JPG, PNG, PDF (max 2MB)</small>
-
-                        <div style="margin-top:10px; position:relative; display:inline-block;">
-                            <img id="frameLeft" class="img-fluid" width="100" style="display:none;">
-                            <img id="pdfIcon" src="https://cdn-icons-png.flaticon.com/512/179/179483.png"
-                                class="img-fluid" width="80" style="display:none;" />
-                            <button type="button" id="clearImage"
-                                style="position:absolute; top:-10px; right:-10px; background:red; color:white; border:none; border-radius:50%; width:24px; height:24px; cursor:pointer; display:none;"
-                                onclick="clearImage()">×</button>
+                    <div class="row g-3">
+                        <!-- Mode of Payment -->
+                        <div class="col-sm-3">
+                            <label>{{ __('Mode of Payment') }}</label>
+                            <select class="form-control" name="mode" id="mode" disabled>
+                                <option value="Cash" {{ ($data['refund']['mode'] ?? '' )=='Cash' ? 'selected' : '' }}>
+                                    Cash</option>
+                                <option value="Online" {{ ($data['refund']['mode'] ?? '' )=='Online' ? 'selected' : ''
+                                    }}>Online</option>
+                                <option value="Cheque" {{ ($data['refund']['mode'] ?? '' )=='Cheque' ? 'selected' : ''
+                                    }}>Cheque</option>
+                            </select>
                         </div>
-                    </div> --}}
-                    <div class="col-sm-3">
-                        <label>{{ __('Upload Image/PDF') }} <span class="text-danger">*</span></label>
-                        <input type="file" class="form-control" name="fdoc" id="fdoc" accept=".jpg,.jpeg,.png,.pdf"
-                            onchange="handleFdocAttachment(this)">
-                        <small class="text-muted">JPG, PNG, PDF (max 2MB)</small>
 
-                        <!-- Chip Preview Area -->
-                        <div id="fdocProofPreview" class="mt-3"></div>
+                        <!-- Transaction Details -->
+                        <div class="col-sm-3">
+                            <label>{{ __('Transaction Details') }}</label>
+                            <input type="text" class="form-control" name="transaction_details"
+                                value="{{ $data['refund']['transaction_details'] ?? 'N/A' }}" readonly>
+                        </div>
 
-                        <!-- Hidden delete flag (agar edit mode mein existing file ho to) -->
-                        <input type="hidden" name="delete_fdoc" id="delete_fdoc" value="0">
+                        <!-- Remarks -->
+                        <div class="col-sm-3">
+                            <label>{{ __('Remarks') }}</label>
+                            <input type="text" class="form-control" name="remark"
+                                value="{{ $data['refund']['remark'] ?? 'N/A' }}" readonly>
+                        </div>
+
+                        <!-- Payment Proof -->
+                        <div class="col-sm-3">
+                            <label class="small fw-bold">Payment Proof (Refund Proof)</label>
+
+                            @php
+                            $payUrl = $data['pay_proof'] ?? '';
+                            $payFileName = $payUrl ? basename($payUrl) : '';
+                            @endphp
+
+                            @if($payUrl)
+                            <span
+                                class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2 px-3 py-2 mt-2"
+                                style="cursor:pointer;"
+                                onclick="openPaymentProof('{{ $payUrl }}', '{{ addslashes($payFileName) }}')">
+                                <i class="la la-paperclip"></i>
+                                <span class="fw-medium small text-truncate" style="max-width:160px;">
+                                    {{ Str::limit($payFileName, 22) }}
+                                </span>
+                            </span>
+                            @else
+                            <span class="badge bg-secondary-subtle text-secondary mt-2">Not uploaded</span>
+                            @endif
+                        </div>
+
+                        <!-- Edit / Update Buttons -->
+                        {{-- <div class="col-sm-12 mt-3 text-end">
+                            <button type="button" class="btn btn-primary" id="editRefundButton">
+                                {{ __('Edit') }}
+                            </button>
+                            <button type="submit" class="btn btn-success" id="updateRefundButton" style="display:none;">
+                                {{ __('Update') }}
+                            </button>
+                        </div> --}}
                     </div>
-                    {{-- <div class="col-sm-12 mt-3">
-                        <div class="row">
-                            <div class="col-sm-1">
-                                <button type="submit" class="btn btn-success btn-block">
-                                    {{ __('Add Remarks') }}
+                </form>
+            </div>
+        </div>
+        @endif
+           
+                
+                    <div class="card card-body mt-3 shadow-sm" style="border-radius: 12px">
+                        <!-- Payment Details -->
+                        <h2 class="mb-3  ">Payment Details</h2>
+                        <div class="row g-3">
+                            <div class="col-sm-3">
+                                <label class="small fw-bold">Customer Type</label>
+                                <input type="text" class="form-control" value="{{ ucfirst($booking->b_type ?? 'N/A') }}"
+                                    readonly>
+                            </div>
+                            <div class="col-sm-3">
+                                <label class="small fw-bold">Customer Category</label>
+                                <input type="text" class="form-control" value="{{ ucfirst($booking->b_cat ?? 'N/A') }}"
+                                    readonly>
+                            </div>
+                            <div class="col-sm-3">
+                                <label class="small fw-bold">Booking Date</label>
+                                <input type="text" class="form-control"
+                                    value="{{ $booking->booking_date ? \Carbon\Carbon::parse($booking->booking_date)->format('d-M-Y') : 'N/A' }}"
+                                    readonly>
+                            </div>
+                            <div class="col-sm-3">
+                                <label class="small fw-bold">Collection Type</label>
+                                <input type="text" class="form-control" id="col_type"
+                                    value="{{ $booking->col_type == 1 ? 'Receipt' : ($booking->col_type == 2 ? 'Field Collection (By Sales Team)' : ($booking->col_type == 3 ? 'Field Collection (By DSA)' : 'Used Car Purchased')) }}"
+                                    readonly>
+                            </div>
+                            <div class="col-sm-4">
+                                <label class="small fw-bold">Collected By</label>
+                                <input type="text" class="form-control"
+                                    value="{{ \App\Models\User::find($booking->col_by)?->name ?? 'N/A' }}" readonly>
+                            </div>
+                            <div class="col-sm-4">
+                                <label class="small fw-bold">Booking Amount</label>
+                                <input type="text" class="form-control"
+                                    value="₹ {{ number_format($booking->booking_amount ?? 0) }}" readonly>
+                            </div>
+                            <div class="col-sm-4">
+                                <label class="small fw-bold">
+                                    {{ in_array($booking->col_type, [1,4])
+                                    ? ($booking->col_type == 1 ? 'Receipt No.' : 'Voucher No.')
+                                    : 'Receipt/Voucher No.' }}
+                                </label>
+                                <input type="text" class="form-control" value="{{ $booking->receipt_no ?? 'N/A' }}"
+                                    readonly>
+                            </div>
+                            <div class="col-sm-4">
+                                <label class="small fw-bold">Receipt/Voucher Date</label>
+                                <input type="text" class="form-control"
+                                    value="{{ $booking->receipt_date ? \Carbon\Carbon::parse($booking->receipt_date)->format('d-M-Y') : 'N/A' }}"
+                                    readonly>
+                            </div>
+
+                           
+
+                            <!-- Payment Proof - 100% add.blade.php jaisa -->
+                            <div class="col-sm-3">
+                                <label class="small fw-bold">Payment Proof</label>
+
+                                @php
+                                $payment = $booking->bookingAmounts()->latest()->first();
+                                $hasProof = $payment && $payment->hasMedia('amount-proof');
+                                $media = $hasProof ? $payment->getFirstMedia('amount-proof') : null;
+                                $fileUrl = $hasProof ? $media->getUrl() : null;
+                                $fileName = $hasProof ? $media->file_name : null;
+                                $isPdf = $hasProof && str_contains($media?->mime_type ?? '', 'pdf');
+                                @endphp
+
+                                @if($hasProof)
+                                <div class="mt-2" id="paymentProofPreview">
+
+                                    <span
+                                        class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2 px-3 py-2"
+                                        style="cursor:pointer;"
+                                        onclick="openPaymentProofModal('{{ $fileUrl }}','{{ addslashes($fileName) }}')">
+
+                                        <i class="la la-paperclip"></i>
+
+                                        <span class="fw-medium small">
+                                            {{ Str::limit($fileName, 28) }}
+                                        </span>
+
+                                    </span>
+
+                                </div>
+                                <i
+                                    class="{{ $isPdf ? 'fas fa-file-pdf text-danger' : 'fas fa-file-image text-primary' }} fs-4 me-2"></i>
+                                {{-- <span class="file-name text-truncate" title="{{ $fileName }}">
+                                    {{ Str::limit($fileName, 24) }}
+                                </span> --}}
+                                <button type="button" class="btn-action btn-download ms-2" title="Download"
+                                    onclick="event.stopPropagation(); downloadFile('{{ $fileUrl }}', '{{ addslashes($fileName) }}')">
+                                    <i class="fas fa-download"></i>
                                 </button>
                             </div>
-                            <div class="col-sm-10">
-                                <div class="form-group">
-                                    <a href="{{ backpack_url("booking/{$booking->id}/edit") }}"
-                                        class="btn btn-primary btn-block"
-                                        title="Edit Booking">
-                                        <i class="la la-edit"></i> {{ __('Edit Booking') }}
-                                    </a>
-                                </div>
-                            </div>
                         </div>
-                    </div> --}}
-                    <div class="col-sm-12 mt-3">
-                        <div class="d-flex justify-content-center gap-3 flex-wrap">
-                            <button type="submit" class="btn btn-success">
-                                {{ __('Add Remarks') }}
-                            </button>
-
-                            <a href="{{ backpack_url("booking/{$booking->id}/edit") }}"
-                                class="btn btn-primary"
-                                title="Edit Booking">
-                                <i class="la la-edit"></i> {{ __('Edit Booking') }}
-                            </a>
+                        @else
+                        <div class="badge bg-secondary-subtle text-secondary px-3 py-2 mt-2">
+                            No proof uploaded
                         </div>
+                        @endif
                     </div>
                 </div>
-            </form>
-        </div>
-    </div>
+            </div>                
+        
 
-    @endif
+        <div class="card card-body mt-3 shadow-sm" style="border-radius: 12px">
+            <!-- Customer Details -->
+            <h2 class="mb-3  ">Customer Details</h2>
+            <div class="row g-3">
+                <div class="col-sm-3">
+                    <label class="small fw-bold">Customer Name</label>
+                    <input type="text" class="form-control" value="{{ $booking->name ?? 'N/A' }}" readonly>
+                </div>
+                <div class="col-sm-3">
+                    <label class="small fw-bold">Care Of</label>
+                    <input type="text" class="form-control" id="title" name="title" value="{{ $booking->care_of_type == 5
+                                                ? 'Owned By'
+                                                : ($booking->care_of_type == 1
+                                                    ? 'Son of'
+                                                    : ($booking->care_of_type == 2
+                                                        ? 'Daughter of'
+                                                        : ($booking->care_of_type == 3
+                                                            ? 'Married'
+                                                            : ($booking->care_of_type == 4
+                                                                ? 'Guardian Name'
+                                                                : 'N/A')))) }}" readonly>
+                </div>
+                <div class="col-sm-3">
+                    <label class="small fw-bold">Care Of Name</label>
+                    <input type="text" class="form-control" value="{{ $booking->care_of ?? 'N/A' }}" readonly>
+                </div>
+                <div class="col-sm-3">
+                    <label class="small fw-bold">Contact No.</label>
+                    <input type="text" class="form-control" value="{{ $booking->mobile ?? 'N/A' }}" readonly>
+                </div>
+                <div class="col-sm-3">
+                    <label class="small fw-bold">Alternate Contact No.</label>
+                    <input type="text" class="form-control" value="{{ $booking->alt_mobile ?? 'N/A' }}" readonly>
+                </div>
+                <div class="col-sm-3">
+                    <label class="small fw-bold">Gender</label>
+                    <input type="text" class="form-control" value="{{ ucfirst($booking->gender ?? 'N/A') }}" readonly>
+                </div>
+                <div class="col-sm-3">
+                    <label class="small fw-bold">Occupation</label>
+                    <input type="text" class="form-control" value="{{ match($booking->occ ?? '') {
+                                    'Agriculture'                  => 'Agriculture',
+                                    'Business'                     => 'Business',
+                                    'Salaried (Govt.)'             => 'Salaried (Govt.)',
+                                    'Salaried (Pvt.)'              => 'Salaried (Pvt.)',
+                                    'Self Employed (Professional)' => 'Self Employed (Professional)',
+                                    'Pensioner'                    => 'Pensioner',
+                                    'Other'                        => 'Other',
+                                    default                        => 'N/A'
+                                } }}" readonly>
+                </div>
+                <div class="col-sm-3">
+                    <label class="small fw-bold">PAN Card No.</label>
+                    <input type="text" class="form-control" value="{{ $booking->pan_no ?? 'N/A' }}" readonly>
+                </div>
+                <div class="col-sm-4">
+                    <label class="small fw-bold">Aadhar No.</label>
+                    <input type="text" class="form-control" value="{{ $booking->adhar_no ?? 'N/A' }}" readonly>
+                </div>
+                <div class="col-sm-4">
+                    <label class="small fw-bold">GSTN</label>
+                    <input type="text" class="form-control"
+                        value="{{ $booking->gstn && trim($booking->gstn) !== '0' ? trim($booking->gstn) : 'N/A' }}"
+                        readonly>
+                </div>
+                <div class="col-sm-4">
+                    <label class="small fw-bold">Customer D.O.B.</label>
+
+                    <input type="text" class="form-control"
+                        value="{{ $booking->receipt_date ? \Carbon\Carbon::parse($booking->c_dob)->format('d-M-Y') : 'N/A' }}"
+                        readonly>
+                </div>
+
+                <div class="col-sm-4">
+                    <label class="small fw-bold">Branch</label>
+                    <input type="text" class="form-control" value="{{ $booking->branch?->name ?? 'N/A' }}" readonly>
+                </div>
+                <div class="col-sm-4">
+                    <label class="small fw-bold">Location</label>
+                    <input type="text" class="form-control"
+                        value="{{ $booking->location ? ($booking->location->name . ' - ' . ($booking->location->abbr ?? 'N/A')) : 'N/A' }}"
+                        readonly>
+                </div>
+                <div class="col-sm-4">
+                    <label class="small fw-bold">Other Location</label>
+                    <input type="text" class="form-control" value="{{ $booking->locationother ?? 'N/A' }}" readonly>
+                </div>
+            </div>
+        </div>
+
+        <div class="card card-body mt-3 shadow-sm" style="border-radius: 12px">
+            <!-- Referred By Details -->
+            <h2 class="mb-3  ">Referred By Details</h2>
+            <div class="row g-3">
+
+                <div class="col-sm-3">
+                    <label class="small fw-bold">Referred Customer Name</label>
+                    <input type="text" class="form-control" value="{{ $booking->r_name ?? 'N/A' }}" readonly>
+                </div>
+                <div class="col-sm-3">
+                    <label class="small fw-bold">Referred Mobile No.</label>
+                    <input type="text" class="form-control" value="{{ $booking->r_mobile ?? 'N/A' }}" readonly>
+                </div>
+                <div class="col-sm-2">
+                    <label class="small fw-bold">Existing Model</label>
+                    <input type="text" class="form-control" value="{{ $booking->r_model ?? 'N/A' }}" readonly>
+                </div>
+                <div class="col-sm-2">
+                    <label class="small fw-bold">Variant</label>
+                    <input type="text" class="form-control" value="{{ $booking->r_variant ?? 'N/A' }}" readonly>
+                </div>
+                <div class="col-sm-2">
+                    <label class="small fw-bold">Chassis/Regn. No.</label>
+                    <input type="text" class="form-control" value="{{ $booking->r_chassis ?? 'N/A' }}" readonly>
+                </div>
+            </div>
+        </div>
+
+        <div class="card card-body mt-3 shadow-sm" style="border-radius: 12px">
+            <!-- Purchase Type Details -->
+            <h2 class="mb-3">Purchase Type Details</h2>
+            <div class="row g-3">
+                <div class="col-sm-3">
+                    <label class="small fw-bold">Purchase Type</label>
+                    <input type="text" class="form-control" id="buyer_type" name="buyer_type"
+                        value="{{ $booking->buyer_type ?? 'N/A' }}" readonly>
+                </div>
+                {{-- <div class="col-sm-3">
+                    <label class="small fw-bold">Brand Make 1</label>
+                    <input type="text" class="form-control" id="enum_master1" name="enum_master1" value="{{ $make1 }}"
+                        readonly> {{-- Fix: $data['make1'] -> $make1
+                </div> --}}
+                <div class="col-sm-3">
+                    <label class="small fw-bold">Model Variant 1</label>
+                    <input type="text" class="form-control" value="{{ $booking->vh1_detail ?? 'N/A' }}" readonly>
+                </div>
+                
+                <div class="col-sm-3">
+                    <label class="small fw-bold">Model Variant 2</label>
+                    <input type="text" class="form-control" value="{{ $booking->vh2_detail ?? 'N/A' }}" readonly>
+                </div>
+                <div class="col-sm-3">
+                    <label class="small fw-bold">Vehicle Registration No.</label>
+                    <input type="text" class="form-control" value="{{ $booking->registration_no ?? 'N/A' }}" readonly>
+                </div>
+                <div class="col-sm-3">
+                    <label class="small fw-bold">Manufacturing Year</label>
+                    <input type="text" class="form-control" value="{{ $booking->make_year ?? 'N/A' }}" readonly>
+                </div>
+                <div class="col-sm-3">
+                    <label class="small fw-bold">Odometer Reading</label>
+                    <input type="text" class="form-control" value="{{ $booking->odo_reading ?? 'N/A' }}" readonly>
+                </div>
+                <div class="col-sm-3">
+                    <label class="small fw-bold">Expected Price</label>
+                    <input type="text" class="form-control" value="₹ {{ number_format($booking->expected_price ?? 0) }}"
+                        readonly>
+                </div>
+                <div class="col-sm-3">
+                    <label class="small fw-bold">Offered Price</label>
+                    <input type="text" class="form-control" value="₹ {{ number_format($booking->offered_price ?? 0) }}"
+                        readonly>
+                </div>
+                <div class="col-sm-3">
+                    <label class="small fw-bold">Exchange Bonus</label>
+                    <input type="text" class="form-control" value="₹ {{ number_format($booking->exchange_bonus ?? 0) }}"
+                        readonly>
+                </div>
+                <div class="col-sm-3">
+                    <label class="small fw-bold">Price Gap</label>
+                    <input type="text" class="form-control" id="difference" name="difference"
+                        value="{{ $booking->expected_price - ($booking->offered_price + $booking->exchange_bonus) ?? 'N/A' }}"
+                        readonly>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="card card-body mt-3 shadow-sm" style="border-radius: 12px">
+            <!-- Vehicle Details -->
+            <h2 class="mb-3  ">Vehicle Details</h2>
+            <div class="row g-3">
+
+                <div class="col-sm-3">
+                    <label class="small fw-bold">Segment</label>
+                    <input type="text" class="form-control" value="{{ $booking->segment_name ?? 'N/A' }}" readonly>
+                </div>
+                <div class="col-sm-3">
+                    <label class="small fw-bold">Model</label>
+                    <input type="text" class="form-control" value="{{ $booking->model ?? 'N/A' }}" readonly>
+                </div>
+                <div class="col-sm-3">
+                    <label class="small fw-bold">Variant</label>
+                    <input type="text" class="form-control" value="{{ $booking->variant ?? 'N/A' }}" readonly>
+                </div>
+                <div class="col-sm-3">
+                    <label class="small fw-bold">Color</label>
+                    <input type="text" class="form-control" value="{{ $booking->color ?? 'N/A' }}" readonly>
+                </div>
+                <div class="col-sm-3">
+                    <label class="small fw-bold">Seating</label>
+                    <input type="text" class="form-control" value="{{ $booking->seating ?? 'N/A' }}" readonly>
+                </div>
+                <div class="col-sm-5">
+                    <label class="small fw-bold">Accessories</label>
+                    <input type="text" class="form-control"
+                        value="{{ $booking->accessories ? str_replace(',', ', ', $booking->accessories) : 'N/A' }}"
+                        readonly>
+                </div>
+                <div class="col-sm-2">
+                    <label class="small fw-bold">Accessories Amount</label>
+                    <input type="text" class="form-control" value="₹ {{ number_format($booking->apack_amount ?? 0) }}"
+                        readonly>
+                </div>
+                <div class="col-sm-2">
+                    <label class="small fw-bold">Allotted Chassis No.</label>
+                    <input type="text" class="form-control" value="{{ $booking->chassis ?? 'N/A' }}" readonly>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="card card-body mt-3 shadow-sm" style="border-radius: 12px">
+            <!-- Booking Type & Source -->
+            <h2 class="mb-3  ">Booking Type & Source</h2>
+            <div class="row g-3">
+                <div class="col-sm-3">
+                    <label class="small fw-bold">Booking Mode</label>
+                    <input type="text" class="form-control" value="{{ ucfirst($booking->b_mode ?? 'N/A') }}" readonly>
+                </div>
+                <div class="col-sm-3">
+                    <label class="small fw-bold">Online Booking Ref No.</label>
+                    <input type="text" class="form-control" value="{{ $booking->online_bk_ref_no ?? 'N/A' }}" readonly>
+                </div>
+                <div class="col-sm-3">
+                    <label class="small fw-bold">Booking Source</label>
+                    <input type="text" class="form-control" value="{{ ucfirst($booking->b_source ?? 'N/A') }}" readonly>
+                </div>
+                
+                <div class="col-sm-3">
+                    <label class="small fw-bold">Delivery Date Type</label>
+                    <input type="text" class="form-control" value="{{ ucfirst($booking->del_type ?? 'N/A') }}" readonly>
+                </div>
+                <div class="col-sm-3">
+                    <label class="small fw-bold">Expected Delivery Date</label>
+                    <input type="text" class="form-control"
+                        value="{{ $booking->receipt_date ? \Carbon\Carbon::parse($booking->del_date)->format('d-M-Y') : 'N/A' }}"
+                        readonly>
+
+                </div>
+
+                <div class="col-sm-3">
+                    <label class="small fw-bold">Finance Mode</label>
+                    <input type="text" class="form-control" value="{{ ucfirst($booking->fin_mode ?? 'N/A') }}" readonly>
+                </div>
+                <div class="col-sm-3">
+                    <label class="small fw-bold">Financier</label>
+                    <input type="text" class="form-control"
+                        value="{{ \App\Models\XlFinancier::find($booking->financier)?->name ?? 'N/A' }}" readonly>
+                </div>
+
+                <div class="col-sm-3">
+                    <label class="small fw-bold">Loan File Status</label>
+                    <input type="text" class="form-control" value="{{ ucfirst($booking->loan_status ?? 'N/A') }}"
+                        readonly>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="card card-body mt-3 shadow-sm mb-2" style="border-radius: 12px">
+            <h2 class="mb-3  ">DMS Booking Details</h2>
+            <div class="row g-3">
+                <div class="col-md-3 form-group">
+                    <label>
+                        DMS Booking No.
+
+                    </label>
+                    <input type="text" class="form-control" value="{{ $booking->dms_no ?? 'N/A' }}" readonly>
+                </div>
+
+                <div class="col-md-3 form-group">
+                    <label>
+                        DMS OTF No.
+
+                    </label>
+                    <input type="text" class="form-control" value="{{ $booking->dms_otf ?? 'N/A' }}" readonly>
+                </div>
+
+                <div class="col-md-3 form-group">
+                    <label>
+                        DMS OTF Date
+
+                    </label>
+
+                    <input type="text" class="form-control"
+                        value="{{ $booking->otf_date ? \Carbon\Carbon::parse($booking->otf_date)->format('d-M-Y') : 'N/A' }}"
+                        readonly>
+
+                </div>
+
+
+                <div class="col-md-3 form-group">
+                    <label>
+                        DMS SO No.
+
+                    </label>
+                    <input type="text" class="form-control" value="{{ $booking->dms_so ?? 'N/A' }}" readonly>
+                </div>
+
+            </div>
+        </div>
+
+    
+
+    
+
 
     <!-- Proof Preview Modal -->
     <div class="modal" id="proofPreviewModal" tabindex="-1" aria-labelledby="proofPreviewModalLabel" aria-hidden="true">
@@ -1902,7 +1460,7 @@
 
 
 </div>
-</div>
+
 <div class="modal fade" id="attachmentModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -2545,63 +2103,125 @@ document.getElementById('proofPreviewModal')?.addEventListener('hidden.bs.modal'
             }
         }
 
-        // Main status change handler - SAME LOGIC as in view.blade.php
         function handleStatusChange() {
-            const status = document.getElementById('status').value;
-            const bookingType = "{{ $booking->b_type ?? '' }}";
-            const pending = {{ $booking->pending ?? 0 }};
-            const bookingId = {{ $booking->id }};
+            const statusSelect = document.getElementById('status');
+            const selectedStatus = statusSelect.value;
 
-            if (status === "2") { // Invoiced selected
+            const colType        = "{{ $booking->col_type ?? 0 }}";
+            const bookingAmount  = parseFloat("{{ $booking->booking_amount ?? 0 }}");
+            const pending        = {{ $booking->pending ?? 0 }};
+            const bookingId      = {{ $booking->id }};
 
-                // 1. Dummy booking check (highest priority)
-                if (bookingType.toLowerCase() === 'dummy') {
+            // ────────────────────────────────────────────────
+            // BLOCK for Field Collection (col_type 2 or 3)
+            // when total paid < booking amount
+            // Applies to: Cancel (3), Delivery? (4), On-Hold (6)
+            // ────────────────────────────────────────────────
+            if (["3", "4", "6"].includes(selectedStatus)) {
+                if ([2, 3].includes(parseInt(colType))) {
+                    // Show loading state (optional but recommended)
+                    statusSelect.disabled = true;
+                
+                    fetch("{{ route('booking.check-field-payment', $booking->id) }}", {
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        statusSelect.disabled = false;
+                    
+                        if (data.success === false) {
+                            let titleText = '';
+                            if (selectedStatus === "3") titleText = 'Cannot Cancel Booking';
+                            else if (selectedStatus === "4") titleText = 'Cannot Proceed with Delivery';
+                            else if (selectedStatus === "6") titleText = 'Cannot Put Booking On Hold';
+                        
+                            Swal.fire({
+                                icon: 'warning',
+                                title: titleText,
+                                html: `
+                                    This is a <strong>Field Collection</strong> booking.<br>
+                                    Total received: ₹ ${data.total_paid.toLocaleString('en-IN')}<br>
+                                    Booking amount: ₹ ${bookingAmount.toLocaleString('en-IN')}<br><br>
+                                    <strong>Amount is not fully satisfied.</strong><br>
+                                    Please update/add receipts first.
+                                `,
+                                confirmButtonText: 'Go to Pending / Receipts',
+                                showCancelButton: true,
+                                cancelButtonText: 'Cancel Action',
+                                allowOutsideClick: false
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    window.location.href = "{{ route('booking.pending-edit', $booking->id) }}" + "#pending";
+                                } else {
+                                    statusSelect.value = "0"; // or remember previous value if you want
+                                }
+                            });
+                        }
+                        // If payment is OK → continue with normal flow
+                        else {
+                            proceedWithNormalFlow(selectedStatus);
+                        }
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        statusSelect.disabled = false;
+                        Swal.fire('Error', 'Could not verify payment status. Please try again.', 'error');
+                        statusSelect.value = "0";
+                    });
+                
+                    return; // Important: wait for AJAX
+                }
+            }
+        
+            // ────────────────────────────────────────────────
+            // Normal flow (dummy check, pending items check, etc.)
+            // ────────────────────────────────────────────────
+            proceedWithNormalFlow(selectedStatus);
+        }
+
+        function proceedWithNormalFlow(selectedStatus) {
+            if (selectedStatus === "2") { // Invoiced
+                if ("{{ strtolower($booking->b_type ?? '') }}" === 'dummy') {
                     Swal.fire({
                         title: "Dummy Booking Detected!",
-                        text: "This is a dummy booking. Please activate it by adding a receipt and fill pending data to mark it as invoiced.",
+                        text: "Please activate it by adding a receipt...",
                         icon: "warning",
                         showCancelButton: true,
-                        confirmButtonText: "Add Receipt",
-                        cancelButtonText: "Cancel"
-                    }).then((result) => {
+                        confirmButtonText: "Add Receipt"
+                    }).then(result => {
                         if (result.isConfirmed) {
-                            // Redirect to add receipt page
-                            window.location.href = "{{ backpack_url('booking/:id/add-amount') }}".replace(':id', bookingId);
+                            window.location.href = "{{ backpack_url('booking/:id/add-amount') }}".replace(':id', {{ $booking->id }});
                         } else {
-                            document.getElementById('status').value = "0"; // Reset to "No Change"
+                            document.getElementById('status').value = "0";
                         }
                     });
-                    return; // stop here
+                    return;
                 }
-
-                // 2. Pending items check
-                else if (pending > 0) {
+            
+                if ({{ $booking->pending ?? 0 }} > 0) {
                     Swal.fire({
                         title: "Pending Items Exist!",
-                        text: "You have pending items. Please clear them before marking as Invoiced.",
+                        text: "Clear them before invoicing.",
                         icon: "warning",
                         showCancelButton: true,
-                        confirmButtonText: "Go to Pending Items",
-                        cancelButtonText: "Cancel"
-                    }).then((result) => {
+                        confirmButtonText: "Go to Pending"
+                    }).then(result => {
                         if (result.isConfirmed) {
-                            // Redirect to pending edit page with flag
-                            window.location.href = "{{ backpack_url('booking/:id/pending-edit') }}".replace(':id', bookingId) +
-                                                   "?pending_flag=1";
+                            window.location.href = "{{ backpack_url('booking/:id/pending-edit') }}".replace(':id', {{ $booking->id }}) + "?pending_flag=1";
                         } else {
-                            document.getElementById('status').value = "0"; // Reset
+                            document.getElementById('status').value = "0";
                         }
                     });
-                    return; // stop here
+                    return;
                 }
-
-                // 3. No issues → show fields
-                else {
-                    toggleInvoiceFields();
-                }
-            } else {
-                toggleInvoiceFields();
             }
+        
+            // If we reach here → just show/hide invoice fields
+            toggleInvoiceFields();
         }
 
         // Flatpickr initialization (if not already present)
@@ -2653,9 +2273,42 @@ document.getElementById('proofPreviewModal')?.addEventListener('hidden.bs.modal'
 
 
         // Reject Refund Button Toggle
-        document.getElementById('rejectRefundBtn')?.addEventListener('click', function() {
-            document.getElementById('rejectionCard').style.display = 'block';
-            this.closest('.card').scrollIntoView({ behavior: 'smooth' });
+        document.addEventListener('DOMContentLoaded', function () {
+            const btn = document.getElementById('rejectRefundBtn');
+            const card = document.getElementById('rejectionCard');
+
+            if (btn && card) {
+                btn.addEventListener('click', function () {
+                    card.style.display = 'block';
+                });
+            }
+        });
+        document.addEventListener('DOMContentLoaded', function () {
+            const newProofInput = document.getElementById('newProofFile');
+            if (newProofInput) {
+                newProofInput.addEventListener('change', function () {
+                    const file = this.files[0];
+                    if (!file) return;
+                
+                    if (file.size > 2 * 1024 * 1024) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'File Too Large',
+                            text: 'File must be less than 2MB!',
+                            confirmButtonColor: '#dc3545'
+                        });
+                        this.value = '';
+                        return;
+                    }
+                
+                    const fileURL = URL.createObjectURL(file);
+                    const container = document.getElementById('newProofChipContainer');
+                    container.innerHTML = "";
+                
+                    createFileChip(file.name, fileURL);   // aapka purana function
+                    this.value = "";
+                });
+            }
         });
 
         // Restore Booking Button Confirmation
@@ -3009,6 +2662,55 @@ document.addEventListener('DOMContentLoaded', function () {
             </span>
 
         `;
+    }
+});
+// ====================== RESTORE CANCELLED BOOKING - SWEETALERT ======================
+document.addEventListener('DOMContentLoaded', function () {
+    
+    // Restore Cancelled Booking (Status 3)
+    const restoreCancelledBtn = document.getElementById('restoreCancelledBtn');
+    if (restoreCancelledBtn) {
+        restoreCancelledBtn.addEventListener('click', function () {
+            Swal.fire({
+                title: 'Restore Cancelled Booking?',
+                text: "Are you sure you want to restore this booking?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#28a745',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, Restore It',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const activateForm = document.getElementById('activateForm');
+                    if (activateForm) {
+                        activateForm.submit();
+                    }
+                }
+            });
+        });
+    }
+
+    // Restore Refund (Status 4) - Agar yeh bhi SweetAlert mein chahiye
+    const restoreBookingButton = document.getElementById('restoreBookingButton');
+    if (restoreBookingButton) {
+        restoreBookingButton.addEventListener('click', function () {
+            Swal.fire({
+                title: 'Cancel Refund & Restore Booking?',
+                text: "Are you sure you want to restore this booking and cancel the refund request?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#28a745',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, Restore',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const restoreForm = document.getElementById('restoreForm');
+                    if (restoreForm) restoreForm.submit();
+                }
+            });
+        });
     }
 });
 </script>

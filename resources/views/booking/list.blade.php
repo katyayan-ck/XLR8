@@ -139,7 +139,7 @@
                             {{-- <span>Excel</span> --}}
                         </button>
 
-                        <button id="exportExcel" class="btn btn-sm text-nowrap d-flex align-items-center gap-2">
+                        <button id="exportPdf" class="btn btn-sm text-nowrap d-flex align-items-center gap-2">
 
                             <img src="{{ asset('images/export-pdf.png') }}" alt="PDF" style="height:30px; width:auto;">
 
@@ -639,7 +639,24 @@
                 children: getCols([
                     'rto_sale_type',
                     'rto_permit',
-                    'rto_body_type'
+                    'rto_body_type',
+                    'registration_type',
+                    'registration_no_type',
+                    'trc_number',
+                    'trc_payment_bank_ref_no',
+                    'application_no',
+                    'tax_payment_bank_ref_no',
+                    'vehicle_registration_no'
+                ])
+            },
+           {
+                headerName: 'DO',
+                children: getCols([
+                    'instrument_type',
+                    'loan_amount_dealer_entry',     // ← corrected
+                    'margin_money',                 // ← corrected
+                    'file_charge',                  // ← corrected
+                    'net_payment_amount'            // ← calculated field (best practice)
                 ])
             },
             {

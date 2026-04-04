@@ -24,7 +24,7 @@
                     {{ request('insurance_type', 'pending') === 'closed' ? 'Closed' : 'Pending' }} Insurance Dashboard
                 </h2>
 
-                <div class="d-flex align-items-center gap-3 flex-wrap">
+                {{-- <div class="d-flex align-items-center gap-3 flex-wrap">
                     <div class="d-flex align-items-center gap-2">
                         <label class="text-black mb-0 text-nowrap">Insurance Status:</label>
                         <select id="insurance_type" class="form-control form-select" style="min-width: 200px;">
@@ -37,7 +37,7 @@
                             </option>
                         </select>
                     </div>
-                </div>
+                </div> --}}
             </div>
 
             {{-- BODY --}}

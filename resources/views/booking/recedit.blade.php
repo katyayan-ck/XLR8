@@ -13,7 +13,7 @@
 <div class="container-fluid">
     @include(backpack_view('inc.alerts'))
 
-    <h2 class="mb-4">Edit Receipt</h2>
+    {{-- <h2 class="mb-4">Edit Receipt</h2> --}}
 
     <div class="card">
         <div class="card-header">
@@ -55,7 +55,7 @@
                     </div>
 
                     <!-- Proof Upload + Preview -->
-                    <div class="col-sm-6">
+                    {{-- <div class="col-sm-6">
                         <label>Current Proof</label>
                         <div style="margin-top:8px;">
                             @if($entry->getFirstMediaUrl('amount-proof'))
@@ -75,9 +75,39 @@
                             <span class="text-muted">No proof uploaded</span>
                             @endif
                         </div>
+                    </div> --}}
+                    <!-- Current Proof -->
+                    <div class="col-sm-6 mt-3">
+                        <label class="form-label fw-bold">Current Proof</label>
+
+                        @php
+                        $media = $entry->getFirstMedia('amount-proof');
+                        $hasProof = $media !== null;
+                        $fileUrl = $hasProof ? $media->getUrl() : '';
+                        $fileName = $hasProof ? $media->file_name : 'No proof uploaded';
+                        $isPdf = $hasProof && str_contains($media->mime_type ?? '', 'pdf');
+                        @endphp
+
+                        @if($hasProof)
+                        <div class="mt-2">
+                            <span
+                                class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2 px-3 py-2"
+                                style="cursor:pointer;"
+                                onclick="openPaymentProof('{{ $fileUrl }}', '{{ addslashes($fileName) }}')">
+                                <i class="la la-paperclip"></i>
+                                <span class="fw-medium small text-truncate" style="max-width: 220px;">
+                                    {{ Str::limit($fileName, 35) }}
+                                </span>
+                            </span>
+                        </div>
+                        @else
+                        <span class="badge bg-secondary-subtle text-secondary px-3 py-2 mt-2">
+                            No proof uploaded
+                        </span>
+                        @endif
                     </div>
 
-                    <div class="col-sm-6">
+                    <div class="col-sm-4">
 
                         <label class="form-label fw-bold">
                             Replace Proof (optional)
@@ -97,12 +127,13 @@
                     <!-- Buttons -->
                     <div class="col-12 mt-4">
                         <button type="submit" class="btn btn-primary px-4">Update Receipt</button>
+                        <!-- Delete Receipt Button with SweetAlert -->
                         <button type="submit" name="action" value="delete" class="btn btn-danger px-4 ms-2"
-                            onclick="return confirm('Are you sure you want to delete this receipt? This action cannot be undone.')">
+                            id="deleteReceiptBtn">
                             Delete Receipt
                         </button>
-                        <a href="{{ backpack_url('booking/' . $booking_id) }}"
-                            class="btn btn-secondary px-4 ms-2">Cancel</a>
+                        {{-- <a href="{{ backpack_url('booking/' . $booking_id) }}"
+                            class="btn btn-secondary px-4 ms-2">Cancel</a> --}}
                     </div>
                 </div>
             </form>
@@ -150,6 +181,56 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
+    // SweetAlert for Delete Receipt Button
+
+    // Unified Proof Preview Function (Image + PDF)
+function openPaymentProof(url, fileName = 'Proof File') {
+    const modal = document.getElementById('proofPreviewModal');
+    if (!modal) return;
+
+    document.getElementById('proofPreviewModalLabel').innerText = fileName;
+
+    const img = document.getElementById('modalProofImg');
+    const pdf = document.getElementById('modalProofPdf');
+
+    img.style.display = 'none';
+    pdf.style.display = 'none';
+
+    if (url.toLowerCase().endsWith('.pdf')) {
+        pdf.src = url;
+        pdf.style.display = 'block';
+    } else {
+        img.src = url;
+        img.style.display = 'block';
+    }
+
+    document.getElementById('modalDownloadLink').href = url;
+    document.getElementById('modalDownloadLink').download = fileName;
+
+    $('#proofPreviewModal').modal('show');
+}
+        document.getElementById('deleteReceiptBtn')?.addEventListener('click', function(e) {
+            e.preventDefault();   // form submit रोकें
+
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "You want to delete this receipt? This action cannot be undone!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, Delete It!',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Form submit कर दो
+                    const form = this.closest('form');
+                    if (form) {
+                        form.submit();
+                    }
+                }
+            });
+        });
     function handleReceiptProof(input)
 {
     if (!input.files?.[0]) return;

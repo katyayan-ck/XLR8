@@ -221,312 +221,284 @@
 
         </form>
 
-        <div class="card bg-light border-0  mb-4 mt-4">
+        <div class="card border-0  mb-4 mt-4">
 
-            <h1 class="mb-2 mt-2 " style="margin-left: 15px">Booking & Customer Information (Read-only)</h5>
+            <h2 class="mb-2 mt-2 " style="margin-left: 15px">Booking & Customer Information (Read-only)</h2>
 
-                <div class="card-body">
-                    <div class="row g-3">
-                        {{-- Booking Details --}}
-                        <div class="col-sm-2">
-                            <label class="form-label">Customer Type <span class="text-red">*</span></label>
-                            <input type="text" class="form-control is-valid" value="{{ $booking->b_type }}" readonly>
-                        </div>
-                        <div class="col-sm-3">
-                            <label class="form-label">Customer Category <span class="text-red">*</span></label>
-                            <input type="text" class="form-control is-valid" value="{{ $booking->b_cat }}" readonly>
-                        </div>
-                        <div class="col-sm-2">
-                            <label class="form-label">Booking Date <span class="text-red">*</span></label>
-                            <input type="text" class="form-control is-valid"
-                                value="{{ \Carbon\Carbon::parse($booking->booking_date)->format('d-M-Y') }}" readonly>
-                        </div>
-                        <div class="col-sm-2">
-                            <label class="form-label">Collection Type <span class="text-red">*</span></label>
-                            <input type="text" class="form-control"
-                                value="{{ $booking->col_type == 1 ? 'Receipt' : 'Field Collection' }}" readonly>
-                        </div>
-                        <div class="col-sm-3">
-                            <label class="form-label">Collected By</label>
-                            <input type="text" class="form-control is-valid"
-                                value="{{ $data['collector_name'] ?? 'N/A' }}" readonly>
-                        </div>
-                        <div class="col-sm-3">
-                            @if ($booking->b_cat != 'Firm')
-                            <label class="form-label">Customer Name <span class="text-red">*</span></label>
-                            @else
-                            <label class="form-label">Firm Name <span class="text-red">*</span></label>
-                            @endif
-                            <input type="text" class="form-control is-valid" value="{{ $booking->name }}" readonly>
-                        </div>
-                        <div class="col-sm-3">
-                            <label class="form-label">Care Of</label>
-                            <input type="text" class="form-control is-valid"
-                                value="{{ $booking->care_of_type == 5 ? 'Owned By' : ($booking->care_of_type == 1 ? 'Son of' : ($booking->care_of_type == 2 ? 'Daughter of' : ($booking->care_of_type == 3 ? 'Married' : ($booking->care_of_type == 4 ? 'Guardian Name' : 'N/A')))) }}"
-                                readonly>
-                        </div>
-                        <div class="col-sm-3">
-                            <label class="form-label">Enter Name</label>
-                            <input type="text" class="form-control is-valid" value="{{ $booking->care_of }}" readonly>
-                        </div>
-                        <div class="col-sm-3">
-                            <label class="form-label">Contact No. <span class="text-red">*</span></label>
-                            <input type="text" class="form-control is-valid" value="{{ $booking->mobile }}" readonly>
-                        </div>
-                        <div class="col-sm-4">
-                            <label class="form-label">Alternate Contact No.</label>
-                            <input type="text" class="form-control is-valid" value="{{ $booking->alt_mobile ?? 'N/A' }}"
-                                readonly>
-                        </div>
-                        <div class="col-sm-4">
-                            <label class="form-label">Gender</label>
-                            <input type="text" class="form-control is-valid" value="{{ $booking->gender ?? 'N/A' }}"
-                                readonly>
-                        </div>
-                        <div class="col-sm-4">
-                            <label class="form-label">Occupation</label>
-                            <input type="text" class="form-control is-valid" value="{{ $booking->occ ?? 'N/A' }}"
-                                readonly>
-                        </div>
-                        <div class="col-sm-3">
-                            <label class="form-label">Buyer Type</label>
-                            <input type="text" class="form-control is-valid" value="{{ $booking->buyer_type ?? 'N/A' }}"
-                                readonly>
-                        </div>
-                        <div class="col-sm-3">
-                            <label class="form-label">PAN Card No.</label>
-                            <input type="text" class="form-control is-valid" value="{{ $booking->pan_no ?? 'N/A' }}"
-                                readonly>
-                        </div>
-                        <div class="col-sm-3">
-                            <label class="form-label">Aadhar No.</label>
-                            <input type="text" class="form-control is-valid" value="{{ $booking->adhar_no ?? 'N/A' }}"
-                                readonly>
-                        </div>
-                        <div class="col-sm-3">
-                            <label class="form-label">Customer D.O.B.</label>
-                            <input type="text" class="form-control is-valid"
-                                value="{{ \Carbon\Carbon::parse($booking->c_dob)->format('d-M-Y') ?? 'N/A' }}" readonly>
-                        </div>
-                        <div class="col-sm-6">
-                            <label class="form-label">{{ __('Branch') }} <span class="text-red">*</span></label>
-                            <input type="text" class="form-control is-valid" value="{{ $data['branch'] ?? 'N/A' }}"
-                                readonly>
-                        </div>
-                        <div class="col-sm-6">
-                            <label class="form-label">{{ __('Location') }} <span class="text-red">*</span></label>
-                            <input type="text" class="form-control is-valid" value="{{ $data['location'] ?? 'N/A' }}"
-                                readonly>
-                        </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    {{-- Booking Details --}}
+                    <div class="col-sm-2">
+                        <label class="form-label">Customer Type <span class="text-red">*</span></label>
+                        <input type="text" class="form-control" value="{{ $booking->b_type }}" readonly>
                     </div>
-                </div>
-
-        </div>
-        <div class="card bg-light border-0  mb-4 mt-4">
-
-            <h1 class="mb-2 mt-2 " style="margin-left: 15px">Reffered by Details (Read-only)</h5>
-
-                <div class="card-body">
-                    <div class="row g-3">
-                        {{-- Referred By Details --}}
-                        <div class="col-sm-4">
-                            <label class="form-label">Referred By (Customer Name)</label>
-                            <input type="text" class="form-control is-valid" value="{{ $booking->r_name ?? 'N/A' }}"
-                                readonly>
-                        </div>
-                        <div class="col-sm-2">
-                            <label class="form-label">Mobile No.</label>
-                            <input type="text" class="form-control is-valid" value="{{ $booking->r_mobile ?? 'N/A' }}"
-                                readonly>
-                        </div>
-                        <div class="col-sm-2">
-                            <label class="form-label">Existing Model</label>
-                            <input type="text" class="form-control is-valid" value="{{ $booking->r_model ?? 'N/A' }}"
-                                readonly>
-                        </div>
-                        <div class="col-sm-2">
-                            <label class="form-label">Variant</label>
-                            <input type="text" class="form-control is-valid" value="{{ $booking->r_variant ?? 'N/A' }}"
-                                readonly>
-                        </div>
-                        <div class="col-sm-2">
-                            <label class="form-label">Chassis / Regn. No.</label>
-                            <input type="text" class="form-control is-valid" value="{{ $booking->r_chassis ?? 'N/A' }}"
-                                readonly>
-                        </div>
+                    <div class="col-sm-3">
+                        <label class="form-label">Customer Category <span class="text-red">*</span></label>
+                        <input type="text" class="form-control" value="{{ $booking->b_cat }}" readonly>
                     </div>
-                </div>
-        </div>
-
-        <div class="card bg-light border-0  mb-4 mt-4">
-
-            <h1 class="mb-2 mt-2 " style="margin-left: 15px">Vehicles Details (Read-only)</h5>
-
-                <div class="card-body">
-                    <div class="row g-3">
-                        {{-- Vehicle Details --}}
-                        <div class="col-sm-3">
-                            <label class="form-label">Segment <span class="text-red">*</span></label>
-                            <input type="text" class="form-control is-valid"
-                                value="{{ isset($data['segments'][$booking->segment_id]) ? (is_array($data['segments'][$booking->segment_id]) ? $data['segments'][$booking->segment_id]['name'] ?? 'N/A' : $data['segments'][$booking->segment_id]) : 'N/A' }}"
-                                readonly>
-                        </div>
-                        <div class="col-sm-3">
-                            <label class="form-label">Model <span class="text-red">*</span></label>
-                            <input type="text" class="form-control is-valid" value="{{ $booking->model }}" readonly>
-                        </div>
-                        <div class="col-sm-3">
-                            <label class="form-label">Variant <span class="text-red">*</span></label>
-                            <input type="text" class="form-control is-valid" value="{{ $booking->variant }}" readonly>
-                        </div>
-                        <div class="col-sm-3">
-                            <label class="form-label">Color <span class="text-red">*</span></label>
-                            <input type="text" class="form-control is-valid" value="{{ $booking->color }}" readonly>
-                        </div>
-                        <div class="col-sm-2">
-                            <label class="form-label">Seating</label>
-                            <input type="text" class="form-control is-valid" value="{{ $booking->seating }}" readonly>
-                        </div>
-                        <div class="col-sm-6">
-                            <label class="form-label">{{ __('Accessories') }}</label>
-                            <textarea class="form-control is-valid" rows="2"
-                                readonly>{{ $data['accessories'] }}</textarea>
-                        </div>
-                        <div class="col-sm-2">
-                            <label class="form-label">Acces. Pack Amount</label>
-                            <input type="text" class="form-control is-valid"
-                                value="{{ $booking->apack_amount ?? 'N/A' }}" readonly>
-                        </div>
-                        <div class="col-sm-2">
-                            <label class="form-label">Allotted Chassis Number</label>
-                            <input type="text" class="form-control is-valid"
-                                value="{{ $booking->chasis_no ?? ($data['bchasis'] ?? 'N/A') }}" readonly>
-                        </div>
+                    <div class="col-sm-2">
+                        <label class="form-label">Booking Date <span class="text-red">*</span></label>
+                        <input type="text" class="form-control"
+                            value="{{ \Carbon\Carbon::parse($booking->booking_date)->format('d-M-Y') }}" readonly>
                     </div>
-                </div>
-        </div>
-
-        <div class="card bg-light border-0  mb-4 mt-4">
-
-            <h1 class="mb-2 mt-2 " style="margin-left: 15px">Vehicles Details (Read-only)</h5>
-                <div class="card-body">
-                    <div class="row g-3">
-                        {{-- Booking Details --}}
-                        <div class="col-sm-2">
-                            <label class="form-label">Booking Mode <span class="text-red">*</span></label>
-                            <input type="text" class="form-control is-valid" value="{{ $booking->b_mode ?? 'N/A' }}"
-                                readonly>
-                        </div>
-                        <div class="col-sm-2">
-                            <label class="form-label">{{ __('Online Book Ref No.') }}</label>
-                            <input type="text" class="form-control is-valid"
-                                value="{{ $booking->online_bk_ref_no ?? 'N/A' }}" readonly>
-                        </div>
-                        <div class="col-sm-3">
-                            <label class="form-label">Sales Consultant</label>
-                            <input type="text" class="form-control is-valid"
-                                value="{{ optional(collect($data['saleconsultants'])->firstWhere('id', $booking->consultant))['name'] }} - {{ optional(collect($data['saleconsultants'])->firstWhere('id', $booking->consultant))['mile_id'] }}"
-                                readonly>
-                        </div>
-                        <div class="col-sm-2">
-                            <label class="form-label">Booking Source <span class="text-red">*</span></label>
-                            <input type="text" class="form-control is-valid" value="{{ $booking->b_source ?? 'N/A' }}"
-                                readonly>
-                        </div>
-                        <div class="col-sm-3">
-                            <label class="form-label">Selected DSA</label>
-                            <input type="text" class="form-control is-valid" value="{{ $dsaname }}" readonly>
-                        </div>
-                        <div class="col-sm-3">
-                            <label class="form-label">Delivery Date Type <span class="text-red">*</span></label>
-                            <input type="text" class="form-control is-valid" value="{{ $booking->del_type }}" readonly>
-                        </div>
-                        <div class="col-sm-2">
-                            <label class="form-label">Date <span class="text-red">*</span></label>
-                            <input type="text" class="form-control is-valid"
-                                value="{{ \Carbon\Carbon::parse($booking->del_date)->format('d-M-Y') }}" readonly>
-                        </div>
-                        <div class="col-sm-2">
-                            <label class="form-label">Booking Amount <span class="text-red">*</span></label>
-                            <input type="text" class="form-control is-valid"
-                                value="{{ $booking->booking_amount ?? 'N/A' }}" readonly>
-                        </div>
-                        <div class="col-sm-2">
-                            <label class="form-label">Receipt No. <span class="text-red">*</span></label>
-                            <input type="text" class="form-control is-valid" value="{{ $booking->receipt_no ?? 'N/A' }}"
-                                readonly>
-                        </div>
-                        <div class="col-sm-3">
-                            <label class="form-label">Receipt Date <span class="text-red">*</span></label>
-                            <input type="text" class="form-control is-valid"
-                                value="{{ \Carbon\Carbon::parse($booking->receipt_date)->format('d-M-Y') }}" readonly>
-                        </div>
-                        <div class="col-sm-3">
-                            <label class="form-label">CPD Date <span class="text-red">*</span></label>
-                            <input type="text" class="form-control is-valid" value="{{ $booking->cpd ?? 'N/A' }}"
-                                readonly>
-                        </div>
-                        <div class="col-sm-3">
-                            <label class="form-label">Finance Mode <span class="text-red">*</span></label>
-                            <input type="text" class="form-control is-valid" value="{{ $booking->fin_mode }}" readonly>
-                        </div>
-                        <div class="col-sm-3" id="financier_box">
-                            <label class="form-label">Financier</label>
-                            <input type="text" class="form-control is-valid" value="{{ $booking->financier ?? 'N/A' }}"
-                                readonly>
-                        </div>
-                        <div class="col-sm-3" id="loan_status_box">
-                            <label class="form-label">Loan File Status</label>
-                            <input type="text" class="form-control is-valid"
-                                value="{{ $booking->loan_status ?? 'N/A' }}" readonly>
-                        </div>
-                        @if ($booking->status == 2)
-                        <div class="col-sm-3">
-                            <label class="form-label">Invoice Number <span class="text-red">*</span></label>
-                            <input type="text" class="form-control is-valid" value="{{ $booking->inv_no }}" readonly>
-                        </div>
-                        <div class="col-sm-3">
-                            <label class="form-label">Invoice Date <span class="text-red">*</span></label>
-                            <input type="text" class="form-control is-valid"
-                                value="{{ \Carbon\Carbon::parse($booking->inv_date)->format('d-M-Y') }}" readonly>
-                        </div>
+                    <div class="col-sm-2">
+                        <label class="form-label">Collection Type <span class="text-red">*</span></label>
+                        <input type="text" class="form-control"
+                            value="{{ $booking->col_type == 1 ? 'Receipt' : 'Field Collection' }}" readonly>
+                    </div>
+                    <div class="col-sm-3">
+                        <label class="form-label">Collected By</label>
+                        <input type="text" class="form-control" value="{{ $data['collector_name'] ?? 'N/A' }}" readonly>
+                    </div>
+                    <div class="col-sm-3">
+                        @if ($booking->b_cat != 'Firm')
+                        <label class="form-label">Customer Name <span class="text-red">*</span></label>
+                        @else
+                        <label class="form-label">Firm Name <span class="text-red">*</span></label>
                         @endif
-                        @if ($booking->status == 8)
-                        <div class="col-sm-12">
-                            <label class="form-label">{{ __('Pending Remarks') }}</label>
-                            <textarea class="form-control is-valid" rows="2"
-                                readonly>{{ $booking->pending_remark }}</textarea>
-                        </div>
-                        @endif
-
-                        {{-- Booking Info --}}
-                        <div class="col-sm-3">
-                            <label class="form-label">SAP Booking No.</label>
-                            <input type="text" class="form-control is-valid" value="{{ $booking->sap_no ?? 'N/A' }}"
-                                readonly>
-                        </div>
-                        <div class="col-sm-3">
-                            <label class="form-label">DMS Booking Number</label>
-                            <input type="text" class="form-control is-valid" value="{{ $booking->dms_no ?? 'N/A' }}"
-                                readonly>
-                        </div>
-                        <div class="col-sm-2">
-                            <label class="form-label">DMS OTF No.</label>
-                            <input type="text" class="form-control is-valid" value="{{ $booking->dms_otf ?? 'N/A' }}"
-                                readonly>
-                        </div>
-                        <div class="col-sm-2">
-                            <label class="form-label">DMS OTF Date</label>
-                            <input type="text" class="form-control is-valid" value="{{ $booking->otf_date ?? 'N/A' }}"
-                                readonly>
-                        </div>
-                        <div class="col-sm-2">
-                            <label class="form-label">DMS SO No.</label>
-                            <input type="text" class="form-control is-valid" value="{{ $booking->dms_so ?? 'N/A' }}"
-                                readonly>
-                        </div>
+                        <input type="text" class="form-control" value="{{ $booking->name }}" readonly>
+                    </div>
+                    <div class="col-sm-3">
+                        <label class="form-label">Care Of</label>
+                        <input type="text" class="form-control"
+                            value="{{ $booking->care_of_type == 5 ? 'Owned By' : ($booking->care_of_type == 1 ? 'Son of' : ($booking->care_of_type == 2 ? 'Daughter of' : ($booking->care_of_type == 3 ? 'Married' : ($booking->care_of_type == 4 ? 'Guardian Name' : 'N/A')))) }}"
+                            readonly>
+                    </div>
+                    <div class="col-sm-3">
+                        <label class="form-label">Enter Name</label>
+                        <input type="text" class="form-control" value="{{ $booking->care_of }}" readonly>
+                    </div>
+                    <div class="col-sm-3">
+                        <label class="form-label">Contact No. <span class="text-red">*</span></label>
+                        <input type="text" class="form-control" value="{{ $booking->mobile }}" readonly>
+                    </div>
+                    <div class="col-sm-4">
+                        <label class="form-label">Alternate Contact No.</label>
+                        <input type="text" class="form-control" value="{{ $booking->alt_mobile ?? 'N/A' }}" readonly>
+                    </div>
+                    <div class="col-sm-4">
+                        <label class="form-label">Gender</label>
+                        <input type="text" class="form-control" value="{{ $booking->gender ?? 'N/A' }}" readonly>
+                    </div>
+                    <div class="col-sm-4">
+                        <label class="form-label">Occupation</label>
+                        <input type="text" class="form-control" value="{{ $booking->occ ?? 'N/A' }}" readonly>
+                    </div>
+                    <div class="col-sm-3">
+                        <label class="form-label">Buyer Type</label>
+                        <input type="text" class="form-control" value="{{ $booking->buyer_type ?? 'N/A' }}" readonly>
+                    </div>
+                    <div class="col-sm-3">
+                        <label class="form-label">PAN Card No.</label>
+                        <input type="text" class="form-control" value="{{ $booking->pan_no ?? 'N/A' }}" readonly>
+                    </div>
+                    <div class="col-sm-3">
+                        <label class="form-label">Aadhar No.</label>
+                        <input type="text" class="form-control" value="{{ $booking->adhar_no ?? 'N/A' }}" readonly>
+                    </div>
+                    <div class="col-sm-3">
+                        <label class="form-label">Customer D.O.B.</label>
+                        <input type="text" class="form-control"
+                            value="{{ \Carbon\Carbon::parse($booking->c_dob)->format('d-M-Y') ?? 'N/A' }}" readonly>
+                    </div>
+                    <div class="col-sm-6">
+                        <label class="form-label">{{ __('Branch') }} <span class="text-red">*</span></label>
+                        <input type="text" class="form-control" value="{{ $data['branch'] ?? 'N/A' }}" readonly>
+                    </div>
+                    <div class="col-sm-6">
+                        <label class="form-label">{{ __('Location') }} <span class="text-red">*</span></label>
+                        <input type="text" class="form-control" value="{{ $data['location'] ?? 'N/A' }}" readonly>
                     </div>
                 </div>
+            </div>
+
+        </div>
+        <div class="card border-0  mb-4 mt-4">
+
+            <h2 class="mb-2 mt-2 " style="margin-left: 15px">Reffered by Details (Read-only)</h2>
+
+            <div class="card-body">
+                <div class="row g-3">
+                    {{-- Referred By Details --}}
+                    <div class="col-sm-4">
+                        <label class="form-label">Referred By (Customer Name)</label>
+                        <input type="text" class="form-control" value="{{ $booking->r_name ?? 'N/A' }}" readonly>
+                    </div>
+                    <div class="col-sm-2">
+                        <label class="form-label">Mobile No.</label>
+                        <input type="text" class="form-control" value="{{ $booking->r_mobile ?? 'N/A' }}" readonly>
+                    </div>
+                    <div class="col-sm-2">
+                        <label class="form-label">Existing Model</label>
+                        <input type="text" class="form-control" value="{{ $booking->r_model ?? 'N/A' }}" readonly>
+                    </div>
+                    <div class="col-sm-2">
+                        <label class="form-label">Variant</label>
+                        <input type="text" class="form-control" value="{{ $booking->r_variant ?? 'N/A' }}" readonly>
+                    </div>
+                    <div class="col-sm-2">
+                        <label class="form-label">Chassis / Regn. No.</label>
+                        <input type="text" class="form-control" value="{{ $booking->r_chassis ?? 'N/A' }}" readonly>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0  mb-4 mt-4">
+
+            <h2 class="mb-2 mt-2 " style="margin-left: 15px">Vehicles Details (Read-only)</h2>
+
+            <div class="card-body">
+                <div class="row g-3">
+                    {{-- Vehicle Details --}}
+                    <div class="col-sm-3">
+                        <label class="form-label">Segment <span class="text-red">*</span></label>
+                        <input type="text" class="form-control"
+                            value="{{ isset($data['segments'][$booking->segment_id]) ? (is_array($data['segments'][$booking->segment_id]) ? $data['segments'][$booking->segment_id]['name'] ?? 'N/A' : $data['segments'][$booking->segment_id]) : 'N/A' }}"
+                            readonly>
+                    </div>
+                    <div class="col-sm-3">
+                        <label class="form-label">Model <span class="text-red">*</span></label>
+                        <input type="text" class="form-control" value="{{ $booking->model }}" readonly>
+                    </div>
+                    <div class="col-sm-3">
+                        <label class="form-label">Variant <span class="text-red">*</span></label>
+                        <input type="text" class="form-control" value="{{ $booking->variant }}" readonly>
+                    </div>
+                    <div class="col-sm-3">
+                        <label class="form-label">Color <span class="text-red">*</span></label>
+                        <input type="text" class="form-control" value="{{ $booking->color }}" readonly>
+                    </div>
+                    <div class="col-sm-2">
+                        <label class="form-label">Seating</label>
+                        <input type="text" class="form-control" value="{{ $booking->seating }}" readonly>
+                    </div>
+                    <div class="col-sm-6">
+                        <label class="form-label">{{ __('Accessories') }}</label>
+                        <textarea class="form-control" rows="2" readonly>{{ $data['accessories'] }}</textarea>
+                    </div>
+                    <div class="col-sm-2">
+                        <label class="form-label">Acces. Pack Amount</label>
+                        <input type="text" class="form-control" value="{{ $booking->apack_amount ?? 'N/A' }}" readonly>
+                    </div>
+                    <div class="col-sm-2">
+                        <label class="form-label">Allotted Chassis Number</label>
+                        <input type="text" class="form-control"
+                            value="{{ $booking->chasis_no ?? ($data['bchasis'] ?? 'N/A') }}" readonly>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0  mb-4 mt-4">
+
+            <h2 class="mb-2 mt-2 " style="margin-left: 15px">Booking Type & Source</h2>
+            <div class="card-body">
+                <div class="row g-3">
+                    {{-- Booking Details --}}
+                    <div class="col-sm-2">
+                        <label class="form-label">Booking Mode <span class="text-red">*</span></label>
+                        <input type="text" class="form-control" value="{{ $booking->b_mode ?? 'N/A' }}" readonly>
+                    </div>
+                    <div class="col-sm-2">
+                        <label class="form-label">{{ __('Online Book Ref No.') }}</label>
+                        <input type="text" class="form-control" value="{{ $booking->online_bk_ref_no ?? 'N/A' }}"
+                            readonly>
+                    </div>
+                    <div class="col-sm-3">
+                        <label class="form-label">Sales Consultant</label>
+                        <input type="text" class="form-control"
+                            value="{{ optional(collect($data['saleconsultants'])->firstWhere('id', $booking->consultant))['name'] }} - {{ optional(collect($data['saleconsultants'])->firstWhere('id', $booking->consultant))['mile_id'] }}"
+                            readonly>
+                    </div>
+                    <div class="col-sm-2">
+                        <label class="form-label">Booking Source <span class="text-red">*</span></label>
+                        <input type="text" class="form-control" value="{{ $booking->b_source ?? 'N/A' }}" readonly>
+                    </div>
+                    <div class="col-sm-3">
+                        <label class="form-label">Selected DSA</label>
+                        <input type="text" class="form-control" value="{{ $dsaname }}" readonly>
+                    </div>
+                    <div class="col-sm-3">
+                        <label class="form-label">Delivery Date Type <span class="text-red">*</span></label>
+                        <input type="text" class="form-control" value="{{ $booking->del_type }}" readonly>
+                    </div>
+                    <div class="col-sm-2">
+                        <label class="form-label">Date <span class="text-red">*</span></label>
+                        <input type="text" class="form-control"
+                            value="{{ \Carbon\Carbon::parse($booking->del_date)->format('d-M-Y') }}" readonly>
+                    </div>
+                    <div class="col-sm-2">
+                        <label class="form-label">Booking Amount <span class="text-red">*</span></label>
+                        <input type="text" class="form-control" value="{{ $booking->booking_amount ?? 'N/A' }}"
+                            readonly>
+                    </div>
+                    <div class="col-sm-2">
+                        <label class="form-label">Receipt No. <span class="text-red">*</span></label>
+                        <input type="text" class="form-control" value="{{ $booking->receipt_no ?? 'N/A' }}" readonly>
+                    </div>
+                    <div class="col-sm-3">
+                        <label class="form-label">Receipt Date <span class="text-red">*</span></label>
+                        <input type="text" class="form-control"
+                            value="{{ \Carbon\Carbon::parse($booking->receipt_date)->format('d-M-Y') }}" readonly>
+                    </div>
+                    <div class="col-sm-3">
+                        <label class="form-label">CPD Date <span class="text-red">*</span></label>
+                        <input type="text" class="form-control" value="{{ $booking->cpd ?? 'N/A' }}" readonly>
+                    </div>
+                    <div class="col-sm-3">
+                        <label class="form-label">Finance Mode <span class="text-red">*</span></label>
+                        <input type="text" class="form-control" value="{{ $booking->fin_mode }}" readonly>
+                    </div>
+                    <div class="col-sm-3" id="financier_box">
+                        <label class="form-label">Financier</label>
+                        <input type="text" class="form-control" value="{{ $booking->financier ?? 'N/A' }}" readonly>
+                    </div>
+                    <div class="col-sm-3" id="loan_status_box">
+                        <label class="form-label">Loan File Status</label>
+                        <input type="text" class="form-control" value="{{ $booking->loan_status ?? 'N/A' }}" readonly>
+                    </div>
+                    @if ($booking->status == 2)
+                    <div class="col-sm-3">
+                        <label class="form-label">Invoice Number <span class="text-red">*</span></label>
+                        <input type="text" class="form-control" value="{{ $booking->inv_no }}" readonly>
+                    </div>
+                    <div class="col-sm-3">
+                        <label class="form-label">Invoice Date <span class="text-red">*</span></label>
+                        <input type="text" class="form-control"
+                            value="{{ \Carbon\Carbon::parse($booking->inv_date)->format('d-M-Y') }}" readonly>
+                    </div>
+                    @endif
+                    @if ($booking->status == 8)
+                    <div class="col-sm-12">
+                        <label class="form-label">{{ __('Pending Remarks') }}</label>
+                        <textarea class="form-control" rows="2" readonly>{{ $booking->pending_remark }}</textarea>
+                    </div>
+                    @endif
+
+                    {{-- Booking Info --}}
+                    <div class="col-sm-3">
+                        <label class="form-label">SAP Booking No.</label>
+                        <input type="text" class="form-control" value="{{ $booking->sap_no ?? 'N/A' }}" readonly>
+                    </div>
+                    <div class="col-sm-3">
+                        <label class="form-label">DMS Booking Number</label>
+                        <input type="text" class="form-control" value="{{ $booking->dms_no ?? 'N/A' }}" readonly>
+                    </div>
+                    <div class="col-sm-2">
+                        <label class="form-label">DMS OTF No.</label>
+                        <input type="text" class="form-control" value="{{ $booking->dms_otf ?? 'N/A' }}" readonly>
+                    </div>
+                    <div class="col-sm-2">
+                        <label class="form-label">DMS OTF Date</label>
+                        <input type="text" class="form-control" value="{{ $booking->otf_date ?? 'N/A' }}" readonly>
+                    </div>
+                    <div class="col-sm-2">
+                        <label class="form-label">DMS SO No.</label>
+                        <input type="text" class="form-control" value="{{ $booking->dms_so ?? 'N/A' }}" readonly>
+                    </div>
+                </div>
+            </div>
         </div>
 
 

@@ -1,17 +1,9 @@
 @extends(backpack_view('blank'))
 
 @section('header')
-<section class="container-fluid">
-    {{-- <h2>
-        <i
-            class="la la-money-check text-{{ request('payout_type', 'pending') === 'completed' ? 'success' : 'warning' }}"></i>
-        {{ request('payout_type', 'pending') === 'completed' ? 'Completed Payout' : 'Pending Payout' }}
-        <small class="d-none d-md-inline">
-            {{ request('payout_type', 'pending') === 'completed' ? '(Processed)' : '(Awaiting Payout)' }}
-        </small>
-    </h2> --}}
-</section>
+<section class="container-fluid"></section>
 @endsection
+
 @push('after_styles')
 <link rel="stylesheet" href="https://unpkg.com/ag-grid-community/styles/ag-theme-quartz.css">
 
@@ -28,38 +20,48 @@
         <div class="card">
 
             {{-- HEADER --}}
-            <div
-                class="card-header bg-gradient-{{ request('payout_type', 'pending') === 'completed' ? 'success' : 'warning' }} d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div class="card-header bg-gradient-success d-flex justify-content-between align-items-center flex-wrap gap-3">
                 <h2 class="card-title mb-0 fw-bold text-black text-nowrap">
-                    Finance Payout - Pending Dashboard
+                    Finance Payout - Completed Dashboard
                 </h2>
 
-                <div class="d-flex align-items-center gap-3 flex-wrap">
-                    <div class="d-flex align-items-center gap-2">
+              <div class="d-flex align-items-center gap-3 flex-wrap">
+                           
+                   {{-- Payout Status Dropdown --}}
+                   <div class="d-flex align-items-center gap-2">
                        <label class="text-black mb-0 text-nowrap">Payout Status:</label>
                        <select id="payout_type" class="form-control form-select" style="min-width: 220px;">
-                           <option value="{{ route('finance.payout') }}"selected>Pending Payout</option>
-                           <option value="{{ route('finance.payout.completed') }}" >Completed Payout</option>
+                           <option value="{{ route('finance.payout') }}">Pending Payout</option>
+                           <option value="{{ route('finance.payout.completed') }}" selected>Completed Payout</option>
                        </select>
                    </div>
-                </div>
+               
+                   {{-- Difference Filter (sirf Completed ke liye) --}}
+                   <div class="d-flex align-items-center gap-2">
+                       <label class="text-black mb-0 text-nowrap">Difference Filter:</label>
+                       <select id="status_filter" class="form-control" style="min-width: 180px;">
+                           <option value="all" {{ request('status_filter', 'all') === 'all' ? 'selected' : '' }}>All</option>
+                           <option value="short" {{ request('status_filter') === 'short' ? 'selected' : '' }}>Short</option>
+                           <option value="excess" {{ request('status_filter') === 'excess' ? 'selected' : '' }}>Excess</option>
+                           <option value="reconciled" {{ request('status_filter') === 'reconciled' ? 'selected' : '' }}>Reconciled</option>
+                       </select>
+                   </div>
+               
+               </div>
             </div>
 
             {{-- BODY --}}
             <div class="card-body p-0 bg-light">
 
                 {{-- TOOLBAR --}}
-                <div
-                    class="d-flex justify-content-between align-items-center flex-wrap gap-3 p-3 border-bottom bg-white">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 p-3 border-bottom bg-white">
                     <div class="d-flex align-items-center gap-2 flex-wrap">
                         <input type="text" id="quickFilter" class="form-control" style="width: 360px; min-width: 260px;"
                             placeholder="Smart Search...">
                         <button id="resetAll" class="btn btn-outline-danger btn-sm">Reset</button>
                     </div>
+
                     <div class="d-flex gap-2 flex-wrap justify-content-center">
-
-
-
                         <button id="btnDefaultHeaders" class="btn btn-secondary btn-sm text-nowrap">
                             Default Headers
                         </button>
@@ -69,25 +71,11 @@
                                 Customise Headers
                             </button>
 
-                            <!-- Customise Bubble -->
-                            <div id="columnBubble" style="
-                                display:none;
-                                position:absolute;
-                                top:110%;
-                                left:0;
-                                width:260px;
-                                background:#fff;
-                                border:1px solid #ddd;
-                                border-radius:6px;
-                                box-shadow:0 8px 20px rgba(0,0,0,.15);
-                                z-index:9999;
-                            ">
+                            <div id="columnBubble" style="display:none; position:absolute; top:110%; left:0; width:260px; background:#fff; border:1px solid #ddd; border-radius:6px; box-shadow:0 8px 20px rgba(0,0,0,.15); z-index:9999;">
                                 <div class="d-flex justify-content-between px-2 py-1 border-bottom">
                                     <strong style="font-size:13px;">Customise Headers</strong>
-                                    <button id="closeColumnBubble"
-                                        class="btn btn-sm btn-link text-danger p-0">✕</button>
+                                    <button id="closeColumnBubble" class="btn btn-sm btn-link text-danger p-0">✕</button>
                                 </div>
-
                                 <div style="max-height:260px; overflow:auto;">
                                     <table class="table table-sm mb-0">
                                         <tbody id="columnBubbleBody"></tbody>
@@ -99,21 +87,14 @@
                         <button id="btnAllHeaders" class="btn btn-info btn-sm text-nowrap">
                             All Headers
                         </button>
-
-
-
                     </div>
 
-
-
-
                     <div class="d-flex gap-2 flex-wrap">
-                        <button id="exportCsv" class="btn btn-sm text-nowrap d-flex align-items-center gap-2">
-                            <img src="{{ asset('images/export-excel.png') }}" alt="Excel"
-                                style="height:30px; width:auto;">
+                        <button id="exportExcel" class="btn btn-sm text-nowrap d-flex align-items-center gap-2">
+                            <img src="{{ asset('images/export-excel.png') }}" alt="Excel" style="height:30px; width:auto;">
                         </button>
 
-                        <button id="exportExcel" class="btn btn-sm text-nowrap d-flex align-items-center gap-2">
+                        <button id="exportPdf" class="btn btn-sm text-nowrap d-flex align-items-center gap-2">
                             <img src="{{ asset('images/export-pdf.png') }}" alt="PDF" style="height:30px; width:auto;">
                         </button>
                     </div>
@@ -133,10 +114,6 @@
 </div>
 @endsection
 
-@push('after_styles')
-<link rel="stylesheet" href="https://unpkg.com/ag-grid-community/styles/ag-theme-quartz.css">
-@endpush
-
 @push('after_scripts')
 <script src="https://unpkg.com/ag-grid-community/dist/ag-grid-community.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -144,110 +121,55 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
 
 <script>
-    // ────────────────────────────────────────────────
-    // ALL_COLUMNS from controller → $gridConfig['columns']
-    // ────────────────────────────────────────────────
     const ALL_COLUMNS = @json($gridConfig['columns'] ?? []);
 
     function getCols(fields) {
         return ALL_COLUMNS.filter(col => fields.includes(col.field));
     }
 
-    let gridApi;
-
-    // ────────────────────────────────────────────────
-    // Default visible fields → only Y marked ones
-    // ────────────────────────────────────────────────
+    // Default visible fields (agar Completed ke liye alag chahiye to yahan change kar sakte ho)
     const DEFAULT_VISIBLE_FIELDS = [
-        // Primary - Y (both pending & completed)
-        'serial_no',
-        'booking_no',          // Booking Age
-        'inv_no',               // Invoice No.
-        'inv_date',             // Invoice Date
-
-        // Customer - Y
-        'name',                 // Customer Name
-        'mobile',               // Contact No.
-        'branch_name',
-        'location_name',
-
-        // Vehicle - Y
-        'model',
-        'variant',
-        'color',
-        'seating',
-
-        // Booking Detail - Y
-        'consultant',           // Sales Consultant
-        'fin_mode',   // Finance Mode (Final)
-        'financier',            // Financier
-        'financier_short_name',      // Financier Short Name
-        'loan_status',
-        // Action (always visible)
-        'action'
+        'serial_no', 'booking_no', 'created_at', 'booking_date', 'days_count',
+        'inv_no', 'inv_date', 'name', 'mobile', 'branch_name', 'location_name',
+        'model', 'variant', 'color', 'seating',
+        'consultant', 'finance_mode_final', 'financier', 'financier_short',
+        'payout_category', 'do_number', 'loan_amount_dealer',
+        'expected_payout_percent', 'expected_payout_without_gst',
+        'expected_payout_amount_without_gst', 'action'
     ];
 
-    // ────────────────────────────────────────────────
-    // Grouped columns with pinning & centering
-    // ────────────────────────────────────────────────
     const columnGroups = [
         {
             headerName: 'Primary',
             headerClass: 'ag-header-center',
-            children: getCols([
-                'serial_no',
-                'booking_no',
-                'created_at',
-                'booking_date',
-                'days_count',
-                'inv_no',
-                'inv_date'
-            ]).map(col => {
-                if (col.field === 'serial_no' || col.field === 'booking_no') {
-                    col.pinned = 'left';
-                }
-                return col;
-            })
+            children: getCols(['serial_no','booking_no','created_at','booking_date','days_count','inv_no','inv_date'])
+                .map(col => {
+                    if (['serial_no', 'booking_no'].includes(col.field)) col.pinned = 'left';
+                    return col;
+                })
         },
         {
             headerName: 'Customer',
             headerClass: 'ag-header-center',
-            children: getCols([
-                'receipt_no',
-                'receipt_date',
-                'name',
-                'mobile',
-                'alt_mobile',
-                'pan_no',
-                'adhar_no',
-                'gstn',
-                'branch_name',
-                'location_name'
-            ])
+            children: getCols(['receipt_no','receipt_date','name','mobile','alt_mobile','pan_no','adhar_no','gstn','branch_name','location_name'])
         },
         {
             headerName: 'Vehicle',
             headerClass: 'ag-header-center',
-            children: getCols([
-                'segment',
-                'model',
-                'variant',
-                'color',
-                'seating',
-                'chasis_no'
-            ])
+            children: getCols(['segment','model','variant','color','seating','chasis_no'])
         },
         {
             headerName: 'Booking Detail',
             headerClass: 'ag-header-center',
+            children: getCols(['consultant','delivery_date','finmode','finance_mode_final','financier','financier_short','loan_status'])
+        },
+        {
+            headerName: 'Payout Detail',
+            headerClass: 'ag-header-center',
             children: getCols([
-                'consultant',
-                'del_type',
-                'fin_mode',
-                'finmode',
-                'financier',
-                'financier_short_name',
-                'loan_status'
+                'payout_category','do_number','loan_amount_dealer',
+                'expected_payout_percent','expected_payout_without_gst',
+                'expected_payout_amount_without_gst'
             ])
         },
         {
@@ -262,6 +184,8 @@
             })
         }
     ];
+
+    let gridApi;
 
     const gridOptions = {
         columnDefs: columnGroups,
@@ -290,11 +214,9 @@
 
             const allFields = [];
             columnGroups.forEach(group => {
-                if (group.children) {
-                    group.children.forEach(child => {
-                        if (child.field) allFields.push(child.field);
-                    });
-                }
+                group.children?.forEach(child => {
+                    if (child.field) allFields.push(child.field);
+                });
             });
 
             gridApi.setColumnsVisible(allFields, false);
@@ -307,37 +229,29 @@
         }
     };
 
-    // ────────────────────────────────────────────────
-    // Customise Headers – grouped + sync
-    // ────────────────────────────────────────────────
+    // Customise Headers Bubble
     function openColumnBubble() {
         const bubble = document.getElementById('columnBubble');
-        const tbody  = document.getElementById('columnBubbleBody');
+        const tbody = document.getElementById('columnBubbleBody');
         if (!gridApi || !bubble || !tbody) return;
 
         tbody.innerHTML = '';
 
         columnGroups.forEach(group => {
             const groupName = group.headerName;
-            const children  = group.children || [];
-
+            const children = group.children || [];
             if (groupName === 'Action') return;
 
             const groupTr = document.createElement('tr');
             groupTr.style.background = '#f0f0f0';
-
             const groupCheckTd = document.createElement('td');
             groupCheckTd.style.width = '30px';
             groupCheckTd.className = 'text-center';
 
             const groupCheckbox = document.createElement('input');
             groupCheckbox.type = 'checkbox';
-
             const fields = children.map(c => c.field).filter(Boolean);
-            const visibleCount = fields.filter(f => {
-                const col = gridApi.getColumn(f);
-                return col && col.isVisible();
-            }).length;
+            const visibleCount = fields.filter(f => gridApi.getColumn(f)?.isVisible() ?? false).length;
 
             groupCheckbox.checked = visibleCount === fields.length && visibleCount > 0;
             groupCheckbox.indeterminate = visibleCount > 0 && visibleCount < fields.length;
@@ -349,52 +263,40 @@
 
             groupCheckbox.addEventListener('change', () => {
                 gridApi.setColumnsVisible(fields, groupCheckbox.checked);
-                tbody.querySelectorAll(`tr[data-group="${groupName}"] input`)
-                    .forEach(cb => cb.checked = groupCheckbox.checked);
+                tbody.querySelectorAll(`tr[data-group="${groupName}"] input`).forEach(cb => cb.checked = groupCheckbox.checked);
             });
 
             groupCheckTd.appendChild(groupCheckbox);
-
             const groupLabelTd = document.createElement('td');
             groupLabelTd.colSpan = 2;
             groupLabelTd.innerHTML = `<strong>${groupName}</strong>`;
-
-            groupTr.appendChild(groupCheckTd);
-            groupTr.appendChild(groupLabelTd);
+            groupTr.append(groupCheckTd, groupLabelTd);
             tbody.appendChild(groupTr);
 
             children.forEach(child => {
                 if (!child.field) return;
-
                 const tr = document.createElement('tr');
                 tr.dataset.group = groupName;
 
                 const tdCheck = document.createElement('td');
                 tdCheck.style.paddingLeft = '40px';
                 tdCheck.className = 'text-center';
-
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
-
-                const col = gridApi.getColumn(child.field);
-                checkbox.checked = col ? col.isVisible() : false;
+                checkbox.checked = gridApi.getColumn(child.field)?.isVisible() ?? false;
 
                 if (groupName === 'Primary') {
                     checkbox.disabled = true;
                     checkbox.checked = true;
                 }
 
-                checkbox.addEventListener('change', () => {
-                    gridApi.setColumnsVisible([child.field], checkbox.checked);
-                });
+                checkbox.addEventListener('change', () => gridApi.setColumnsVisible([child.field], checkbox.checked));
 
                 tdCheck.appendChild(checkbox);
-
                 const tdLabel = document.createElement('td');
                 tdLabel.innerText = child.headerName;
 
-                tr.appendChild(tdCheck);
-                tr.appendChild(tdLabel);
+                tr.append(tdCheck, tdLabel);
                 tbody.appendChild(tr);
             });
         });
@@ -402,64 +304,12 @@
         bubble.style.display = 'block';
     }
 
-    // ────────────────────────────────────────────────
     // Event Listeners
-    // ────────────────────────────────────────────────
-    document.getElementById('btnCustomiseHeaders')?.addEventListener('click', e => {
-        e.stopPropagation();
-        openColumnBubble();
-    });
-
-    document.getElementById('closeColumnBubble')?.addEventListener('click', () => {
-        document.getElementById('columnBubble').style.display = 'none';
-    });
-
-    document.getElementById('columnBubble')?.addEventListener('click', e => e.stopPropagation());
-
-    document.addEventListener('click', () => {
-        const bubble = document.getElementById('columnBubble');
-        if (bubble) bubble.style.display = 'none';
-    });
-
-    document.getElementById('btnAllHeaders')?.addEventListener('click', () => {
-        const allFields = [];
-        columnGroups.forEach(group => {
-            if (group.children) {
-                group.children.forEach(c => {
-                    if (c.field) allFields.push(c.field);
-                });
-            }
-        });
-        gridApi.setColumnsVisible(allFields, true);
-        setTimeout(() => {
-            const visibleIds = gridApi.getAllDisplayedColumns().map(c => c.getColId());
-            gridApi.autoSizeColumns(visibleIds, false);
-        }, 200);
-    });
-
-    document.getElementById('btnDefaultHeaders')?.addEventListener('click', () => {
-        const allFields = [];
-        columnGroups.forEach(group => {
-            if (group.children) {
-                group.children.forEach(c => {
-                    if (c.field) allFields.push(c.field);
-                });
-            }
-        });
-
-        gridApi.setColumnsVisible(allFields, false);
-        gridApi.setColumnsVisible(DEFAULT_VISIBLE_FIELDS, true);
-
-        setTimeout(() => {
-            const visibleIds = gridApi.getAllDisplayedColumns().map(c => c.getColId());
-            gridApi.autoSizeColumns(visibleIds, false);
-        }, 200);
-    });
-
     document.addEventListener('DOMContentLoaded', () => {
         const gridDiv = document.querySelector('#myGrid');
         gridApi = agGrid.createGrid(gridDiv, gridOptions);
 
+        // Quick Filter
         document.getElementById('quickFilter')?.addEventListener('input', e => {
             gridApi.setGridOption('quickFilterText', e.target.value);
         });
@@ -470,12 +320,12 @@
             document.getElementById('quickFilter').value = '';
         });
 
-        // Payout Type Switch
+        
         document.getElementById('payout_type')?.addEventListener('change', function() {
             window.location.href = this.value;
         });
 
-        // Difference Filter (for Completed only)
+        // Difference Filter
         document.getElementById('status_filter')?.addEventListener('change', function() {
             const url = new URL(window.location);
             if (this.value === 'all') {
@@ -486,8 +336,39 @@
             window.location = url;
         });
 
-        // Excel Export
-        document.getElementById('exportCsv')?.addEventListener('click', () => {
+        // Customise Headers
+        document.getElementById('btnCustomiseHeaders')?.addEventListener('click', e => {
+            e.stopPropagation();
+            openColumnBubble();
+        });
+
+        document.getElementById('closeColumnBubble')?.addEventListener('click', () => {
+            document.getElementById('columnBubble').style.display = 'none';
+        });
+
+        document.getElementById('columnBubble')?.addEventListener('click', e => e.stopPropagation());
+
+        document.addEventListener('click', () => {
+            document.getElementById('columnBubble').style.display = 'none';
+        });
+
+        document.getElementById('btnAllHeaders')?.addEventListener('click', () => {
+            const allFields = [];
+            columnGroups.forEach(group => group.children?.forEach(c => c.field && allFields.push(c.field)));
+            gridApi.setColumnsVisible(allFields, true);
+            setTimeout(() => gridApi.autoSizeColumns(gridApi.getAllDisplayedColumns().map(c => c.getColId()), false), 200);
+        });
+
+        document.getElementById('btnDefaultHeaders')?.addEventListener('click', () => {
+            const allFields = [];
+            columnGroups.forEach(group => group.children?.forEach(c => c.field && allFields.push(c.field)));
+            gridApi.setColumnsVisible(allFields, false);
+            gridApi.setColumnsVisible(DEFAULT_VISIBLE_FIELDS, true);
+            setTimeout(() => gridApi.autoSizeColumns(gridApi.getAllDisplayedColumns().map(c => c.getColId()), false), 200);
+        });
+
+        // Export Excel
+        document.getElementById('exportExcel')?.addEventListener('click', () => {
             const visibleColumns = gridApi.getAllDisplayedColumns()
                 .map(col => col.getColDef())
                 .filter(col => col.field && col.field !== 'action');
@@ -504,11 +385,11 @@
             const worksheet = XLSX.utils.json_to_sheet(rows);
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, 'Finance Payout');
-            XLSX.writeFile(workbook, `finance-payout-${new Date().toISOString().slice(0,10)}.xlsx`);
+            XLSX.writeFile(workbook, `finance-payout-completed-${new Date().toISOString().slice(0,10)}.xlsx`);
         });
 
-        // PDF Export
-        document.getElementById('exportExcel')?.addEventListener('click', () => {
+        // Export PDF
+        document.getElementById('exportPdf')?.addEventListener('click', () => {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF('l', 'pt', 'a4');
 
@@ -524,22 +405,20 @@
             const rows = [];
             gridApi.forEachNodeAfterFilterAndSort(node => {
                 const row = {};
-                visibleColumns.forEach(col => {
-                    row[col.field] = node.data[col.field];
-                });
+                visibleColumns.forEach(col => row[col.field] = node.data[col.field]);
                 rows.push(row);
             });
 
-            doc.text('Finance Payout Report', 40, 30);
+            doc.text('Finance Payout - Completed Report', 40, 30);
             doc.autoTable({
                 columns: exportCols,
                 body: rows,
                 startY: 50,
                 styles: { fontSize: 8 },
-                headStyles: { fillColor: [13, 110, 253] },
+                headStyles: { fillColor: [40, 167, 69] },
             });
 
-            doc.save('finance-payout.pdf');
+            doc.save('finance-payout-completed.pdf');
         });
     });
 </script>

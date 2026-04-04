@@ -507,91 +507,92 @@
 
         function applyLogic() {
 
-    const mode = $('#fin_mode').val();
-    const caseVal = $('#case_status').val();
-    const prevFin = $('#financier_select').val();
+            const mode = $('#fin_mode').val();
+            const caseVal = $('#case_status').val();
+            const prevFin = $('#financier_select').val();
 
-    $('.finance-field').hide();
-    $('#case_lost_reason_wrapper').hide();
+            $('.finance-field').hide();
+            $('#case_lost_reason_wrapper').hide();
 
-    $('#financier_wrapper, #financier_short_wrapper').show();
-    $('#financier_select').prop('disabled', false).prop('required', true);
+            $('#financier_wrapper, #financier_short_wrapper').show();
+            $('#financier_select').prop('disabled', false).prop('required', true);
 
-    $('#case_status').prop('disabled', false);
-    $('#loan_status_box').prop('disabled', false).prop('required', true);
+            $('#case_status').prop('disabled', false);
+            $('#loan_status_box').prop('disabled', false).prop('required', true);
 
-    let disableFinancier = false;
+            let disableFinancier = false;
 
-    if (mode === 'Cash' || mode === 'Customer Self') {
-
-        disableFinancier = true;
-
-        $('#case_status').val(3).prop('disabled', true);
-        $('#loan_status_box').val('').prop('disabled', true).prop('required', false);
-
-        $('#case_lost_reason_wrapper').show();
-
-        if (mode === 'Cash') {
-
-            $('#case_lost_reason_display').val('Cash Purchase');
-            $('#case_lost_reason_hidden').val('1');
-
-        } else {
-
-            $('#case_lost_reason_display').val('Customer Self Finance');
-            $('#case_lost_reason_hidden').val('2');
-
-            showFinanceFields();
+            if (mode === 'Cash' || mode === 'Customer Self') {
+            
+                disableFinancier = true;
+            
+                $('#case_status').val(3).prop('disabled', true);
+                $('#loan_status_box').val('').prop('disabled', true).prop('required', false);
+            
+                $('#case_lost_reason_wrapper').show();
+            
+                if (mode === 'Cash') {
+                
+                    $('#case_lost_reason_display').val('Cash Purchase');
+                    $('#case_lost_reason_hidden').val('1');
+                
+                } else {
+                
+                    $('#case_lost_reason_display').val('Customer Self Finance');
+                    $('#case_lost_reason_hidden').val('2');
+                
+                    showFinanceFields();
+                }
+            
+            }
+        
+            if (mode === 'In-house') {
+            
+                $('#case_lost_option').hide();
+            
+                if (caseVal == 3) {
+                    $('#case_status').val(1);
+                }
+            
+                if (caseVal == 2) {
+                
+                    $('#loan_status_box')
+                        .val('Complete')
+                        .prop('disabled', true)
+                        .prop('required', false);
+                
+                    showFinanceFields();
+                }
+            
+            } else {
+            
+                $('#case_lost_option').show();
+            
+            }
+        
+            if (disableFinancier) {
+            
+                $('#financier_select')
+                    .val('')
+                    .trigger('change')
+                    .prop('disabled', true)
+                    .prop('required', false);
+            
+            } else {
+            
+                if (prevFin && prevFin !== '') {
+                    $('#financier_select').val(prevFin).trigger('change');
+                }
+            
+                $('#financier_select')
+                    .prop('disabled', false)
+                    .prop('required', true);
+            }
+        
+            updateInstrumentFields();
+            updateVerificationStatus();
+            checkPayoutEligibility();
         }
-
-    }
-
-    if (mode === 'In-house') {
-
-        $('#case_lost_option').hide();
-
-        if (caseVal == 3) {
-            $('#case_status').val(1);
-        }
-
-        if (caseVal == 2) {
-
-            $('#loan_status_box')
-                .val('Complete')
-                .prop('disabled', true)
-                .prop('required', false);
-
-            showFinanceFields();
-        }
-
-    } else {
-
-        $('#case_lost_option').show();
-
-    }
-
-    if (disableFinancier) {
-
-        $('#financier_select')
-            .val('')
-            .trigger('change')
-            .prop('disabled', true)
-            .prop('required', false);
-
-    } else {
-
-        if (prevFin && prevFin !== '') {
-            $('#financier_select').val(prevFin).trigger('change');
-        }
-
-        $('#financier_select')
-            .prop('disabled', false)
-            .prop('required', true);
-    }
-
-    updateInstrumentFields();
-    checkPayoutEligibility();
-}
 
         function updateInstrumentFields() {
 
@@ -681,6 +682,33 @@
             $('#payout_hidden').val(eligible ? '1' : '0');
         }
 
+        function updateVerificationStatus() {
+            const mode = $('#fin_mode').val();
+            let vText = 'Please select Finance Mode';
+            let vVal = 1;
+            let vColor = '#6c757d';
+
+            if (mode) {
+                if (mode === originalFinMode) {
+                    vText = 'Verified (Match)';
+                    vVal = 2;
+                    vColor = '#28a745';
+                } else if (mode === 'Purchase Plan Cancelled') {
+                    vText = 'Plan Cancelled';
+                    vVal = 4;
+                    vColor = '#dc3545';
+                } else {
+                    vText = 'Verified (Mismatch)';
+                    vVal = 3;
+                    vColor = '#dc3545';
+                }
+            }
+        
+            $('#verification_status_display').val(vText).css('color', vColor);
+            $('#verification_status_hidden').val(vVal);
+        }
+
+
         function init() {
             $('.select2').select2({
                 placeholder: "-- Select --",
@@ -731,6 +759,7 @@
             $('#instrument_ref_no').on('input', checkPayoutEligibility);
 
             applyLogic();
+            updateVerificationStatus();
         }
 
         $(document).ready(init);

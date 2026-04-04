@@ -1141,9 +1141,8 @@ class CommonHelper
         return;
     }
 
-    //getFnSHeading(C,N,C,N);
-    //getFnSHeading(<Value>,<parent>,<bound_with (goes to col val_type)>,<master_id : 25 for Spec, 26 for Features>
-    public static function getFnSHeads($val, $parent = 0, $bounded, $type)
+
+    public static function getFnSHeads($val, $bounded, $type, $parent = 0)
     {
         $tmp = EnumMaster::updateOrCreate([
             'master_id' => $type,

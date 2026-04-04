@@ -300,33 +300,38 @@
                                 style="{{ $entry->r_name ? '' : 'display:none;' }}">
                                 <div class="col-sm-3 form-group">
                                     <label for="ref_customer_name">Customer Name <span class="required-mark"
-                                            style="display: none;">*</span></label>
+                                            style="display: {{ $entry->r_name ? 'inline' : 'none' }};">*</span></label>
                                     <input type="text" name="ref_customer_name" id="ref_customer_name"
-                                        class="form-control uppercase" value="{{ $entry->r_name ?? '' }}">
+                                        class="form-control uppercase" value="{{ $entry->r_name ?? '' }}"
+                                        {{ $entry->r_name ? 'required' : '' }}>
                                 </div>
                                 <div class="col-sm-3 form-group">
                                     <label for="ref_mobile_no">Mobile No. <span class="required-mark"
-                                            style="display: none;">*</span></label>
+                                            style="display: {{ $entry->r_name ? 'inline' : 'none' }};">*</span></label>
                                     <input type="text" name="ref_mobile_no" id="ref_mobile_no" class="form-control"
-                                        value="{{ $entry->r_mobile ?? '' }}">
+                                        value="{{ $entry->r_mobile ?? '' }}"
+                                        {{ $entry->r_name ? 'required' : '' }}>
                                 </div>
                                 <div class="col-sm-3 form-group">
                                     <label for="ref_existing_model">Existing Model <span class="required-mark"
-                                            style="display: none;">*</span></label>
+                                            style="display: {{ $entry->r_name ? 'inline' : 'none' }};">*</span></label>
                                     <input type="text" name="ref_existing_model" id="ref_existing_model"
-                                        class="form-control uppercase" value="{{ $entry->r_model ?? '' }}">
+                                        class="form-control uppercase" value="{{ $entry->r_model ?? '' }}"
+                                        {{ $entry->r_name ? 'required' : '' }}>
                                 </div>
                                 <div class="col-sm-3 form-group">
                                     <label for="ref_variant">Variant <span class="required-mark"
-                                            style="display: none;">*</span></label>
+                                            style="display: {{ $entry->r_name ? 'inline' : 'none' }};">*</span></label>
                                     <input type="text" name="ref_variant" id="ref_variant"
-                                        class="form-control uppercase" value="{{ $entry->r_variant ?? '' }}">
+                                        class="form-control uppercase" value="{{ $entry->r_variant ?? '' }}"
+                                        {{ $entry->r_name ? 'required' : '' }}>
                                 </div>
                                 <div class="col-sm-3 form-group">
                                     <label for="ref_chassis_reg_no">Chassis / Regn. No. <span class="required-mark"
-                                            style="display: none;">*</span></label>
+                                            style="display: {{ $entry->r_name ? 'inline' : 'none' }};">*</span></label>
                                     <input type="text" name="ref_chassis_reg_no" id="ref_chassis_reg_no"
-                                        class="form-control uppercase" value="{{ $entry->r_chassis ?? '' }}">
+                                        class="form-control uppercase" value="{{ $entry->r_chassis ?? '' }}"
+                                        {{ $entry->r_name ? 'required' : '' }}>
                                 </div>
                             </div>
                         </div>
@@ -900,20 +905,68 @@
     $('#accessories').on('change', updateAccessoriesAmount);
 
     // Initial Load - Restore saved values
-    @if($entry->segment_id && $entry->model && $entry->variant && $entry->color)
-        $('#segment_id').trigger('change');
+    // ==================== RESTORE SAVED VALUES ON EDIT (Sequential) ====================
+async function restoreVehicleDetails() {
+    if (!{{ $entry->segment_id ?? 'null' }}) return;
 
-        setTimeout(() => $('#model').val('{{ addslashes($entry->model) }}').trigger('change'), 600);
-        setTimeout(() => $('#variant').val('{{ addslashes($entry->variant) }}').trigger('change'), 1400);
-        setTimeout(() => {
-            $('#color').val('{{ addslashes($entry->color) }}').trigger('change');
-            updateFromColor();
-        }, 2200);
-        setTimeout(() => {
+    // 1. Set Segment
+    $('#segment_id').val('{{ $entry->segment_id }}').trigger('change');
+
+    // Wait for models to load
+    await new Promise(resolve => {
+        const check = setInterval(() => {
+            if ($('#model option').length > 1) {
+                clearInterval(check);
+                resolve();
+            }
+        }, 100);
+    });
+
+    // 2. Set Model
+    $('#model').val('{{ addslashes($entry->model) }}').trigger('change');
+
+    // Wait for variants
+    await new Promise(resolve => {
+        const check = setInterval(() => {
+            if ($('#variant option').length > 1) {
+                clearInterval(check);
+                resolve();
+            }
+        }, 100);
+    });
+
+    // 3. Set Variant
+    $('#variant').val('{{ addslashes($entry->variant) }}').trigger('change');
+
+    // Wait for colors
+    await new Promise(resolve => {
+        const check = setInterval(() => {
+            if ($('#color option').length > 1) {
+                clearInterval(check);
+                resolve();
+            }
+        }, 100);
+    });
+
+    // 4. Set Color + Chassis + Accessories
+    $('#color').val('{{ addslashes($entry->color) }}').trigger('change');
+
+    // Small delay for color data to attach
+    setTimeout(() => {
+        updateFromColor();
+
+        if ('{{ $entry->chasis_no }}') {
             $('#chassis').val('{{ $entry->chasis_no }}').trigger('change.select2');
-            updateAccessoriesAmount();
-        }, 2800);
-    @endif
+        }
+
+        updateAccessoriesAmount();
+    }, 800);
+}
+
+// Call it after document ready
+$(document).ready(function() {
+    restoreVehicleDetails();
+});
 });
 </script>
 
@@ -930,60 +983,92 @@
         $('#buyer_type').on('change', function() {
             const type = this.value;
             const isAdditional = type === 'Additional Buy';
-            const isExchange = type === 'Exchange Buy';
-            const isScrappage = type === 'Scrappage';
+            const isExchange   = type === 'Exchange Buy';
+            const isScrappage  = type === 'Scrappage';
 
-            const baseFields = ['#enum_master1', '#vehicle_details', '#enum_master2', '#vehicle_details2'];
+            const baseRequired  = ['#enum_master1', '#vehicle_details'];
+            const extraMake     = ['#enum_master2', '#vehicle_details2'];  // optional for Additional Buy
             const exchangeFields = ['#registration_no', '#manufacturing_year', '#odometer_reading', '#expected_price', '#offered_price', '#exchange_bonus'];
             const scrappageFields = ['#registration_no', '#manufacturing_year'];
 
-            // Reset states ONLY — DO NOT CLEAR VALUES!
-            const allFields = baseFields.concat(exchangeFields, scrappageFields);
+            // 1. Disable + un-require ALL fields first (DO NOT CLEAR VALUES)
+            const allFields = baseRequired.concat(extraMake, exchangeFields, scrappageFields);
             allFields.forEach(id => {
-                const $field = $(id);
-                if ($field.length) {
-                    $field.prop('disabled', true).prop('required', false);
-                    $field.siblings('label').find('.required-mark').hide();
-                    // IMPORTANT: NO $field.val('') here!
-                }
+                const $f = $(id);
+                if (!$f.length) return;
+                $f.prop('disabled', true).prop('required', false);
+                $f.closest('.form-group').find('.required-mark').hide();
             });
 
-            function enableFields(ids) {
+            // Helper: enable as REQUIRED
+            function enableRequired(ids) {
                 ids.forEach(id => {
-                    const $field = $(id);
-                    if ($field.length) {
-                        $field.prop('disabled', false).prop('required', true);
-                        $field.siblings('label').find('.required-mark').show();
-
-                        // Refresh Select2 display if it's a dropdown
-                        if ($field.hasClass('select2-hidden-accessible') || $field.hasClass('select2')) {
-                            $field.trigger('change.select2');
-                        }
+                    const $f = $(id);
+                    if (!$f.length) return;
+                    $f.prop('disabled', false).prop('required', true);
+                    $f.closest('.form-group').find('.required-mark').show();
+                    if ($f.hasClass('select2-hidden-accessible') || $f.hasClass('select2')) {
+                        $f.trigger('change.select2');
                     }
                 });
             }
 
-            if (isAdditional) {
-                enableFields(baseFields);
-            } else if (isExchange) {
-                enableFields(baseFields.slice(0, 2).concat(exchangeFields));
-                calculatePriceGap();
-            } else if (isScrappage) {
-                enableFields(baseFields.slice(0, 2).concat(scrappageFields));
+            // Helper: enable as OPTIONAL (enabled but NOT required)
+            function enableOptional(ids) {
+                ids.forEach(id => {
+                    const $f = $(id);
+                    if (!$f.length) return;
+                    $f.prop('disabled', false).prop('required', false);
+                    $f.closest('.form-group').find('.required-mark').hide();
+                    if ($f.hasClass('select2-hidden-accessible') || $f.hasClass('select2')) {
+                        $f.trigger('change.select2');
+                    }
+                });
             }
 
-            // Always re-calculate gap after any change
+            // 2. Apply correct state per type
+            if (isAdditional) {
+                enableRequired(baseRequired);
+                enableOptional(extraMake);   // Brand Make 2 & Variant 2 → optional
+            } else if (isExchange) {
+                enableRequired(baseRequired.concat(exchangeFields));
+                calculatePriceGap();
+            } else if (isScrappage) {
+                enableRequired(baseRequired.concat(scrappageFields));
+            }
+            // First time Buyer → everything stays disabled (already reset above)
+
             calculatePriceGap();
         });
 
-        // Trigger once on load — but values are preserved
+        // Trigger once on load — values are preserved
         $('#buyer_type').trigger('change');
 
-        // Re-calculate price gap immediately (in case inputs have values)
+        // Re-calculate price gap immediately
         calculatePriceGap();
 
-        // Live update when user types (if enabled)
+        // Live update when user types
         $('#expected_price, #offered_price, #exchange_bonus').on('input', calculatePriceGap);
+
+        // ─── Referred By checkbox toggle ─────────────────────────────────────
+        const $refFields = $('#ref_customer_name, #ref_mobile_no, #ref_existing_model, #ref_variant, #ref_chassis_reg_no');
+
+        $('#referred_by_checkbox').on('change', function() {
+            const isChecked = this.checked;
+
+            if (isChecked) {
+                // Show section, make fields required
+                $('#referred_by_fields').show();
+                $refFields.prop('required', true);
+                $('#referred_by_fields .required-mark').show();
+            } else {
+                // Hide section, clear values, remove required
+                $('#referred_by_fields').hide();
+                $refFields.val('').prop('required', false);
+                $('#referred_by_fields .required-mark').hide();
+            }
+        });
+        // ─────────────────────────────────────────────────────────────────────
     });
 </script>
 <script>
