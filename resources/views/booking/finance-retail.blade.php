@@ -65,7 +65,7 @@
                     Pending Finance Info (Invoiced Cases)
                 </h2>
 
-                <div class="d-flex align-items-center gap-3 flex-wrap">
+                {{-- <div class="d-flex align-items-center gap-3 flex-wrap">
                     <div class="d-flex align-items-center gap-2">
                         <label class="text-black mb-0 text-nowrap">Retail Status:</label>
                         <select id="retail_type" class="form-control form-select" style="min-width: 220px;">
@@ -78,7 +78,7 @@
                             </option>
                         </select>
                     </div>
-                </div>
+                </div> --}}
             </div>
 
             {{-- BODY --}}
@@ -87,9 +87,9 @@
                 {{-- TOOLBAR --}}
                 <div
                     class="d-flex justify-content-between align-items-center flex-wrap gap-3 p-3 border-bottom bg-white">
-                    <div class="d-flex align-items-center gap-2 flex-wrap">
-                        <input type="text" id="quickFilter" class="form-control" style="width: 360px; min-width: 260px;"
-                            placeholder="Smart Search...">
+                    <div class="d-flex align-items-center gap-2 flex-nowrap">
+                        <input type="text" id="quickFilter" class="form-control w-100 w-md-auto"
+                            style="width: 360px; min-width: 260px;" placeholder="Smart Search...">
                         <button id="resetAll" class="btn btn-outline-danger btn-sm">Reset</button>
                     </div>
 
@@ -207,10 +207,8 @@
 
         // Booking Detail - Y
         'consultant',           // Sales Consultant
-        // 'finance_mode_final',   // Finance Mode (Final)
-        'financier',            // Financier
-        // 'financier_short_name',      // Financier Short Name
-        'loan_status',      // Loan File Status
+        'fin_mode',   // Finance Mode (Final)
+        'financier_short_name',      // Financier Short Name
 
         // Action (always visible)
         'action'
@@ -272,9 +270,9 @@
             children: getCols([
                 'consultant',               // Sales Consultant - Y
                 'del_type',
-                // 'finance_mode_final',       // Finance Mode (Final) - Y
+                'fin_mode',       // Finance Mode (Final) - Y
                 'financier',                // Financier - Y
-                // 'financier_short_name',          // Financier Short Name - Y
+                'financier_short_name',          // Financier Short Name - Y
                 'loan_status'          // Loan File Status - Y
             ])
         },

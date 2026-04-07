@@ -80,9 +80,9 @@
                             p-3 border-bottom bg-white">
 
                     {{-- LEFT --}}
-                    <div class="d-flex align-items-center gap-2 flex-wrap">
-                        <input type="text" id="quickFilter" class="form-control" style="width:340px;"
-                            placeholder="Smart Search...">
+                    <div class="d-flex align-items-center gap-2 flex-nowrap">
+                        <input type="text" id="quickFilter" class="form-control w-100 w-md-auto"
+                            style="width:360px; min-width: 260px;" placeholder="Smart Search...">
                         <button id="resetAll" class="btn btn-sm btn-outline-danger">Reset</button>
                     </div>
 
@@ -199,8 +199,9 @@
 
         // Booking Detail - Y
         'consultant',           // Sales Consultant
-        'delivery_date',        // Delivery Date
+        'del_date',        // Delivery Date
         'b_type',               // Purchase Type
+        'buyer_type',
         'exist_oem1',           // Brand Make 1
         'vh1_detail', // Model Variant 1
         'expected_price',           // Used Vehicle Expected Price - Y
@@ -261,12 +262,20 @@
             ])
         },
         {
-            headerName: 'Booking Detail',
+            headerName: 'Booking Details',
             headerClass: 'ag-header-center',
             children: getCols([
                 'consultant',               // Sales Consultant - Y
                 'del_type',
                 'del_date',            // Delivery Date - Y
+
+            ])
+        },
+        {
+            headerName: 'Purchase Type Details',
+            headerClass: 'ag-header-center',
+            children: getCols([
+            // Delivery Date - Y
                 'buyer_type',                   // Purchase Type - Y
                 'exist_oem1',               // Brand Make 1 - Y
                 'vh1_detail',     // Model Variant 1 - Y

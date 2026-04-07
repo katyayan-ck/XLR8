@@ -36,12 +36,12 @@
 
                 <div class="d-flex align-items-center gap-3 flex-wrap">
                     <div class="d-flex align-items-center gap-2">
-                       <label class="text-black mb-0 text-nowrap">Payout Status:</label>
-                       <select id="payout_type" class="form-control form-select" style="min-width: 220px;">
-                           <option value="{{ route('finance.payout') }}"selected>Pending Payout</option>
-                           <option value="{{ route('finance.payout.completed') }}" >Completed Payout</option>
-                       </select>
-                   </div>
+                        <label class="text-black mb-0 text-nowrap">Payout Status:</label>
+                        <select id="payout_type" class="form-control form-select" style="min-width: 220px;">
+                            <option value="{{ route('finance.payout') }}" selected>Pending Payout</option>
+                            <option value="{{ route('finance.payout.completed') }}">Completed Payout</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
@@ -51,9 +51,9 @@
                 {{-- TOOLBAR --}}
                 <div
                     class="d-flex justify-content-between align-items-center flex-wrap gap-3 p-3 border-bottom bg-white">
-                    <div class="d-flex align-items-center gap-2 flex-wrap">
-                        <input type="text" id="quickFilter" class="form-control" style="width: 360px; min-width: 260px;"
-                            placeholder="Smart Search...">
+                    <div class="d-flex align-items-center gap-2 flex-nowrap">
+                        <input type="text" id="quickFilter" class="form-control w-100 w-md-auto"
+                            style="width: 360px; min-width: 260px;" placeholder="Smart Search...">
                         <button id="resetAll" class="btn btn-outline-danger btn-sm">Reset</button>
                     </div>
                     <div class="d-flex gap-2 flex-wrap justify-content-center">
@@ -180,9 +180,7 @@
         // Booking Detail - Y
         'consultant',           // Sales Consultant
         'fin_mode',   // Finance Mode (Final)
-        'financier',            // Financier
         'financier_short_name',      // Financier Short Name
-        'loan_status',
         // Action (always visible)
         'action'
     ];
@@ -244,7 +242,6 @@
                 'consultant',
                 'del_type',
                 'fin_mode',
-                'finmode',
                 'financier',
                 'financier_short_name',
                 'loan_status'

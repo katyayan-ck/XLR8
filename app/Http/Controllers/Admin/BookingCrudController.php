@@ -484,6 +484,7 @@ class BookingCrudController extends CrudController
 
         $statusBadge = $this->getStatusBadge($booking->status ?? 8);
 
+
         $bookingNo = $booking->id;
 
         $invoiceDate = $booking->inv_date ? Carbon::parse($booking->inv_date)->format('d-M-Y')
@@ -501,6 +502,18 @@ class BookingCrudController extends CrudController
         $financierRecord = $booking->financier
             ? XlFinancier::find($booking->financier)
             : null;
+
+        $careOfTypeMap = [
+            1 => 'Son of',
+            2 => 'Daughter of',
+            3 => 'Married to',
+            4 => 'Guardian Name',
+            5 => 'Owned By',
+        ];
+
+        $care_of_type_display = $careOfTypeMap[(int)($booking->care_of_type ?? 0)]
+            ?? ($booking->care_of_type ?? 'N/A');
+
         $refundRecord = \App\Models\Xl_Refunds::where('entity_id', $booking->id)
             ->where('entity_type', 'booking')
             ->latest('created_at')
@@ -731,7 +744,7 @@ class BookingCrudController extends CrudController
             'name'                    => $booking->name ?? 'N/A',
             'col_by'                    => $booking->col_by ?? 'N/A',
             'care_of'                 => $booking->care_of ?? 'N/A',
-            'care_of_type'                 => $booking->care_of_type ?? 'N/A',
+            'care_of_type'          => $care_of_type_display,
             'customer_age'            => $booking->c_dob
                 ? $this->calculateAgeFromDob($booking->c_dob)
                 : 'N/A',
@@ -890,10 +903,10 @@ class BookingCrudController extends CrudController
             ['headerName' => 'Receipt No.',       'field' => 'receipt_no',          'width' => 120],
             ['headerName' => 'Receipt Date',       'field' => 'receipt_date',          'width' => 120, 'type' => 'date'],
             ['headerName' => 'Customer Name',  'field' => 'name',         'width' => 180, 'filter' => true],
-            ['headerName' => 'Care Of Type',        'field' => 'care_of_type',      'width' => 140],
-            ['headerName' => 'Care Of',        'field' => 'care_of',      'width' => 140],
-            ['headerName' => 'Mobile No.',         'field' => 'mobile',       'width' => 120],
-            ['headerName' => 'Alternate Mobile No.',         'field' => 'alt_mobile',       'width' => 120],
+            ['headerName' => 'Care Of',        'field' => 'care_of_type',      'width' => 140],
+            ['headerName' => 'Care Of Name',        'field' => 'care_of',      'width' => 140],
+            ['headerName' => 'Contact No.',         'field' => 'mobile',       'width' => 120],
+            ['headerName' => 'Alternate Contact No.',         'field' => 'alt_mobile',       'width' => 120],
             ['headerName' => 'Gender',  'field' => 'gender',         'width' => 180, 'filter' => true],
             ['headerName' => 'Occupation',        'field' => 'occ',      'width' => 140],
             ['headerName' => 'PAN No.',         'field' => 'pan_no',       'width' => 110],
@@ -909,7 +922,7 @@ class BookingCrudController extends CrudController
             ['headerName' => 'Variant',        'field' => 'variant',        'width' => 150],
             ['headerName' => 'Color',          'field' => 'color',          'width' => 100],
             ['headerName' => 'Seating',        'field' => 'seating',      'width' => 130],
-            ['headerName' => 'Chassis No.',        'field' => 'chasis_no',      'width' => 130],
+            ['headerName' => 'Allotted Chassis No.',        'field' => 'chasis_no',      'width' => 130],
             ['headerName' => 'Booking Status',    'field' => 'status',    'width' => 130],
             ['headerName' => 'Booking Mode',        'field' => 'b_mode',      'width' => 140],
             ['headerName' => 'Online Book Ref No.',     'field' => 'online_bk_ref_no', 'width' => 130],
@@ -933,7 +946,7 @@ class BookingCrudController extends CrudController
             ['headerName' => 'Vehicle Odometer Reading',        'field' => 'odo_reading',      'width' => 130],
             ['headerName' => 'Used Vehicle Expected Price',       'field' => 'expected_price',     'width' => 100, 'type' => 'number', 'cellClass' => 'text-right'],
             ['headerName' => 'Used Vehicle Offered Price',       'field' => 'offered_price',     'width' => 100, 'type' => 'number', 'cellClass' => 'text-right'],
-            ['headerName' => 'Used Vehicle Exchange Bonus',       'field' => 'exchange_bonus',     'width' => 100, 'type' => 'number', 'cellClass' => 'text-right'],
+            ['headerName' => 'New Vehicle Exchange Bonus',       'field' => 'exchange_bonus',     'width' => 100, 'type' => 'number', 'cellClass' => 'text-right'],
             [
                 'headerName' => 'Price Gap',
                 'field'      => 'price_gap',
@@ -988,7 +1001,6 @@ class BookingCrudController extends CrudController
             ],
             ['headerName' => 'CPD',                'field' => 'cpd',                   'width' => 100, 'type' => 'date'],
 
-            ['headerName' => 'Customer Type',  'field' => 'customer_type',         'width' => 180, 'filter' => true],
 
 
             ['headerName' => 'Care Of Name',        'field' => 'care_of_name',      'width' => 140],
@@ -997,7 +1009,7 @@ class BookingCrudController extends CrudController
 
 
             // Amount & Finance
-            ['headerName' => 'Loan Amount',         'field' => 'booking_amount', 'width' => 120, 'type' => 'number'],
+            // ['headerName' => 'Loan Amount',         'field' => 'booking_amount', 'width' => 120, 'type' => 'number'],
 
             ['headerName' => 'Payout Category',    'field' => 'payout_category',    'width' => 130],
 
@@ -5818,9 +5830,9 @@ class BookingCrudController extends CrudController
 
         $this->data['gridConfig'] = $gridConfig;
 
-        if ($gridData->isEmpty()) {
-            session()->flash('info', 'No pending invoices found.');
-        }
+        // if ($gridData->isEmpty()) {
+        //     session()->flash('info', 'No pending invoices found.');
+        // }
 
         return view('booking.pending-invoices', $this->data);
     }

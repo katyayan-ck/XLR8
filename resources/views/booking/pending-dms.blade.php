@@ -19,7 +19,7 @@
             {{-- HEADER (updated to match order-verification style with bg-gradient-warning) --}}
             <div class="card-header bg-gradient-warning
                         d-flex justify-content-between align-items-center
-                        flex-nowrap flex-md-nowrap flex-wrap">
+                        flex-nowrap gap-2">
                 <h2 class="card-title mb-0 fw-bold text-black text-nowrap">
                     Pending DMS Dashboard
                 </h2>

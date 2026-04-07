@@ -45,8 +45,8 @@
                 {{-- TOOLBAR --}}
                 <div
                     class="d-flex justify-content-between align-items-center flex-wrap gap-3 p-3 border-bottom bg-white">
-                    <div class="d-flex align-items-center gap-2 flex-wrap">
-                        <input type="text" id="quickFilter" class="form-control" style="width: 360px; min-width: 260px;"
+                    <div class="d-flex align-items-center gap-2 flex-nowrap">
+                        <input type="text" id="quickFilter" class="form-control" style="width: 260px; min-width: 260px;"
                             placeholder="Smart Search...">
                         <button id="resetAll" class="btn btn-outline-danger btn-sm">Reset</button>
                     </div>

@@ -88,9 +88,9 @@
                             p-3 border-bottom bg-white">
 
                     {{-- LEFT --}}
-                    <div class="d-flex align-items-center gap-2 flex-wrap">
-                        <input type="text" id="quickFilter" class="form-control" style="width:340px;"
-                            placeholder="Smart Search...">
+                    <div class="d-flex align-items-center gap-2 flex-nowrap">
+                        <input type="text" id="quickFilter" class="form-control w-100 w-md-auto"
+                            style="width: 360px; min-width: 260px;" placeholder="Smart Search...">
                         <button id="resetAll" class="btn btn-sm btn-outline-danger">Reset</button>
                     </div>
 

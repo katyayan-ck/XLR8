@@ -225,10 +225,9 @@
         invoiced: [
             'serial_no', 'booking_no', 'created_at', 'booking_date', 'days_count',
             'invoice_no', 'invoice_date',
-            'customer_category', 'name', 'mobile', 'branch_name', 'location_name',
-            'model', 'variant',
-            'consultant', 'finance_mode', 'financier_short', 'loan_status',
-            'livecount', 'stockcount',
+            'b_cat', 'name', 'mobile', 'branch_name', 'location_name',
+            'model', 'variant', 'color', 'seating', 'chasis_no', 'booking source',
+            'consultant',
             'action'
         ],
         cancelled: [
@@ -313,8 +312,6 @@
             {
                 headerName: 'Booking Detail',
                 children: getCols([
-                    'status',
-                    'b_type',
                     'b_mode',
                     'online_bk_ref_no',
                     'b_source',
@@ -650,10 +647,10 @@
                 ])
             },
            {
-                headerName: 'DO',
+                headerName: 'DO Details',
                 children: getCols([
                     'instrument_type',
-                    'loan_amount_dealer_entry',     // ← corrected
+                    'loan_amount_dealer',     // ← corrected
                     'margin_money',                 // ← corrected
                     'file_charge',                  // ← corrected
                     'net_payment_amount'            // ← calculated field (best practice)

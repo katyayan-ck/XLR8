@@ -20,44 +20,50 @@
         <div class="card">
 
             {{-- HEADER --}}
-            <div class="card-header bg-gradient-success d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div
+                class="card-header bg-gradient-success d-flex justify-content-between align-items-center flex-wrap gap-3">
                 <h2 class="card-title mb-0 fw-bold text-black text-nowrap">
                     Finance Payout - Completed Dashboard
                 </h2>
 
-              <div class="d-flex align-items-center gap-3 flex-wrap">
-                           
-                   {{-- Payout Status Dropdown --}}
-                   <div class="d-flex align-items-center gap-2">
-                       <label class="text-black mb-0 text-nowrap">Payout Status:</label>
-                       <select id="payout_type" class="form-control form-select" style="min-width: 220px;">
-                           <option value="{{ route('finance.payout') }}">Pending Payout</option>
-                           <option value="{{ route('finance.payout.completed') }}" selected>Completed Payout</option>
-                       </select>
-                   </div>
-               
-                   {{-- Difference Filter (sirf Completed ke liye) --}}
-                   <div class="d-flex align-items-center gap-2">
-                       <label class="text-black mb-0 text-nowrap">Difference Filter:</label>
-                       <select id="status_filter" class="form-control" style="min-width: 180px;">
-                           <option value="all" {{ request('status_filter', 'all') === 'all' ? 'selected' : '' }}>All</option>
-                           <option value="short" {{ request('status_filter') === 'short' ? 'selected' : '' }}>Short</option>
-                           <option value="excess" {{ request('status_filter') === 'excess' ? 'selected' : '' }}>Excess</option>
-                           <option value="reconciled" {{ request('status_filter') === 'reconciled' ? 'selected' : '' }}>Reconciled</option>
-                       </select>
-                   </div>
-               
-               </div>
+                <div class="d-flex align-items-center gap-3 flex-wrap">
+
+                    {{-- Payout Status Dropdown --}}
+                    <div class="d-flex align-items-center gap-2">
+                        <label class="text-black mb-0 text-nowrap">Payout Status:</label>
+                        <select id="payout_type" class="form-control form-select" style="min-width: 220px;">
+                            <option value="{{ route('finance.payout') }}">Pending Payout</option>
+                            <option value="{{ route('finance.payout.completed') }}" selected>Completed Payout</option>
+                        </select>
+                    </div>
+
+                    {{-- Difference Filter (sirf Completed ke liye) --}}
+                    <div class="d-flex align-items-center gap-2">
+                        <label class="text-black mb-0 text-nowrap">Difference Filter:</label>
+                        <select id="status_filter" class="form-control" style="min-width: 180px;">
+                            <option value="all" {{ request('status_filter', 'all' )==='all' ? 'selected' : '' }}>All
+                            </option>
+                            <option value="short" {{ request('status_filter')==='short' ? 'selected' : '' }}>Short
+                            </option>
+                            <option value="excess" {{ request('status_filter')==='excess' ? 'selected' : '' }}>Excess
+                            </option>
+                            <option value="reconciled" {{ request('status_filter')==='reconciled' ? 'selected' : '' }}>
+                                Reconciled</option>
+                        </select>
+                    </div>
+
+                </div>
             </div>
 
             {{-- BODY --}}
             <div class="card-body p-0 bg-light">
 
                 {{-- TOOLBAR --}}
-                <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 p-3 border-bottom bg-white">
-                    <div class="d-flex align-items-center gap-2 flex-wrap">
-                        <input type="text" id="quickFilter" class="form-control" style="width: 360px; min-width: 260px;"
-                            placeholder="Smart Search...">
+                <div
+                    class="d-flex justify-content-between align-items-center flex-wrap gap-3 p-3 border-bottom bg-white">
+                    <div class="d-flex align-items-center gap-2 flex-nowrap">
+                        <input type="text" id="quickFilter" class="form-control w-100 w-md-auto"
+                            style="width: 360px; min-width: 260px;" placeholder="Smart Search...">
                         <button id="resetAll" class="btn btn-outline-danger btn-sm">Reset</button>
                     </div>
 
@@ -71,10 +77,12 @@
                                 Customise Headers
                             </button>
 
-                            <div id="columnBubble" style="display:none; position:absolute; top:110%; left:0; width:260px; background:#fff; border:1px solid #ddd; border-radius:6px; box-shadow:0 8px 20px rgba(0,0,0,.15); z-index:9999;">
+                            <div id="columnBubble"
+                                style="display:none; position:absolute; top:110%; left:0; width:260px; background:#fff; border:1px solid #ddd; border-radius:6px; box-shadow:0 8px 20px rgba(0,0,0,.15); z-index:9999;">
                                 <div class="d-flex justify-content-between px-2 py-1 border-bottom">
                                     <strong style="font-size:13px;">Customise Headers</strong>
-                                    <button id="closeColumnBubble" class="btn btn-sm btn-link text-danger p-0">✕</button>
+                                    <button id="closeColumnBubble"
+                                        class="btn btn-sm btn-link text-danger p-0">✕</button>
                                 </div>
                                 <div style="max-height:260px; overflow:auto;">
                                     <table class="table table-sm mb-0">
@@ -91,7 +99,8 @@
 
                     <div class="d-flex gap-2 flex-wrap">
                         <button id="exportExcel" class="btn btn-sm text-nowrap d-flex align-items-center gap-2">
-                            <img src="{{ asset('images/export-excel.png') }}" alt="Excel" style="height:30px; width:auto;">
+                            <img src="{{ asset('images/export-excel.png') }}" alt="Excel"
+                                style="height:30px; width:auto;">
                         </button>
 
                         <button id="exportPdf" class="btn btn-sm text-nowrap d-flex align-items-center gap-2">
@@ -129,13 +138,16 @@
 
     // Default visible fields (agar Completed ke liye alag chahiye to yahan change kar sakte ho)
     const DEFAULT_VISIBLE_FIELDS = [
-        'serial_no', 'booking_no', 'created_at', 'booking_date', 'days_count',
+        'serial_no', 'booking_no',
         'inv_no', 'inv_date', 'name', 'mobile', 'branch_name', 'location_name',
         'model', 'variant', 'color', 'seating',
-        'consultant', 'finance_mode_final', 'financier', 'financier_short',
-        'payout_category', 'do_number', 'loan_amount_dealer',
-        'expected_payout_percent', 'expected_payout_without_gst',
-        'expected_payout_amount_without_gst', 'action'
+        'consultant', 'fin_mode', 'financier', 'financier_short_name',
+        'payout_category','do_number','loan_amount_dealer',
+                'expected_payout_pct',
+                'expected_payout_pct_without_gst','expected_payout_amount_without_gst',
+                'expected_payout_amount_without_gst','sugg_inv_amt','loan_amount_fin_payout_sheet',
+                'total_prov_with_gst', 'prov_prc_without_gst', 'diff_without_gst',
+        'action'
     ];
 
     const columnGroups = [
@@ -161,15 +173,24 @@
         {
             headerName: 'Booking Detail',
             headerClass: 'ag-header-center',
-            children: getCols(['consultant','delivery_date','finmode','finance_mode_final','financier','financier_short','loan_status'])
+            children: getCols(['consultant', 'del_type','fin_mode','financier','financier_short_name','loan_status'])
         },
         {
             headerName: 'Payout Detail',
             headerClass: 'ag-header-center',
             children: getCols([
                 'payout_category','do_number','loan_amount_dealer',
-                'expected_payout_percent','expected_payout_without_gst',
+                'expected_payout_pct',
+                'expected_payout_pct_without_gst','expected_payout_amount_without_gst',
                 'expected_payout_amount_without_gst'
+            ])
+        },
+        {
+            headerName: 'RTO',
+            headerClass: 'ag-header-center',
+            children: getCols([
+                'sugg_inv_amt','loan_amount_fin_payout_sheet',
+                'total_prov_with_gst', 'prov_prc_without_gst', 'diff_without_gst'
             ])
         },
         {
@@ -320,7 +341,7 @@
             document.getElementById('quickFilter').value = '';
         });
 
-        
+
         document.getElementById('payout_type')?.addEventListener('change', function() {
             window.location.href = this.value;
         });
