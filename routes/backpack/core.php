@@ -1,0 +1,139 @@
+<?php
+
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\SubSegmentCrudController;
+use App\Http\Controllers\Admin\VehicleModelCrudController;
+use App\Http\Controllers\Admin\VehicleAccessoryCrudController;
+use App\Http\Controllers\Admin\VariantCrudController;
+use App\Http\Controllers\Admin\ColorCrudController;
+use App\Http\Controllers\Admin\PermissionCrudController;
+
+Route::group([
+    'prefix' => config('backpack.base.route_prefix', 'admin'),
+    'middleware' => array_merge(
+        (array) config('backpack.base.web_middleware', 'web'),
+        (array) config('backpack.base.middleware_key', 'admin')
+    ),
+    'namespace' => 'App\Http\Controllers\Admin',
+], function () {
+
+    Route::get('org-demo', [App\Http\Controllers\Admin\OrgDemoController::class, 'index'])->name('backpack.org.demo');
+
+
+    Route::get('finance/import', [App\Http\Controllers\Admin\FinanceCrudController::class, 'import'])
+        ->name('finance.import');
+    Route::get('insurance/import', [App\Http\Controllers\Admin\InsuranceCrudController::class, 'import'])
+        ->name('insurance.import');
+    Route::get('rto/import', [App\Http\Controllers\Admin\RtoCrudController::class, 'import'])
+        ->name('rto.import');
+    Route::post('brand/import', [App\Http\Controllers\Admin\BrandCrudController::class, 'import'])
+        ->name('brand.import');
+    Route::get('home', [DashboardController::class, 'index'])->name('backpack.dashboard.home');
+    Route::get('dashboard', [DashboardController::class, 'index'])->name('backpack.dashboard');
+
+    // ==================== VEHICLE MODEL (Manual Routes) ====================
+    Route::get('vehicle-model', [VehicleModelCrudController::class, 'index'])->name('vehicle-model.index');
+    Route::get('vehicle-model/create', [VehicleModelCrudController::class, 'create'])->name('vehicle-model.create');
+    Route::post('vehicle-model', [VehicleModelCrudController::class, 'store'])->name('vehicle-model.store');
+    Route::get('vehicle-model/{id}/edit', [VehicleModelCrudController::class, 'edit'])->name('vehicle-model.edit');
+    Route::put('vehicle-model/{id}', [VehicleModelCrudController::class, 'update'])->name('vehicle-model.update');
+    Route::delete('vehicle-model/{id}', [VehicleModelCrudController::class, 'destroy'])->name('vehicle-model.destroy');
+
+    // AJAX: Get Sub Segments when Segment is selected
+    Route::get(
+        'vehicle-model/sub-segments/{segmentCode}',
+        [VehicleModelCrudController::class, 'getSubSegmentsBySegment']
+    );
+
+    // AJAX: Variant Create/Edit Dropdowns
+
+    Route::get(
+        'variant/subsegments',
+        [VariantCrudController::class, 'getSubSegments']
+    );
+
+    Route::get(
+        'variant/models',
+        [VariantCrudController::class, 'getModels']
+    );
+
+    Route::get(
+        'color/subsegments',
+        [ColorCrudController::class, 'getSubSegments']
+    );
+
+    Route::get(
+        'color/models',
+        [ColorCrudController::class, 'getModels']
+    );
+
+    Route::get(
+        'color/variants',
+        [ColorCrudController::class, 'getVariants']
+    );
+
+    Route::get(
+        'permission/processes/{moduleCode}',
+        [PermissionCrudController::class, 'getProcesses']
+    );
+    // Other Routes
+    Route::crud('vehicle-accessory', VehicleAccessoryCrudController::class);
+    Route::crud('approval-hierarchy', 'ApprovalHierarchyCrudController');
+    Route::crud('system-settings', 'SystemSettingCrudController');
+    Route::crud('branch', 'BranchCrudController');
+    Route::crud('brand', 'BrandCrudController');
+    Route::crud('color', 'ColorCrudController');
+    Route::crud('department', 'DepartmentCrudController');
+    Route::crud('designation', 'DesignationCrudController');
+    Route::crud('division', 'DivisionCrudController');
+    Route::crud('employee', 'EmployeeCrudController');
+    Route::crud('employee-branch-assignment', 'EmployeeBranchAssignmentCrudController');
+    Route::crud('employee-department-assignment', 'EmployeeDepartmentAssignmentCrudController');
+    Route::crud('employee-location-assignment', 'EmployeeLocationAssignmentCrudController');
+    Route::crud('employee-vertical-assignment', 'EmployeeVerticalAssignmentCrudController');
+    Route::crud('garage', 'GarageCrudController');
+    Route::crud('graph-edge', 'GraphEdgeCrudController');
+    Route::crud('graph-node', 'GraphNodeCrudController');
+    Route::crud('reporting-hierarchy', 'ReportingHierarchyCrudController');
+    Route::crud('keyvalue', 'KeyvalueCrudController');
+    Route::crud('keyword-master', 'KeywordMasterCrudController');
+    Route::crud('location', 'LocationCrudController');
+    Route::crud('modules', 'ModulesCrudController');
+    Route::crud('permission', 'PermissionCrudController');
+    Route::crud('role', 'RoleCrudController');
+    Route::crud('person-address', 'PersonAddressCrudController');
+    Route::crud('person-banking-detail', 'PersonBankingDetailCrudController');
+    Route::crud('person-contact', 'PersonContactCrudController');
+    Route::crud('person', 'PersonCrudController');
+    Route::crud('post', 'PostCrudController');
+    Route::crud('post-permission', 'PostPermissionCrudController');
+    Route::crud('process', 'ProcessCrudController');
+    Route::crud('segment', 'SegmentCrudController');
+    Route::crud('sub-segment', 'SubSegmentCrudController');
+    Route::crud('user-type', 'UserTypeCrudController');
+    Route::crud('variant', 'VariantCrudController');
+    Route::crud('vertical', 'VerticalCrudController');
+    Route::crud('user', 'UserCrudController');
+    Route::crud('spare-request', 'SpareRequestCrudController');
+
+
+
+    // Other custom routes
+    Route::get('sub-segment/segments/{brandCode}', [SubSegmentCrudController::class, 'getSegmentsByBrand']);
+    Route::get('sub-segment/sub-segments/{segmentCode}', [SubSegmentCrudController::class, 'getSubSegmentsBySegment']);
+
+
+    // HR Routes
+    Route::prefix('hr')->name('hr.')->group(function () {
+        Route::get('transfer', 'HRTransferController@index')->name('transfer.index');
+        Route::post('transfer', 'HRTransferController@store')->name('transfer.store');
+        Route::get('transfer/posts', 'HRTransferController@getPosts')->name('transfer.posts');
+
+        Route::get('relieve', 'HRRelievingController@index')->name('relieve.index');
+        Route::post('relieve', 'HRRelievingController@store')->name('relieve.store');
+
+        Route::get('journey', 'EmployeeJourneyController@index')->name('journey.index');
+        Route::get('journey/{emp_code}', 'EmployeeJourneyController@show')->name('journey.show');
+    });
+}); // ← This should be the last line
