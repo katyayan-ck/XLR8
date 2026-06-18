@@ -49,8 +49,8 @@ return [
 // ADD THIS BASSET DISK BLOCK HERE:
         'basset' => [
             'driver' => 'local',
-            'root' => storage_path('app/public/basset'),
-            'url' => env('APP_URL').'/storage/basset',
+            'root' => storage_path('app/public'),
+            'url' => env('APP_URL').'/storage',
             'visibility' => 'public',
         ],
         's3' => [

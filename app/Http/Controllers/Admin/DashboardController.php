@@ -10,25 +10,25 @@ use Illuminate\Support\Facades\Log;
 
 class DashboardController extends CrudController
 {
-    public function index()
-    {
-        $user = backpack_user();
+    // public function index()
+    // {
+    //     $user = backpack_user();
 
-        try {
-            Log::info('Dashboard accessed', ['user_id' => $user->id, 'username' => $user->username]);
+    //     try {
+    //         Log::info('Dashboard accessed', ['user_id' => $user->id, 'username' => $user->username]);
 
-            $details = $this->getCurrentUserDetails($user);
+    //         $details = $this->getCurrentUserDetails($user);
 
-            if ($user->isSuperAdmin()) {
-                return $this->getSuperAdminDashboard($user, $details);
-            }
+    //         if ($user->isSuperAdmin()) {
+    //             return $this->getSuperAdminDashboard($user, $details);
+    //         }
 
-            return $this->getScopedUserDashboard($user, $details);
-        } catch (\Exception $e) {
-            Log::error('Dashboard error', ['error' => $e->getMessage()]);
-            return view('vendor.backpack.ui.dashboard', ['error' => 'Failed to load dashboard data.']);
-        }
-    }
+    //         return $this->getScopedUserDashboard($user, $details);
+    //     } catch (\Exception $e) {
+    //         Log::error('Dashboard error', ['error' => $e->getMessage()]);
+    //         return view('vendor.backpack.ui.dashboard', ['error' => 'Failed to load dashboard data.']);
+    //     }
+    // }
     // public function index()
     // {
     //     $user = backpack_user();
@@ -121,44 +121,95 @@ class DashboardController extends CrudController
     //     ]);
     // }
 
+    // private function getCurrentUserDetails(User $user): array
+    // {
+    //     $employee = $user->employee;
+    //     $person   = $user->person;
+
+    //     return [
+    //         'name'                => $user->display_name ?? $user->username ?? 'N/A',
+    //         'username'            => $user->username ?? '—',
+    //         'user_type'           => $user->user_type ?? 'Emp',
+    //         'designation'         => $employee?->desig_code ?? '—',
+    //         'mile_id'             => $employee?->mile_id ?? '—',
+    //         'vertical'            => $employee?->vertical_code ?? '—',
+    //         'segment'             => $employee?->segment_code ?? '—',
+    //         'sub_segment'         => $employee?->sub_segment_code ?? '—',
+
+    //         'primary_branch'      => $user->primaryBranchCode() ?? '—',
+    //         'primary_location'    => $user->primaryLocationCode() ?? '—',
+    //         'primary_department'  => $user->primaryDepartmentCode() ?? '—',
+    //         'primary_division'    => $user->primaryDivisionCode() ?? '—',
+    //         'primary_post'        => $user->primaryPost() ?? '—',
+
+    //         'all_branches'        => $user->branches()->pluck('name', 'code')->toArray(),
+    //         'all_locations'       => $user->locations()->pluck('name', 'code')->toArray(),
+    //         'all_departments'     => $user->departments()->pluck('name', 'code')->toArray(),
+    //         'all_divisions'       => $user->divisions()->pluck('name', 'code')->toArray(),
+
+    //         'primary_mobile'      => $user->primary_mobile ?? '—',
+    //         'primary_email'       => $user->primary_email ?? '—',
+    //         'all_mobiles'         => $user->all_mobiles->toArray(),
+    //         'all_emails'          => $user->all_emails->toArray(),
+
+    //         'primary_address'     => $person?->primary_address?->full_address ?? '—',
+    //         'all_addresses'       => $person?->all_addresses->pluck('full_address')->toArray(),
+    //         'primary_banking'     => $person?->primary_bank?->masked_account ?? '—',
+    //         'all_banking'         => $person?->all_banking->pluck('masked_account')->toArray(),
+
+    //         'roles'               => $user->getRoleNames()->toArray(),
+    //         'posts'               => $user->posts()->pluck('post_code')->toArray(),
+    //     ];
+    // }
+
+public function index()
+    {
+        $user = backpack_user(); // or auth()->user()
+
+        if (!$user) {
+            return redirect()->route('backpack.auth.login');
+        }
+
+        // This is the key line that was missing
+        $current_user_details = $this->getCurrentUserDetails($user);
+
+        return view('vendor.backpack.ui.dashboard', [
+            'current_user_details' => $current_user_details,
+            // Add any other variables your view needs
+        ]);
+    }
+
+    /**
+     * Build rich user profile + access data for dashboard
+     */
     private function getCurrentUserDetails(User $user): array
     {
-        $employee = $user->employee;
-        $person   = $user->person;
+        $employee = $user->employee;   // Make sure relation exists in User model
+        $person   = $user->person;     // Make sure relation exists in User model
 
         return [
-            'name'                => $user->display_name ?? $user->username ?? 'N/A',
-            'username'            => $user->username ?? '—',
-            'user_type'           => $user->user_type ?? 'Emp',
-            'designation'         => $employee?->desig_code ?? '—',
+            'name'                => $user->display_name ?? $user->username,
+            'username'            => $user->username,
+            'avatar_initials'     => $user->avatar_initials ?? 'U',
+            'designation'         => $user->primary_designation ?? ($employee?->designation?->name ?? '—'),
             'mile_id'             => $employee?->mile_id ?? '—',
-            'vertical'            => $employee?->vertical_code ?? '—',
-            'segment'             => $employee?->segment_code ?? '—',
-            'sub_segment'         => $employee?->sub_segment_code ?? '—',
 
-            'primary_branch'      => $user->primaryBranchCode() ?? '—',
-            'primary_location'    => $user->primaryLocationCode() ?? '—',
-            'primary_department'  => $user->primaryDepartmentCode() ?? '—',
-            'primary_division'    => $user->primaryDivisionCode() ?? '—',
-            'primary_post'        => $user->primaryPost() ?? '—',
+            // Primary
+            'primary_branch'      => $employee?->primary_branch_code ?? '—',
+            'primary_location'    => $employee?->primary_loc_code ?? '—',
+            'primary_department'  => $employee?->primary_dept_code ?? '—',
+            'primary_division'    => $employee?->primary_div_code ?? '—',
+            'primary_vertical'    => $employee?->vertical_code ?? '—',
+            'primary_segment'     => $employee?->segment_code ?? '—',
+            'primary_sub_segment' => $employee?->sub_segment_code ?? '—',
 
-            'all_branches'        => $user->branches()->pluck('name', 'code')->toArray(),
-            'all_locations'       => $user->locations()->pluck('name', 'code')->toArray(),
-            'all_departments'     => $user->departments()->pluck('name', 'code')->toArray(),
-            'all_divisions'       => $user->divisions()->pluck('name', 'code')->toArray(),
-
-            'primary_mobile'      => $user->primary_mobile ?? '—',
-            'primary_email'       => $user->primary_email ?? '—',
-            'all_mobiles'         => $user->all_mobiles->toArray(),
-            'all_emails'          => $user->all_emails->toArray(),
-
+            // Contact
+            'primary_mobile'      => $person?->primary_mobile ?? '—',
+            'primary_email'       => $person?->primary_email ?? '—',
             'primary_address'     => $person?->primary_address?->full_address ?? '—',
-            'all_addresses'       => $person?->all_addresses->pluck('full_address')->toArray(),
-            'primary_banking'     => $person?->primary_bank?->masked_account ?? '—',
-            'all_banking'         => $person?->all_banking->pluck('masked_account')->toArray(),
 
-            'roles'               => $user->getRoleNames()->toArray(),
-            'posts'               => $user->posts()->pluck('post_code')->toArray(),
+            // All Access (from xlr8_admin_user_scopes)
+            'all_scopes'          => $user->all_access_scopes ?? [],
         ];
     }
 

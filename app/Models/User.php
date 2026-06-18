@@ -84,13 +84,13 @@ class User extends Authenticatable
         return OrgService::getCurrentUser();
     }
 
-    public function getDisplayNameAttribute(): string
-    {
-        return $this->person?->display_name
-            ?? $this->employee?->person?->display_name
-            ?? $this->username
-            ?? 'N/A';
-    }
+    // public function getDisplayNameAttribute(): string
+    // {
+    //     return $this->person?->display_name
+    //         ?? $this->employee?->person?->display_name
+    //         ?? $this->username
+    //         ?? 'N/A';
+    // }
 
     public function primaryBranchCode(): ?string
     {
@@ -194,6 +194,43 @@ class User extends Authenticatable
             ->get()
             ->groupBy('scope_type')
             ->map(fn($items) => $items->pluck('scope_code')->map(fn($c) => strtoupper($c))->toArray())
+            ->toArray();
+    }
+
+    // In class User extends Authenticatable
+
+    public function getDisplayNameAttribute(): string
+    {
+        return $this->person?->display_name 
+            ?? $this->employee?->person?->display_name 
+            ?? $this->username 
+            ?? 'N/A';
+    }
+
+    public function getAvatarInitialsAttribute(): string
+    {
+        $name = $this->display_name;
+        $words = explode(' ', trim($name));
+        $initials = '';
+        foreach ($words as $word) {
+            $initials .= strtoupper(substr($word, 0, 1));
+        }
+        return substr($initials, 0, 2) ?: 'U';
+    }
+
+    public function getPrimaryDesignationAttribute(): ?string
+    {
+        return $this->employee?->designation?->name 
+            ?? $this->employee?->desig_code 
+            ?? null;
+    }
+
+    public function getAllAccessScopesAttribute(): array
+    {
+        return $this->activeScopes()
+            ->get()
+            ->groupBy('scope_type')
+            ->map(fn($items) => $items->pluck('scope_code')->unique()->values()->toArray())
             ->toArray();
     }
 
