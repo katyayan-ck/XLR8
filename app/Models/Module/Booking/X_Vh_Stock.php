@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
 use App\Models\BaseModel;
 
-class XVehicleStock extends BaseModel
+class X_Vh_Stock  extends BaseModel
 {
 	use SoftDeletes;
 

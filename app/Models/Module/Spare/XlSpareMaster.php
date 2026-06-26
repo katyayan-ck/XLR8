@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Models;
+namespace App\Models\Module\Spare;
 
 class XlSpareMaster extends BaseModel
 {

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services\HR;
+namespace Tests\Unit\Services;
 
 use App\Exceptions\DomainException;
 use App\Enums\ErrorCodeEnum;

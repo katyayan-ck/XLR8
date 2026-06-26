@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Models\Module\Booking;
+namespace App\Models\Module\Exchange;
 
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\BaseModel;

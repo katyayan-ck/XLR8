@@ -78,8 +78,37 @@ Route::group([
         [PermissionCrudController::class, 'getProcesses']
     );
     // Other Routes
+    
+    //Route::crud('approval-hierarchy', 'ApprovalHierarchyCrudController');
+     //Route::crud('employee-branch-assignment', 'EmployeeBranchAssignmentCrudController');
+    //Route::crud('employee-department-assignment', 'EmployeeDepartmentAssignmentCrudController');
+    //Route::crud('employee-location-assignment', 'EmployeeLocationAssignmentCrudController');
+    //Route::crud('employee-vertical-assignment', 'EmployeeVerticalAssignmentCrudController');
+    //Route::crud('garage', 'GarageCrudController');
+    //Route::crud('graph-edge', 'GraphEdgeCrudController');
+    //Route::crud('graph-node', 'GraphNodeCrudController');
+    //Route::crud('reporting-hierarchy', 'ReportingHierarchyCrudController');
+    //Route::crud('modules', 'ModulesCrudController');
+    //Route::crud('permission', 'PermissionCrudController');
+    //Route::crud('role', 'RoleCrudController');
+    //Route::crud('post', 'PostCrudController');
+    //Route::crud('post-permission', 'PostPermissionCrudController');
+    //Route::crud('process', 'ProcessCrudController');
+    //Route::crud('user-type', 'UserTypeCrudController');
+    // HR Routes
+    // Route::prefix('hr')->name('hr.')->group(function () {
+    //     Route::get('transfer', 'HRTransferController@index')->name('transfer.index');
+    //     Route::post('transfer', 'HRTransferController@store')->name('transfer.store');
+    //     Route::get('transfer/posts', 'HRTransferController@getPosts')->name('transfer.posts');
+
+    //     Route::get('relieve', 'HRRelievingController@index')->name('relieve.index');
+    //     Route::post('relieve', 'HRRelievingController@store')->name('relieve.store');
+
+    //     Route::get('journey', 'EmployeeJourneyController@index')->name('journey.index');
+    //     Route::get('journey/{emp_code}', 'EmployeeJourneyController@show')->name('journey.show');
+    // });
+
     Route::crud('vehicle-accessory', VehicleAccessoryCrudController::class);
-    Route::crud('approval-hierarchy', 'ApprovalHierarchyCrudController');
     Route::crud('system-settings', 'SystemSettingCrudController');
     Route::crud('branch', 'BranchCrudController');
     Route::crud('brand', 'BrandCrudController');
@@ -88,52 +117,26 @@ Route::group([
     Route::crud('designation', 'DesignationCrudController');
     Route::crud('division', 'DivisionCrudController');
     Route::crud('employee', 'EmployeeCrudController');
-    Route::crud('employee-branch-assignment', 'EmployeeBranchAssignmentCrudController');
-    Route::crud('employee-department-assignment', 'EmployeeDepartmentAssignmentCrudController');
-    Route::crud('employee-location-assignment', 'EmployeeLocationAssignmentCrudController');
-    Route::crud('employee-vertical-assignment', 'EmployeeVerticalAssignmentCrudController');
-    Route::crud('garage', 'GarageCrudController');
-    Route::crud('graph-edge', 'GraphEdgeCrudController');
-    Route::crud('graph-node', 'GraphNodeCrudController');
-    Route::crud('reporting-hierarchy', 'ReportingHierarchyCrudController');
+   
     Route::crud('keyvalue', 'KeyvalueCrudController');
     Route::crud('keyword-master', 'KeywordMasterCrudController');
     Route::crud('location', 'LocationCrudController');
-    Route::crud('modules', 'ModulesCrudController');
-    Route::crud('permission', 'PermissionCrudController');
-    Route::crud('role', 'RoleCrudController');
+    
     Route::crud('person-address', 'PersonAddressCrudController');
     Route::crud('person-banking-detail', 'PersonBankingDetailCrudController');
     Route::crud('person-contact', 'PersonContactCrudController');
     Route::crud('person', 'PersonCrudController');
-    Route::crud('post', 'PostCrudController');
-    Route::crud('post-permission', 'PostPermissionCrudController');
-    Route::crud('process', 'ProcessCrudController');
+    
     Route::crud('segment', 'SegmentCrudController');
     Route::crud('sub-segment', 'SubSegmentCrudController');
-    Route::crud('user-type', 'UserTypeCrudController');
+    
     Route::crud('variant', 'VariantCrudController');
     Route::crud('vertical', 'VerticalCrudController');
     Route::crud('user', 'UserCrudController');
     Route::crud('spare-request', 'SpareRequestCrudController');
 
-
-
     // Other custom routes
     Route::get('sub-segment/segments/{brandCode}', [SubSegmentCrudController::class, 'getSegmentsByBrand']);
     Route::get('sub-segment/sub-segments/{segmentCode}', [SubSegmentCrudController::class, 'getSubSegmentsBySegment']);
-
-
-    // HR Routes
-    Route::prefix('hr')->name('hr.')->group(function () {
-        Route::get('transfer', 'HRTransferController@index')->name('transfer.index');
-        Route::post('transfer', 'HRTransferController@store')->name('transfer.store');
-        Route::get('transfer/posts', 'HRTransferController@getPosts')->name('transfer.posts');
-
-        Route::get('relieve', 'HRRelievingController@index')->name('relieve.index');
-        Route::post('relieve', 'HRRelievingController@store')->name('relieve.store');
-
-        Route::get('journey', 'EmployeeJourneyController@index')->name('journey.index');
-        Route::get('journey/{emp_code}', 'EmployeeJourneyController@show')->name('journey.show');
-    });
+    
 }); // ← This should be the last line
