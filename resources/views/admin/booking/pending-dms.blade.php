@@ -2,7 +2,7 @@
 
 @section('header')
 <section class="container-fluid">
-    
+
 
 </section>
 @endsection
@@ -156,7 +156,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
 
 <script>
-    
     const ALL_COLUMNS = @json($gridConfig['columns'] ?? []);
 
     function getCols(fields) {
@@ -224,7 +223,7 @@
                 'model',
                 'variant',
                 'color',
-                'chasis_no'
+                'chassis_no'
             ])
         },
         {

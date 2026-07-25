@@ -97,7 +97,7 @@
                             </div>
 
                             <div class="col-md-3 mb-3">
-                                <label>Vehicle / Chassis No <span class="required-mark">*</span></label>
+                                <label>Vehicle / Chassis No. <span class="required-mark">*</span></label>
                                 <input type="text" name="regn_no" class="form-control"
                                     value="{{ $spareRequest->regn_no }}" required>
                             </div>
@@ -141,7 +141,6 @@
 <script>
     flatpickr(".flatpickr", { dateFormat: "Y-m-d" });
 
-    // Model → Variant Fetch (Safe Version)
     $('#model').on('change', function() {
         let modelName = $(this).val().trim();
 

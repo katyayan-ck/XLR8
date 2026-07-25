@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Models\Module\Spare;
+namespace App\Models;
 
 use App\Models\Traits\ScopedQuery;
 use Illuminate\Database\Eloquent\SoftDeletes;

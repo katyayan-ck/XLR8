@@ -166,8 +166,8 @@
 
 
         'consultant',
-        'delivery_date',
-        'b_type',
+        'del_date',
+        'buyer_type',
         'exist_oem1',
         'vh1_detail',
         'expected_price',
@@ -220,7 +220,7 @@
                 'variant',
                 'color',
                 'seating',
-                'chasis_no'
+                'chassis_no'
             ])
         },
         {

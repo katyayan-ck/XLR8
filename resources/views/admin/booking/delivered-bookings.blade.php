@@ -73,7 +73,7 @@
                 { headerName: 'Booking Date', field: 'booking_date', filter: true },
                 { headerName: 'Inv. Date', field: 'inv_date', filter: true },
                 { headerName: 'Inv. No.', field: 'inv_no', filter: true },
-                { headerName: 'Chassis No.', field: 'chasis_no', filter: true },
+                { headerName: 'Chassis No.', field: 'chassis_no', filter: true },
                 { headerName: 'Branch', field: 'branch', filter: true },
                 { headerName: 'Location', field: 'location', filter: true },
                 { headerName: 'Segment', field: 'segment', filter: true },

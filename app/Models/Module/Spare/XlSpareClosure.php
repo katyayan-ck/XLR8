@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Models\Module\Spare;
+namespace App\Models;
 
 use Illuminate\Database\Eloquent\SoftDeletes;
 use DataTables, Auth;

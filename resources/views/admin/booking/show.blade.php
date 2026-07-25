@@ -126,10 +126,14 @@
     <div class="row">
         @if ($booking->status == 1 || $booking->status == 6 || $booking->status == 8)
         <div class="card mt-3 shadow-sm" style="border-radius: 12px">
-            <div class="card-header">
-                <h2 class="mb-0 fw-bold">
-                    Actions
-                </h2>
+            <div class="card-header d-flex justify-content-between align-items-center">
+
+                <h2 class="mb-0 fw-bold">Actions</h2>
+
+                <a href="{{ backpack_url('booking/otf-form/' . $booking->id) }}" class="btn btn-success">
+                    <i class="la la-file-text"></i>
+                    Booking Process
+                </a>
             </div>
             <div class="card-body">
 
@@ -587,7 +591,7 @@
 
                         <div class="col-sm-12 text-center mt-4">
                             <button type="submit" class="btn btn-danger btn-lg px-5">
-                                {{ __('Reject Refund & Save Remark') }}
+                                {{ __('Reject Refund & Save Remarks') }}
                             </button>
                             <button type="button" class="btn btn-secondary ml-3"
                                 onclick="document.getElementById('rejectionCard').style.display='none';">
@@ -1116,11 +1120,11 @@
         <div class="col-sm-4">
             <label class="small fw-bold">Location</label>
             <input type="text" class="form-control"
-                value="{{ $booking->location ? ($booking->location->name  ?? 'N/A') : 'N/A' }}" readonly>
+                value="{{ $booking->location ? ($booking->location->name  ?? 'N/A') : 'Other' }}" readonly>
         </div>
         <div class="col-sm-4">
             <label class="small fw-bold">Other Location</label>
-            <input type="text" class="form-control" value="{{ $booking->locationother ?? 'N/A' }}" readonly>
+            <input type="text" class="form-control" value="{{ $booking->location_other ?? 'N/A' }}" readonly>
         </div>
     </div>
 </div>
@@ -1249,7 +1253,7 @@
         </div>
         <div class="col-sm-2">
             <label class="small fw-bold">Allotted Chassis No.</label>
-            <input type="text" class="form-control" value="{{ $booking->chasis_no ?? 'N/A' }}" readonly>
+            <input type="text" class="form-control" value="{{ $booking->chassis_no ?? 'N/A' }}" readonly>
         </div>
     </div>
 </div>

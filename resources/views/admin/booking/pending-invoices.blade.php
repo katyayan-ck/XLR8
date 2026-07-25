@@ -165,7 +165,7 @@
         'model',
         'variant',
         'color',
-        'chasis_no',
+        'chassis_no',
 
         'action'
     ];
@@ -213,7 +213,7 @@
                 'variant',
                 'color',
                 'seating',
-                'chasis_no'
+                'chassis_no'
             ])
         },
         {

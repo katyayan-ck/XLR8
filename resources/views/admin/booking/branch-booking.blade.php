@@ -102,7 +102,7 @@
         else if (col.headerName === 'GLOBAL INFO') headerClass = 'group-global';
         else if (col.headerName === 'PENDING ACTIONS') headerClass = 'group-pending';
 
-        const isSnoColumn = col.field === 'sno' || col.headerName?.toLowerCase().includes('s.no');
+        const isSnoColumn = col.field === 'sno' || col.headerName?.toLowerCase().includes('S.No.');
 
         const columnDef = {
             headerName: col.headerName,
@@ -174,20 +174,18 @@
 
         gridApi = agGrid.createGrid(gridDiv, gridOptions);
 
-        // Quick filter
+        
         document.getElementById('quickFilter')?.addEventListener('input', e => {
             gridApi.setGridOption('quickFilterText', e.target.value);
         });
 
-        // Reset button
+        
         document.getElementById('resetAll')?.addEventListener('click', () => {
             document.getElementById('quickFilter').value = '';
             gridApi.setGridOption('quickFilterText', '');
         });
 
-        // ────────────────────────────────────────────────
         // Excel Export – same improved version
-        // ────────────────────────────────────────────────
         document.getElementById('exportExcel')?.addEventListener('click', () => {
             const allColumns = [];
 
@@ -229,7 +227,7 @@
             XLSX.writeFile(workbook, fileName);
         });
 
-        // PDF Export – same as before
+         – same as before
         document.getElementById('exportPdf')?.addEventListener('click', () => {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });

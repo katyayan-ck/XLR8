@@ -1,0 +1,4 @@
+Phase 2 Cleanup started at 20-06-2026 12:10:38.30 
+ 
+Phase 2 finished at 20-06-2026 12:10:38.67 
+Total Moved: 16 | Skipped: 16 

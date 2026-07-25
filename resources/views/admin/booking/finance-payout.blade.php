@@ -34,6 +34,21 @@
                             <option value="{{ route('finance.payout.completed') }}">Completed Payout</option>
                         </select>
                     </div>
+
+                    <div class="d-flex align-items-center gap-2">
+                        <label class="text-black mb-0 text-nowrap">Financier:</label>
+
+                        <select id="financier_filter" class="form-control form-select" style="min-width:220px;">
+                            <option value="">All Financiers</option>
+
+                            @foreach($financiers as $financier)
+                            <option value="{{ $financier['id'] }}" {{ request('financier')==$financier['id']
+                                ? 'selected' : '' }}>
+                                {{ $financier['short_name'] ?? $financier['name'] }}
+                            </option>
+                            @endforeach
+                        </select>
+                    </div>
                 </div>
             </div>
 
@@ -160,9 +175,7 @@
 
         'consultant',
         'fin_mode',
-        'financier',
         'financier_short_name',
-        'loan_status',
         'action'
     ];
 
@@ -211,7 +224,7 @@
                 'variant',
                 'color',
                 'seating',
-                'chasis_no'
+                'chassis_no'
             ])
         },
         {
@@ -508,6 +521,18 @@
             });
 
             doc.save('finance-payout.pdf');
+        });
+
+        document.getElementById('financier_filter')?.addEventListener('change', function() {
+            const url = new URL(window.location);
+
+            if (this.value) {
+                url.searchParams.set('financier', this.value);
+            } else {
+                url.searchParams.delete('financier');
+            }
+
+            window.location = url;
         });
     });
 </script>

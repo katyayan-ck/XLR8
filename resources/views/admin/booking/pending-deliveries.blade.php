@@ -162,7 +162,7 @@
         'model',
         'variant',
         'color',
-        'chasis_no',
+        'chassis_no',
 
         'action'
     ];
@@ -209,7 +209,7 @@
                 'variant',
                 'color',
                 'seating',
-                'chasis_no'
+                'chassis_no'
             ])
         },
 
@@ -429,7 +429,7 @@
             document.getElementById('quickFilter').value = '';
         });
 
-        // Excel Export – visible columns only
+         – visible columns only
         document.getElementById('exportCsv')?.addEventListener('click', () => {
             const visibleColumns = gridApi.getAllDisplayedColumns()
                 .map(col => col.getColDef())

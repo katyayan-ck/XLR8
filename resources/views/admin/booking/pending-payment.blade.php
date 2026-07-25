@@ -157,7 +157,7 @@
         'created_at',
         'booking_date',
         'days_count',
-
+        'name',
         'branch_name',
         'location_name',
 
@@ -209,7 +209,7 @@
                 'model',
                 'variant',
                 'color',
-                'chasis_no'
+                'chassis_no'
             ])
         },
         {

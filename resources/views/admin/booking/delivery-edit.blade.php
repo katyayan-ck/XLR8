@@ -98,7 +98,7 @@
                 <div class="readonly-value">
                     {{ $booking->name ?? '—' }}
                     @if($booking->care_of)
-                    <small class="text-muted d-block mt-1">(C/o: {{ $booking->care_of }})</small>
+                    (C/o: {{ $booking->care_of }})
                     @endif
                 </div>
             </div>
@@ -145,7 +145,7 @@
             <div class="col-md-2 form-group readonly-field">
                 <label class="readonly-label">Chassis No.</label>
                 <div class="readonly-value">
-                    {{ $booking->chassis_no ?? $booking->chasis_no ?? '—' }}
+                    {{ $booking->chassis_no ?? $booking->chassis_no ?? '—' }}
                 </div>
             </div>
 
@@ -341,7 +341,6 @@
     function removeExistingPhoto(key) {
         document.getElementById('chip-' + key)?.remove();
 
-        // Server ko batane ke liye hidden input
         let input = document.createElement('input');
         input.type = 'hidden';
         input.name = `delete_photos[${key}]`;

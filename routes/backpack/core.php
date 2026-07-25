@@ -8,6 +8,11 @@ use App\Http\Controllers\Admin\VehicleAccessoryCrudController;
 use App\Http\Controllers\Admin\VariantCrudController;
 use App\Http\Controllers\Admin\ColorCrudController;
 use App\Http\Controllers\Admin\PermissionCrudController;
+use App\Http\Controllers\Admin\LeadCrudController;
+use App\Http\Controllers\Admin\LeadSourceCrudController;
+use App\Http\Controllers\Admin\EnquiryCrudController;
+use App\Http\Controllers\Admin\CampaignCrudController;
+
 
 Route::group([
     'prefix' => config('backpack.base.route_prefix', 'admin'),
@@ -40,13 +45,12 @@ Route::group([
     Route::put('vehicle-model/{id}', [VehicleModelCrudController::class, 'update'])->name('vehicle-model.update');
     Route::delete('vehicle-model/{id}', [VehicleModelCrudController::class, 'destroy'])->name('vehicle-model.destroy');
 
-    // AJAX: Get Sub Segments when Segment is selected
     Route::get(
         'vehicle-model/sub-segments/{segmentCode}',
         [VehicleModelCrudController::class, 'getSubSegmentsBySegment']
     );
 
-    // AJAX: Variant Create/Edit Dropdowns
+
 
     Route::get(
         'variant/subsegments',
@@ -77,36 +81,27 @@ Route::group([
         'permission/processes/{moduleCode}',
         [PermissionCrudController::class, 'getProcesses']
     );
+
+    Route::get(
+        'lead/variants/{modelCode}',
+        [LeadCrudController::class, 'getVariants']
+    );
     // Other Routes
-    
-    //Route::crud('approval-hierarchy', 'ApprovalHierarchyCrudController');
-     //Route::crud('employee-branch-assignment', 'EmployeeBranchAssignmentCrudController');
-    //Route::crud('employee-department-assignment', 'EmployeeDepartmentAssignmentCrudController');
-    //Route::crud('employee-location-assignment', 'EmployeeLocationAssignmentCrudController');
-    //Route::crud('employee-vertical-assignment', 'EmployeeVerticalAssignmentCrudController');
-    //Route::crud('garage', 'GarageCrudController');
-    //Route::crud('graph-edge', 'GraphEdgeCrudController');
-    //Route::crud('graph-node', 'GraphNodeCrudController');
-    //Route::crud('reporting-hierarchy', 'ReportingHierarchyCrudController');
-    //Route::crud('modules', 'ModulesCrudController');
-    //Route::crud('permission', 'PermissionCrudController');
-    //Route::crud('role', 'RoleCrudController');
-    //Route::crud('post', 'PostCrudController');
-    //Route::crud('post-permission', 'PostPermissionCrudController');
-    //Route::crud('process', 'ProcessCrudController');
-    //Route::crud('user-type', 'UserTypeCrudController');
-    // HR Routes
-    // Route::prefix('hr')->name('hr.')->group(function () {
-    //     Route::get('transfer', 'HRTransferController@index')->name('transfer.index');
-    //     Route::post('transfer', 'HRTransferController@store')->name('transfer.store');
-    //     Route::get('transfer/posts', 'HRTransferController@getPosts')->name('transfer.posts');
 
-    //     Route::get('relieve', 'HRRelievingController@index')->name('relieve.index');
-    //     Route::post('relieve', 'HRRelievingController@store')->name('relieve.store');
+    Route::crud('modules', 'ModulesCrudController');
+    Route::crud('permission', 'PermissionCrudController');
+    Route::crud('lead', 'LeadCrudController');
+    Route::crud('role', 'RoleCrudController');
+    Route::get(
+        'lead/variants/{modelCode}',
+        [LeadCrudController::class, 'getVariants']
+    );
 
-    //     Route::get('journey', 'EmployeeJourneyController@index')->name('journey.index');
-    //     Route::get('journey/{emp_code}', 'EmployeeJourneyController@show')->name('journey.show');
-    // });
+    Route::get(
+        'lead/colors/{variantCode}',
+        [LeadCrudController::class, 'getColors']
+    );
+    Route::crud('process', 'ProcessCrudController');
 
     Route::crud('vehicle-accessory', VehicleAccessoryCrudController::class);
     Route::crud('system-settings', 'SystemSettingCrudController');
@@ -117,19 +112,19 @@ Route::group([
     Route::crud('designation', 'DesignationCrudController');
     Route::crud('division', 'DivisionCrudController');
     Route::crud('employee', 'EmployeeCrudController');
-   
+
     Route::crud('keyvalue', 'KeyvalueCrudController');
     Route::crud('keyword-master', 'KeywordMasterCrudController');
     Route::crud('location', 'LocationCrudController');
-    
+
     Route::crud('person-address', 'PersonAddressCrudController');
     Route::crud('person-banking-detail', 'PersonBankingDetailCrudController');
     Route::crud('person-contact', 'PersonContactCrudController');
     Route::crud('person', 'PersonCrudController');
-    
+
     Route::crud('segment', 'SegmentCrudController');
     Route::crud('sub-segment', 'SubSegmentCrudController');
-    
+
     Route::crud('variant', 'VariantCrudController');
     Route::crud('vertical', 'VerticalCrudController');
     Route::crud('user', 'UserCrudController');
@@ -138,5 +133,193 @@ Route::group([
     // Other custom routes
     Route::get('sub-segment/segments/{brandCode}', [SubSegmentCrudController::class, 'getSegmentsByBrand']);
     Route::get('sub-segment/sub-segments/{segmentCode}', [SubSegmentCrudController::class, 'getSubSegmentsBySegment']);
-    
+
+    // ==================== LEAD ====================
+
+    Route::get(
+        'lead',
+        [LeadCrudController::class, 'index']
+    )->name('lead.index');
+
+    Route::get(
+        'lead/create',
+        [LeadCrudController::class, 'create']
+    )->name('lead.create');
+
+    Route::post(
+        'lead',
+        [LeadCrudController::class, 'store']
+    )->name('lead.store');
+
+    Route::get(
+        'lead/{id}/edit',
+        [LeadCrudController::class, 'edit']
+    )->name('lead.edit');
+
+    Route::put(
+        'lead/{id}',
+        [LeadCrudController::class, 'update']
+    )->name('lead.update');
+
+    Route::delete(
+        'lead/{id}',
+        [LeadCrudController::class, 'destroy']
+    )->name('lead.destroy');
+
+    Route::get(
+        'lead/models/{segmentCode}',
+        [LeadCrudController::class, 'getModels']
+    );
+    // =========== LEAD SOURCE ===================
+
+
+    Route::get(
+        'lead-source/check-code',
+        [LeadSourceCrudController::class, 'checkCode']
+    )->name('lead-source.check-code');
+
+
+    Route::crud('lead-source', 'LeadSourceCrudController');
+
+    // =========== ENQUIRY ========================
+    Route::crud(
+        'enquiry',
+        'EnquiryCrudController'
+    );
+
+    Route::get(
+        'enquiry/lead/{leadNo}',
+        [EnquiryCrudController::class, 'getLead']
+    );
+
+    Route::get(
+        'enquiry/variants/{modelCode}',
+        [EnquiryCrudController::class, 'getVariants']
+    );
+
+    Route::get(
+        'enquiry/colors/{variantCode}',
+        [EnquiryCrudController::class, 'getColors']
+    );
+
+    Route::get(
+        'enquiry/models/{segmentCode}',
+        [EnquiryCrudController::class, 'getModels']
+    );
+
+    Route::get('enquiries/add', [App\Http\Controllers\Admin\EnquiryCrudController::class, 'create'])
+        ->name('enquiry.create');
+
+    Route::post('enquiries', [App\Http\Controllers\Admin\EnquiryCrudController::class, 'store']);
+
+    Route::get('enquiries-list', [App\Http\Controllers\Admin\EnquiryCrudController::class, 'index'])
+        ->name('enquiry.index');
+
+    Route::get('enquiry/sources', [App\Http\Controllers\Admin\EnquiryCrudController::class, 'getSources']);
+
+    Route::get('enquiry/sales-consultants', [App\Http\Controllers\Admin\EnquiryCrudController::class, 'getSalesConsultants']);
+
+    Route::get('enquiries/reference', [App\Http\Controllers\Admin\EnquiryCrudController::class, 'referenceList']);
+
+    Route::get('enquiries/virtual-number', [App\Http\Controllers\Admin\EnquiryCrudController::class, 'virtualNumberList']);
+
+    Route::get('enquiries/whatsapp-campaign', [App\Http\Controllers\Admin\EnquiryCrudController::class, 'whatsappCampaignList']);
+
+    Route::get('enquiries/assigned-long', [App\Http\Controllers\Admin\EnquiryCrudController::class, 'assignedLongList']);
+
+    Route::get('enquiries/unassigned-long', [App\Http\Controllers\Admin\EnquiryCrudController::class, 'unassignedLongList']);
+
+    Route::get('enquiries/assigned-quick', [App\Http\Controllers\Admin\EnquiryCrudController::class, 'assignedQuickList']);
+
+    Route::get('enquiries/unassigned-quick', [App\Http\Controllers\Admin\EnquiryCrudController::class, 'unassignedQuickList']);
+    Route::post('enquiries/data', [EnquiryCrudController::class, 'data']);
+    Route::get('enquiries/export', [EnquiryCrudController::class, 'export']);
+    Route::post('enquiry/import', [App\Http\Controllers\Admin\EnquiryCrudController::class, 'importEnquiries'])
+        ->name('enquiry.import');
+    Route::get('enquiry/import/status/{id}', [App\Http\Controllers\Admin\EnquiryCrudController::class, 'importStatus'])
+        ->name('enquiry.import.status');
+
+
+    Route::match(['get', 'post'], 'enquiry/data', [EnquiryCrudController::class, 'gridData'])->name('enquiry.data');
+    Route::get('enquiry/export', [EnquiryCrudController::class, 'exportData'])->name('enquiry.export');
+    Route::get('enquiry/import/history', [App\Http\Controllers\Admin\EnquiryCrudController::class, 'importHistory'])
+        ->name('enquiry.import.history');
+
+    Route::get('enquiry/variants/{model_code}', [App\Http\Controllers\Admin\EnquiryCrudController::class, 'getVariants']);
+    Route::get('enquiry/colors/{variant_code}', [App\Http\Controllers\Admin\EnquiryCrudController::class, 'getColors']);
+    Route::get(
+        'enquiry/lead/{leadNo}',
+        [EnquiryCrudController::class, 'getLead']
+    );
+
+    /*
+    ! Routes for Enquiry
+     */
+
+    Route::get(
+        'admin/master/{keyword}/{parent}',
+        [EnquiryCrudController::class, 'getKeywordValues']
+    )->name('admin.master.keyword-values');
+
+    Route::get(
+        'enquiry/locations/{branchCode}',
+        [EnquiryCrudController::class, 'getLocations']
+    )->name('enquiry.locations');
+
+    // Campaign crud
+
+    Route::crud(
+        'campaign',
+        'CampaignCrudController'
+    );
+
+    Route::get(
+        'campaign',
+        [CampaignCrudController::class, 'index']
+    )->name('campaign.index');
+
+    Route::get(
+        'campaign/create',
+        [CampaignCrudController::class, 'create']
+    )->name('campaign.create');
+
+    Route::post(
+        'campaign',
+        [CampaignCrudController::class, 'store']
+    )->name('campaign.store');
+
+    Route::get(
+        'campaign/{id}/edit',
+        [CampaignCrudController::class, 'edit']
+    )->name('campaign.edit');
+
+    Route::put(
+        'campaign/{id}',
+        [CampaignCrudController::class, 'update']
+    )->name('campaign.update');
+
+    Route::delete(
+        'campaign/{id}',
+        [CampaignCrudController::class, 'destroy']
+    )->name('campaign.destroy');
+    Route::get(
+        'campaign/models/{segmentCode}',
+        [CampaignCrudController::class, 'getModels']
+    );
+
+    Route::get(
+        'campaign/locations/{branchCode}',
+        [CampaignCrudController::class, 'getLocations']
+    );
+
+    Route::get('enquiry/reference-users', [EnquiryCrudController::class, 'getReferenceUsers'])
+        ->name('enquiry.reference-users');
+
+    Route::get('enquiry/check-duplicate', [EnquiryCrudController::class, 'checkDuplicateEnquiry'])
+        ->name('enquiry.check-duplicate');
+
+    Route::get(
+        'enquiry/location-by-pincode',
+        [EnquiryCrudController::class, 'locationByPincode']
+    )->name('enquiry.location-by-pincode');
 }); // ← This should be the last line

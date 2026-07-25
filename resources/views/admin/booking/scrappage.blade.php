@@ -164,8 +164,8 @@
 
 
         'consultant',
-        'delivery_date',
-        'b_type',
+        'del_date',
+        'buyer_type',
         'exist_oem1',
         'vh1_detail',
         'action'
@@ -214,7 +214,7 @@
                 'variant',
                 'color',
                 'seating',
-                'chasis_no'
+                'chassis_no'
             ])
         },
         {
@@ -449,7 +449,7 @@
             document.getElementById('quickFilter').value = '';
         });
 
-        // Excel Export
+        
         document.getElementById('exportCsv')?.addEventListener('click', () => {
             const visibleColumns = gridApi.getAllDisplayedColumns()
                 .map(col => col.getColDef())
@@ -470,7 +470,7 @@
             XLSX.writeFile(workbook, `int-in-scrappage-${new Date().toISOString().slice(0,10)}.xlsx`);
         });
 
-        // PDF Export
+        
         document.getElementById('exportPdf')?.addEventListener('click', () => {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF('l', 'pt', 'a4');

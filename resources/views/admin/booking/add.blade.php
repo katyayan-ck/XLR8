@@ -1,4 +1,14 @@
+@php
+
+$q = $data['quotation']?->proposed_data ?? [];
+
+$quotation = $data['quotation'] ?? null;
+
+$enquiry = $quotation?->enquiry;
+
+@endphp
 @extends(backpack_view('blank'))
+
 
 @section('header')
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
@@ -43,6 +53,11 @@
             <form id="bookingForm" class="forms-sample" method="POST" action="{{ backpack_url('booking') }}"
                 enctype="multipart/form-data">
                 @csrf
+                @if($quotation)
+
+                <input type="hidden" name="quotation_no" value="{{ $quotation->quotation_no }}">
+
+                @endif
 
                 <div class="card p-3">
                     <div class="card-body">
@@ -159,7 +174,8 @@
                                 <div class="form-group">
                                     <label id="customernamelabel" for="name">Customer Name <span
                                             class="required-mark">*</span></label>
-                                    <input type="text" name="name" id="name" class="form-control" required>
+                                    <input type="text" name="name" id="name" class="form-control" required value="{{ old('name', optional($enquiry)->display_name
+    ?? trim(optional($enquiry)->first_name.' '.optional($enquiry)->last_name)) }}" @if($quotation) readonly @endif>
                                 </div>
                             </div>
 
@@ -189,8 +205,14 @@
 
                             <div class="col-sm-3">
                                 <div class="form-group">
-                                    <label for="mobile">Contact No. <span class="required-mark">*</span></label>
-                                    <input type="text" name="mobile" id="mobile" class="form-control" required>
+                                    <label for="mobile">
+                                        Contact No.
+                                        <span class="required-mark">*</span>
+                                    </label>
+
+                                    <input type="text" name="mobile" id="mobile" class="form-control" required
+                                        maxlength="10" value="{{ old('mobile', $enquiry->mobile ?? '') }}"
+                                        @if($quotation) readonly @endif>
                                 </div>
                             </div>
 
@@ -505,49 +527,100 @@
                         <div class="row">
                             <div class="col-sm-3">
                                 <div class="form-group">
-                                    <label for="segment">Segment <span class="required-mark">*</span></label>
-                                    <select name="segment" id="segment" class="form-control form-select" required>
+                                    <label for="segment">
+                                        Segment <span class="required-mark">*</span>
+                                    </label>
+
+                                    <select name="segment" id="segment" class="form-control form-select" required
+                                        @if($quotation) disabled @endif>
+
                                         <option value="">Please Select Segment...</option>
+
                                         @foreach($data['segments'] ?? [] as $segment)
-                                        <option value="{{ $segment->code }}">{{ $segment->name }}</option>
+                                        <option value="{{ $segment->code }}" {{ old('segment', $q['segment_code'] ?? ''
+                                            )==$segment->code ? 'selected' : '' }}>
+                                            {{ $segment->name }}
+                                        </option>
                                         @endforeach
+
                                     </select>
+
+                                    @if($quotation)
+                                    <input type="hidden" name="segment" value="{{ $q['segment_code'] }}">
+                                    @endif
                                 </div>
                             </div>
 
                             <div class="col-sm-3">
                                 <div class="form-group">
-                                    <label for="model">Model <span class="required-mark">*</span></label>
+                                    <label for="model">
+                                        Model <span class="required-mark">*</span>
+                                    </label>
+
+                                    <input type="text" class="form-control"
+                                        value="{{ $quotation?->vehicleModel?->name }}" @if(!$quotation) hidden @endif
+                                        readonly>
+
+                                    @if($quotation)
+                                    <input type="hidden" name="model" value="{{ $q['model_code'] }}">
+                                    @else
                                     <select name="model" id="model" class="form-control form-select" required disabled>
-                                        <option value="0">Please Select...</option>
+                                        <option value="">Please Select...</option>
                                     </select>
+                                    @endif
                                 </div>
                             </div>
 
                             <div class="col-sm-3">
                                 <div class="form-group">
-                                    <label for="variant">Variant <span class="required-mark">*</span></label>
+                                    <label for="variant">
+                                        Variant <span class="required-mark">*</span>
+                                    </label>
+
+                                    <input type="text" class="form-control"
+                                        value="{{ $quotation?->variant?->display_name }}" @if(!$quotation) hidden @endif
+                                        readonly>
+
+                                    @if($quotation)
+                                    <input type="hidden" name="variant" value="{{ $q['variant_code'] }}">
+                                    @else
                                     <select name="variant" id="variant" class="form-control form-select" required
                                         disabled>
-                                        <option value="0">Please Select...</option>
+                                        <option value="">Please Select...</option>
                                     </select>
+                                    @endif
                                 </div>
                             </div>
 
                             <div class="col-sm-3">
                                 <div class="form-group">
-                                    <label for="color">Color <span class="required-mark">*</span></label>
+                                    <label for="color">
+                                        Color <span class="required-mark">*</span>
+                                    </label>
+
+                                    <input type="text" class="form-control" value="{{ $quotation?->color?->name }}"
+                                        @if(!$quotation) hidden @endif readonly>
+
+                                    @if($quotation)
+                                    <input type="hidden" name="color" value="{{ $q['color_code'] }}">
+                                    @else
                                     <select name="color" id="color" class="form-control form-select" required disabled>
-                                        <option value="0">Please Select...</option>
+                                        <option value="">Please Select...</option>
                                     </select>
+                                    @endif
+
                                     <input type="hidden" id="vhid" name="vhid">
                                 </div>
                             </div>
 
                             <div class="col-sm-2">
                                 <div class="form-group">
-                                    <label for="seating">Seating<span class="required-mark">*</span></label>
-                                    <input type="text" name="seating" id="seating" class="form-control" value="0"
+                                    <label for="seating">
+                                        Seating
+                                    </label>
+
+                                    <input type="text" name="seating" id="seating" class="form-control"
+                                        value="{{ old('seating', $quotation?->variant?->seating_capacity ?? 0) }}"
                                         readonly>
                                 </div>
                             </div>
@@ -556,17 +629,36 @@
 
                             <div class="col-sm-6">
                                 <div class="form-group">
-                                    <label for="accessories">Select Accessories</label>
+
+                                    <label>Select Accessories</label>
+
+                                    @if($quotation)
+
+                                    <textarea class="form-control" rows="3"
+                                        readonly>{{ collect($q['accessories'] ?? [])->implode(', ') }}</textarea>
+
+                                    @foreach($q['accessories'] ?? [] as $acc)
+                                    <input type="hidden" name="accessories[]" value="{{ $acc }}">
+                                    @endforeach
+
+                                    @else
+
                                     <select name="accessories[]" id="accessories" class="form-select" multiple disabled>
                                     </select>
+
+                                    @endif
+
                                 </div>
                             </div>
 
                             <div class="col-sm-2">
                                 <div class="form-group">
-                                    <label for="apackamount">Accessories Amount</label>
+
+                                    <label>Accessories Amount</label>
+
                                     <input type="text" name="apackamount" id="apackamount" class="form-control"
-                                        value="0" readonly>
+                                        value="{{ old('apackamount', $q['accessories_amount'] ?? 0) }}" readonly>
+
                                 </div>
                             </div>
 
@@ -718,13 +810,26 @@
                                     </select>
                                 </div>
                             </div>
-                            <div class="col-sm-9">
+                            <div class="col-sm-6">
                                 <div class="form-group">
                                     <label for="details">Remarks</label>
                                     <textarea name="details" id="details" class="form-control" rows="4"
                                         placeholder="Enter any additional remarks..."></textarea>
                                 </div>
                             </div>
+
+                            @if($quotation)
+                            <div class="col-sm-3 d-flex align-items-center">
+                                <div class="form-group w-100">
+                                    <a href="{{ backpack_url('quotation/'.$quotation->quotation_no.'/preview') }}"
+                                        target="_blank" class="btn btn-info btn-block">
+                                        <i class="ik ik-file-text mr-2"></i> View Quotation PDF
+                                    </a>
+                                </div>
+                            </div>
+                            @endif
+
+
                         </div>
                     </div>
                 </div>
@@ -1444,7 +1549,6 @@ $('#financier').on('change', function() {
     const shortName = $(this).find(':selected').data('shortname') || '';
     $('#financiershortname').val(shortName);
 });
-    // Bind event listeners
     function bindEventListeners() {
         $('#customertype').on('change', function() {
             toggleCustomerFields(this.value);
@@ -1475,7 +1579,6 @@ $('#financier').on('change', function() {
             <option value="">Please Select...</option>
             <option value="5" selected>Owned By</option>
         `);
-        // Care Of Name enabled aur required rakho
         $('#careofname').prop('disabled', false).prop('required', true);
         toggleRequiredMark($('#careofname'), true);
     } else {

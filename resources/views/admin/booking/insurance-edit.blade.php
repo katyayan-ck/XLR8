@@ -144,7 +144,7 @@
             <div class="col-md-2 form-group readonly-field">
                 <label class="readonly-label">Chassis No.</label>
                 <div class="readonly-value">
-                    {{ $booking->chassis_no ?? $booking->chasis_no ?? '—' }}
+                    {{ $booking->chassis_no ?? $booking->chassis_no ?? '—' }}
                 </div>
             </div>
 
@@ -252,13 +252,13 @@
                     <select name="policy_type" class="form-control form-select" required>
                         <option value="">Select Type</option>
                         <option value="1" {{ old('policy_type', $insurance?->pol_type ?? '') == 1 ? 'selected' : ''
-                            }}>Normal</option>
+                            }}>Standard</option>
                         <option value="2" {{ old('policy_type', $insurance?->pol_type ?? '') == 2 ? 'selected' : ''
                             }}>Nil Dep</option>
                         <option value="3" {{ old('policy_type', $insurance?->pol_type ?? '') == 3 ? 'selected' : ''
-                            }}>Nil Dep + Cons.</option>
+                            }}>Base(Nil Dep + Consumables)</option>
                         <option value="4" {{ old('policy_type', $insurance?->pol_type ?? '') == 4 ? 'selected' : ''
-                            }}>Nil Dep + Cons. + Extra Add-On</option>
+                            }}>Higher(Nil Dep + Consumables + Add Ons)</option>
                     </select>
                     @error('policy_type') <span class="text-danger small">{{ $message }}</span> @enderror
                 </div>

@@ -94,7 +94,7 @@ class VariantCrudController extends CrudController
             'gridConfig' => [
                 'columns' => [
 
-                    ['field' => 'serial_no', 'headerName' => 'S.No'],
+                    ['field' => 'serial_no', 'headerName' => 'S.No.'],
 
                     ['field' => 'segment', 'headerName' => 'Segment'],
                     ['field' => 'sub_segment', 'headerName' => 'Sub Segment'],
@@ -276,7 +276,6 @@ class VariantCrudController extends CrudController
             'is_active' => 'nullable|boolean',
         ]);
 
-        // Prevent deactivation if active Colors exist
         if (
             $variant->is_active == 1 &&
             !$request->boolean('is_active')

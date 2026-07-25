@@ -166,7 +166,7 @@
                                 </select>
                             </div>
 
-                            <!-- Ref No -->
+                            <!-- Ref No. -->
                             <div class="col-sm-3 finance-field" id="instrument_ref_no_wrapper" style="display:none;">
                                 <label class="form-label" id="instrument_ref_label">Reference No. <span
                                         class="text-danger">*</span></label>
@@ -205,8 +205,7 @@
                             </div>
 
                             <div class="col-sm-3 finance-field" id="margin_money_wrapper" style="display:none;">
-                                <label class="form-label">Margin Money (by Financier) <span
-                                        class="text-danger">*</span></label>
+                                <label class="form-label">Margin Money (by Financier) </label>
                                 <input type="number" name="margin_money" id="margin_money"
                                     class="form-control calc-field"
                                     value="{{ old('margin_money', $finance->margin ?? '') }}">
@@ -220,13 +219,13 @@
                             </div>
 
                             <div class="col-sm-3 finance-field" id="payment_amount_wrapper" style="display:none;">
-                                <label class="form-label">Payment Amount</label>
+                                <label class="form-label">Net Settlement Amount</label>
                                 <input type="text" id="payment_amount" class="form-control" readonly>
                             </div>
 
-                            <!-- Remark -->
+                            <!-- Remarks -->
                             <div class="col-sm-12">
-                                <label class="form-label">Remark <span class="text-danger">*</span></label>
+                                <label class="form-label">Remarks <span class="text-danger">*</span></label>
                                 <textarea name="remark" class="form-control" rows="4"
                                     required>{{ old('remark', '') }}</textarea>
                                 @error('remark') <span class="text-danger small">{{ $message }}</span> @enderror
@@ -633,7 +632,7 @@
         $('#instrument_type').prop('required', true);
         $('#instrument_proof').prop('required', true);
         $('#loan_amount').prop('required', true);
-        $('#margin_money').prop('required', true);
+        $('#margin_money').prop('required', false);
         $('#file_charge').prop('required', true);
         $('#instrument_ref_no').prop('required', true);
 

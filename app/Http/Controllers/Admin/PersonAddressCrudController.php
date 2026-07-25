@@ -69,11 +69,11 @@ class PersonAddressCrudController extends CrudController
             'title' => 'All Person Addresses',
             'gridConfig' => [
                 'columns' => [
-                    ['field' => 'serial_no',      'headerName' => 'S.No'],
+                    ['field' => 'serial_no',      'headerName' => 'S.No.'],
                     ['field' => 'person_name',    'headerName' => 'Person'],
                     ['field' => 'type',           'headerName' => 'Type'],
                     ['field' => 'address_line_1', 'headerName' => 'Address Line 1'],
-                    ['field' => 'address_line_2', 'headerName' => 'Address Line 2'],   // ← ADD THIS
+                    ['field' => 'address_line_2', 'headerName' => 'Address Line 2'],  
                     ['field' => 'city',           'headerName' => 'City'],
                     ['field' => 'state',          'headerName' => 'State'],
                     ['field' => 'pincode',        'headerName' => 'Pincode'],

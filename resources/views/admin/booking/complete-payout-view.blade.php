@@ -1,3 +1,43 @@
+@php
+$GST_RATE = 0.18;
+
+$loanAmount = (float)($finance->loan_amount ?? 0);
+$expectedPct = (float)($finance->expected_payout_pct ?? 0);
+$gstIncluded = (float)($finance->gst_included ?? 0);
+
+$expectedPctDecimal = $expectedPct / 100;
+
+$expectedPctWithoutGst = $gstIncluded > 0
+? $expectedPctDecimal / (1 + ($GST_RATE * $gstIncluded))
+: $expectedPctDecimal;
+
+$expectedAmtWithoutGst = $loanAmount * $expectedPctWithoutGst;
+
+$gstAmount = $expectedAmtWithoutGst * $GST_RATE;
+
+$suggestedInvoiceAmount = $expectedAmtWithoutGst + $gstAmount;
+
+$inv1Prov = (float)($finance->inv1_prov_gst ?? 0);
+$inv2Prov = (float)($finance->inv2_prov_gst ?? 0);
+
+$totalProvWithGst = $inv1Prov + $inv2Prov;
+
+$totalProvWithoutGst = $totalProvWithGst > 0
+? $totalProvWithGst / (1 + $GST_RATE)
+: 0;
+
+$consideration = (float)($finance->consideration_no_gst ?? 0);
+
+$differenceWithoutGst =
+$totalProvWithoutGst
+- $expectedAmtWithoutGst
++ $consideration;
+
+$provPctWithoutGst =
+$loanAmount > 0
+? ($totalProvWithoutGst / $loanAmount) * 100
+: 0;
+@endphp
 @extends(backpack_view('blank'))
 
 @section('title', 'Payout Details')
@@ -374,7 +414,26 @@
 
                     <div class="col-sm-3 form-group">
                         <label>Expected Payout % without GST</label>
-                        <input type="text" id="exp_payout_pct_no_gst" class="form-control readonly-field" readonly>
+                        <input type="text" class="form-control readonly-field"
+                            value="{{ number_format($expectedPctWithoutGst * 100,4) }} %" readonly>
+                    </div>
+
+                    <div class="col-sm-3 form-group">
+                        <label>Expected Payout Amount without GST</label>
+                        <input type="text" class="form-control readonly-field"
+                            value="₹{{ number_format($expectedAmtWithoutGst,2) }}" readonly>
+                    </div>
+
+                    <div class="col-sm-3 form-group">
+                        <label>GST Amount</label>
+                        <input type="text" class="form-control readonly-field"
+                            value="₹{{ number_format($gstAmount,2) }}" readonly>
+                    </div>
+
+                    <div class="col-sm-3 form-group">
+                        <label>Suggested Invoice Amount</label>
+                        <input type="text" class="form-control readonly-field"
+                            value="₹{{ number_format($suggestedInvoiceAmount,2) }}" readonly>
                     </div>
                 </div>
 

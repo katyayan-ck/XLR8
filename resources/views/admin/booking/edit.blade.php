@@ -125,7 +125,10 @@
                         <h2 class="mb-4">Customer Details</h2>
                         <div class="row">
                             <div class="col-sm-3 form-group">
-                                <label for="name">Customer Name <span class="required-mark">*</span></label>
+                                <label for="name">
+                                    {{ $entry->b_cat == 'Corporate' ? 'Corporate Name' : 'Customer Name' }}
+                                    <span class="required-mark">*</span>
+                                </label>
                                 <input type="text" name="name" id="name" class="form-control uppercase"
                                     value="{{ $entry->name }}" required>
                             </div>
@@ -224,10 +227,11 @@
                                 <input type="text" name="gstn" id="gstn" class="form-control uppercase"
                                     value="{{ ($entry->gstn != '0' && $entry->gstn !== null) ? $entry->gstn : '' }}"
                                     placeholder="Enter GSTN No." {{ ($entry->gstn == '0' || $entry->gstn === null) ?
-                                'disabled' : '' }}>
+                                'readonly' : '' }}>
                                 <div class="form-check mt-2">
-                                    <input type="checkbox" class="form-check-input" id="gst_unregistered" {{
-                                        ($entry->gstn == '0' || $entry->gstn === null) ? 'checked' : '' }}>
+                                    <input type="checkbox" name="gst_unregistered" class="form-check-input"
+                                        id="gst_unregistered" value="1" {{ ($entry->gstn == '0' || $entry->gstn ===
+                                    null) ? 'checked' : '' }}>
                                     <label class="form-check-label" for="gst_unregistered">GST Unregistered</label>
                                 </div>
                             </div>
@@ -298,44 +302,45 @@
                                 <input type="checkbox" class="form-check-input" id="referred_by_checkbox"
                                     name="referred_by" {{ $entry->r_name ? 'checked' : '' }}>
                                 <label class="form-check-label" for="referred_by_checkbox">Referred By</label>
-                            </div>
 
-                            <div class="row" id="referred_by_fields"
-                                style="{{ $entry->r_name ? '' : 'display:none;' }}">
-                                <div class="col-sm-2 form-group">
-                                    <label for="ref_customer_name">Customer Name <span class="required-mark"
-                                            style="display: {{ $entry->r_name ? 'inline' : 'none' }};">*</span></label>
-                                    <input type="text" name="ref_customer_name" id="ref_customer_name"
-                                        class="form-control uppercase" value="{{ $entry->r_name ?? '' }}" {{
-                                        $entry->r_name ? 'required' : '' }}>
-                                </div>
-                                <div class="col-sm-2 form-group">
-                                    <label for="ref_mobile_no">Mobile No. <span class="required-mark"
-                                            style="display: {{ $entry->r_name ? 'inline' : 'none' }};">*</span></label>
-                                    <input type="text" name="ref_mobile_no" id="ref_mobile_no" class="form-control"
-                                        value="{{ $entry->r_mobile ?? '' }}" maxlength="10" pattern="[0-9]{10}"
-                                        inputmode="numeric" {{ $entry->r_name ? 'required' : '' }}>
-                                </div>
-                                <div class="col-sm-2 form-group">
-                                    <label for="ref_existing_model">Existing Model <span class="required-mark"
-                                            style="display: {{ $entry->r_name ? 'inline' : 'none' }};">*</span></label>
-                                    <input type="text" name="ref_existing_model" id="ref_existing_model"
-                                        class="form-control uppercase" value="{{ $entry->r_model ?? '' }}" {{
-                                        $entry->r_name ? 'required' : '' }}>
-                                </div>
-                                <div class="col-sm-2 form-group">
-                                    <label for="ref_variant">Variant <span class="required-mark"
-                                            style="display: {{ $entry->r_name ? 'inline' : 'none' }};">*</span></label>
-                                    <input type="text" name="ref_variant" id="ref_variant"
-                                        class="form-control uppercase" value="{{ $entry->r_variant ?? '' }}" {{
-                                        $entry->r_name ? 'required' : '' }}>
-                                </div>
-                                <div class="col-sm-2 form-group">
-                                    <label for="ref_chassis_reg_no">Chassis / Regn. No. <span class="required-mark"
-                                            style="display: {{ $entry->r_name ? 'inline' : 'none' }};">*</span></label>
-                                    <input type="text" name="ref_chassis_reg_no" id="ref_chassis_reg_no"
-                                        class="form-control uppercase" value="{{ $entry->r_chassis ?? '' }}" {{
-                                        $entry->r_name ? 'required' : '' }}>
+
+                                <div class="row" id="referred_by_fields"
+                                    style="{{ $entry->r_name ? '' : 'display:none;' }}">
+                                    <div class="col-sm-2 form-group">
+                                        <label for="ref_customer_name">Customer Name <span class="required-mark"
+                                                style="display: {{ $entry->r_name ? 'inline' : 'none' }};">*</span></label>
+                                        <input type="text" name="ref_customer_name" id="ref_customer_name"
+                                            class="form-control uppercase" value="{{ $entry->r_name ?? '' }}" {{
+                                            $entry->r_name ? 'required' : '' }}>
+                                    </div>
+                                    <div class="col-sm-2 form-group">
+                                        <label for="ref_mobile_no">Mobile No. <span class="required-mark"
+                                                style="display: {{ $entry->r_name ? 'inline' : 'none' }};">*</span></label>
+                                        <input type="text" name="ref_mobile_no" id="ref_mobile_no" class="form-control"
+                                            value="{{ $entry->r_mobile ?? '' }}" maxlength="10" pattern="[0-9]{10}"
+                                            inputmode="numeric" {{ $entry->r_name ? 'required' : '' }}>
+                                    </div>
+                                    <div class="col-sm-2 form-group">
+                                        <label for="ref_existing_model">Existing Model <span class="required-mark"
+                                                style="display: {{ $entry->r_name ? 'inline' : 'none' }};">*</span></label>
+                                        <input type="text" name="ref_existing_model" id="ref_existing_model"
+                                            class="form-control uppercase" value="{{ $entry->r_model ?? '' }}" {{
+                                            $entry->r_name ? 'required' : '' }}>
+                                    </div>
+                                    <div class="col-sm-2 form-group">
+                                        <label for="ref_variant">Variant <span class="required-mark"
+                                                style="display: {{ $entry->r_name ? 'inline' : 'none' }};">*</span></label>
+                                        <input type="text" name="ref_variant" id="ref_variant"
+                                            class="form-control uppercase" value="{{ $entry->r_variant ?? '' }}" {{
+                                            $entry->r_name ? 'required' : '' }}>
+                                    </div>
+                                    <div class="col-sm-2 form-group">
+                                        <label for="ref_chassis_reg_no">Chassis / Regn. No. <span class="required-mark"
+                                                style="display: {{ $entry->r_name ? 'inline' : 'none' }};">*</span></label>
+                                        <input type="text" name="ref_chassis_reg_no" id="ref_chassis_reg_no"
+                                            class="form-control uppercase" value="{{ $entry->r_chassis ?? '' }}" {{
+                                            $entry->r_name ? 'required' : '' }}>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -352,7 +357,7 @@
                                 <label for="buyer_type">Purchase Type <span class="required-mark">*</span></label>
                                 <select name="buyer_type" id="buyer_type" class="form-select" required>
                                     <option value="First time Buyer" {{ $entry->buyer_type == 'First time Buyer' ?
-                                        'selected' : '' }}>First time Buyer</option>
+                                        'selected' : '' }}>First Time Buyer</option>
                                     <option value="Additional Buy" {{ $entry->buyer_type == 'Additional Buy' ?
                                         'selected' : '' }}>Additional Buy</option>
                                     <option value="Exchange Buy" {{ $entry->buyer_type == 'Exchange Buy' ? 'selected' :
@@ -793,8 +798,8 @@
         data.forEach(item => {
             if (!item) return;
 
-            let value = item[valueKey] || item.name || item.colr_name || item.id || item.chasis_no || item.value;
-            let text  = item[textKey] || item.name || item.colr_name || item.chasis_no || item.value || item.id;
+            let value = item[valueKey] || item.name || item.colr_name || item.id || item.chassis_no || item.value;
+            let text  = item[textKey] || item.name || item.colr_name || item.chassis_no || item.value || item.id;
 
             if (!value || !text) return;
 
@@ -941,7 +946,7 @@
 
         const url = '{{ route("get.chasis", ":modelCode") }}'.replace(':modelCode', encodeURIComponent(code));
         $.get(url).done(function(data) {
-            populateSelect2('#chassis', data, 'chasis_no', 'chasis_no');
+            populateSelect2('#chassis', data, 'chassis_no', 'chassis_no');
             $('#chassis').prop('disabled', false);
         });
     });
@@ -955,7 +960,7 @@
             model:    '{{ addslashes($entry->model_code ?? '') }}',
             variant:  '{{ addslashes($entry->variant_code ?? '') }}',
             color:    '{{ addslashes($entry->color_code ?? '') }}',
-            chassis:  '{{ addslashes($entry->chasis_no ?? '') }}',
+            chassis:  '{{ addslashes($entry->chassis_no ?? '') }}',
             accessories: {!! json_encode(array_filter(explode(',', trim($entry->accessories ?? '')))) !!}
         };
 
@@ -1244,46 +1249,39 @@ const scrappageFields = [
     $('#pan_no').mask('AAAAA0000A', { placeholder: 'ABCDE1234F' });
     $('#adhar_no').mask('0000-0000-0000', { placeholder: '1234-5678-9012' });
     
+function toggleGSTField() {
 
-    function toggleGSTField() {
-        const isUnregistered = $('#gst_unregistered').is(':checked');
+    const checked = $('#gst_unregistered').is(':checked');
+    const $gst = $('#gstn');
 
-        if (isUnregistered) {
+    if (checked) {
 
-            // GST field clear + disable
-            $('#gstn')
-                .val('')
-                .prop('disabled', true)
-                .prop('required', false)
-                .removeClass('is-invalid');
+        $gst
+            .val('')
+            .prop('readonly', true)
+            .css({
+                'pointer-events': 'none',
+                'background-color': '#e9ecef'
+            });
 
-            // validation message hatao
-            $('#gstn-error').remove();
+        $('#gstn-required').hide();
 
-            // required star hide
-            $('#gstn-required').hide();
+    } else {
 
-        } else {
+        $gst
+            .prop('readonly', false)
+            .css({
+                'pointer-events': 'auto',
+                'background-color': ''
+            });
 
-            // GST field enable
-            $('#gstn')
-                .prop('disabled', false)
-                .prop('required', true);
-
-            // required star show
-            $('#gstn-required').show();
-        }
+        $('#gstn-required').show();
     }
 
-    $(document).ready(function () {
+    $gst.valid();
+}
 
-        toggleGSTField();
-
-        $('#gst_unregistered').on('change', function () {
-            toggleGSTField();
-        });
-
-    });
+    
 
     $.validator.addMethod('panFormat', function(value, element) {
         return this.optional(element) || /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(value);
@@ -1340,61 +1338,62 @@ const scrappageFields = [
     @endif
 
     $('#bookingForm').validate({
-        rules: {
-            name: { required: true },
-            care_of: { required: true },
-            mobile: { required: true, digits: true, minlength: 10, maxlength: 10 },
-            alt_mobile: {
-                digits: true,
-                minlength: 10,
-                maxlength: 10
+            rules: {
+                name: { required: true },
+                care_of: { required: true },
+                mobile: { required: true, digits: true, minlength: 10, maxlength: 10 },
+                alt_mobile: {
+                    digits: true,
+                    minlength: 10,
+                    maxlength: 10
+                },
+                ref_mobile_no: {
+        digits: true,
+        minlength: 10,
+        maxlength: 10
+    },
+                gender: { required: true },
+                occupation: { required: true },
+                pan_no: { panFormat: true },
+                adhar_no: { udaiFormat: true },
+                gstn: {
+                    gstnFormat: true
+                },
+                customer_dob: { required: true },
+                branch: { required: true },
+                location_id: { required: true },
+                'details': { required: true },
             },
-            ref_mobile_no: {
-    digits: true,
-    minlength: 10,
-    maxlength: 10
-},
-            gender: { required: true },
-            occupation: { required: true },
-            pan_no: { panFormat: true },
-            adhar_no: { udaiFormat: true },
-            gstn: {
-                required: function() { return !$('#gst_unregistered').is(':checked'); },
-                gstnFormat: true
+            messages: {
+                name: 'Please enter customer name',
+                mobile: 'Please enter a valid 10-digit mobile number',
+                alt_mobile: 'Please enter a valid 10-digit alternate mobile number',
+                ref_mobile_no: {
+                    digits: 'Only numbers are allowed',
+                    minlength: 'Mobile number must be 10 digits',
+                    maxlength: 'Mobile number must be 10 digits'
+                },
+                pan_no: 'Please enter a valid PAN (e.g., ABCDE1234F)',
+                adhar_no: 'Please enter a valid Aadhar (e.g., 1234-5678-9012)',
+                gstn: {
+            required: 'Please enter GSTIN',
+            gstnFormat: 'Please enter a valid GSTIN (e.g., 27ABCDE1234F1Z5)'
             },
-            customer_dob: { required: true },
-            branch: { required: true },
-            location_id: { required: true },
-            'details': { required: true },
-        },
-        messages: {
-            name: 'Please enter customer name',
-            mobile: 'Please enter a valid 10-digit mobile number',
-            alt_mobile: 'Please enter a valid 10-digit alternate mobile number',
-            ref_mobile_no: {
-                digits: 'Only numbers are allowed',
-                minlength: 'Mobile number must be 10 digits',
-                maxlength: 'Mobile number must be 10 digits'
+                customer_dob: 'Please select customer date of birth',
             },
-            pan_no: 'Please enter a valid PAN (e.g., ABCDE1234F)',
-            adhar_no: 'Please enter a valid Aadhar (e.g., 1234-5678-9012)',
-            gstn: {
-        required: 'Please enter GSTIN',
-        gstnFormat: 'Please enter a valid GSTIN (e.g., 27ABCDE1234F1Z5)'
-        },
-            customer_dob: 'Please select customer date of birth',
-        },
-        errorElement: 'span',
-        errorClass: 'text-danger',
-        highlight: function(element) {
-            $(element).addClass('is-invalid');
-        },
-        unhighlight: function(element) {
-            $(element).removeClass('is-invalid');
-        }
-    });
+            errorElement: 'span',
+            errorClass: 'text-danger',
+            highlight: function(element) {
+                $(element).addClass('is-invalid');
+            },
+            unhighlight: function(element) {
+                $(element).removeClass('is-invalid');
+            }
+        });
+        toggleGSTField();
+        $('#gst_unregistered').on('change', toggleGSTField);
 
-});
+    });
 $(document).ready(function() {
 
     const isFirm = '{{ $entry->b_cat }}' === 'Firm';

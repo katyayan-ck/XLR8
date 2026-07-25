@@ -161,7 +161,7 @@
         'inv_no',
         'inv_date',
 
-        // Customer - Y
+        
         'name',
         'mobile',
         'branch_name',
@@ -173,8 +173,8 @@
         'seating',
 
         'consultant',
-        'financier',
-        'loan_status',
+        'fin_mode',
+        'financier_short_name',
 
         'action'
     ];
@@ -224,7 +224,7 @@
                 'variant',
                 'color',
                 'seating',
-                'chasis_no'
+                'chassis_no'
             ])
         },
         {
@@ -233,7 +233,9 @@
             children: getCols([
                 'consultant',
                 'del_type',
+                'fin_mode',
                 'financier',
+                'financier_short_name',
                 'loan_status'
             ])
         },
@@ -507,7 +509,7 @@
                 body: rows,
                 startY: 50,
                 styles: { fontSize: 8 },
-                headStyles: { fillColor: [13, 110, 253] }, // blue theme
+                headStyles: { fillColor: [13, 110, 253] }, 
             });
 
             doc.save('pending-finance-retail.pdf');

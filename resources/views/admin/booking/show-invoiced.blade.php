@@ -125,11 +125,11 @@
                             <input type="text" class="form-control" value="{{ $booking->occ ?? 'N/A' }}" readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold  ">PAN No</label>
+                            <label class="fw-bold  ">PAN No.</label>
                             <input type="text" class="form-control" value="{{ $booking->pan_no ?? 'N/A' }}" readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold  ">Aadhaar No</label>
+                            <label class="fw-bold  ">Aadhaar No.</label>
                             <input type="text" class="form-control" value="{{ $booking->adhar_no ?: 'N/A' }}" readonly>
                         </div>
                         <div class="col-md-3">
@@ -381,7 +381,7 @@
                             <input type="text" class="form-control" value="{{ $booking->sap_no ?? 'N/A' }}" readonly>
                         </div>
                         <div class="col-md-3">
-                            <label class="fw-bold  ">Sales Force Booking Number (DMS No)</label>
+                            <label class="fw-bold  ">Sales Force Booking Number (DMS No.)</label>
                             <input type="text" class="form-control" value="{{ $booking->dms_no ?? 'N/A' }}" readonly>
                         </div>
                         <div class="col-md-3">
@@ -440,10 +440,10 @@
                         <div class="col-md-3">
                             <label class="fw-bold  ">Policy Type</label>
                             <input type="text" class="form-control" value="{{ match((int)($insurance?->pol_type ?? 0)) {
-                                       1 => 'Normal',
+                                       1 => 'Standard',
                                        2 => 'Nil Dep',
-                                       3 => 'Nil Dep + Cons.',
-                                       4 => 'Nil Dep + Cons. + Extra Add-On',
+                                       3 => 'Base(Nil Dep + Consumables)',
+                                       4 => 'Higher(Nil Dep + Consumables + Add Ons)',
                                        default => 'N/A'
                                    } }}" readonly>
                         </div>
@@ -756,7 +756,7 @@
                             </div>
 
                             <div class="col-12 mt-3">
-                                <button type="submit" class="btn btn-success">Add Remark</button>
+                                <button type="submit" class="btn btn-success">Add Remarks</button>
                             </div>
                         </div>
                     </form>

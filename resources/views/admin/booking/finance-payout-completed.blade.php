@@ -52,6 +52,21 @@
                         </select>
                     </div>
 
+                    {{-- <div class="d-flex align-items-center gap-2">
+                        <label class="mb-0">Financier:</label>
+
+                        <select id="financier_filter" class="form-control form-select" style="min-width:220px;">
+                            <option value="">All Financiers</option>
+
+                            @foreach($financiers as $financier)
+                            <option value="{{ $financier['id'] }}" {{ request('financier')==$financier['id']
+                                ? 'selected' : '' }}>
+                                {{ $financier['short_name'] ?? $financier['name'] }}
+                            </option>
+                            @endforeach
+                        </select>
+                    </div> --}}
+
                 </div>
             </div>
 
@@ -136,17 +151,16 @@
         return ALL_COLUMNS.filter(col => fields.includes(col.field));
     }
 
-    // Default visible fields (agar Completed ke liye alag chahiye to yahan change kar sakte ho)
     const DEFAULT_VISIBLE_FIELDS = [
         'serial_no', 'booking_no',
         'inv_no', 'inv_date', 'name', 'mobile', 'branch_name', 'location_name',
         'model', 'variant', 'color', 'seating',
-        'consultant', 'fin_mode', 'financier', 'financier_short_name',
+        'consultant', 'fin_mode','financier_short_name',
         'payout_category','do_number','loan_amount_dealer',
                 'expected_payout_pct',
-                'expected_payout_pct_without_gst','expected_payout_amount_without_gst',
-                'expected_payout_amount_without_gst','sugg_inv_amt','loan_amount_fin_payout_sheet',
-                'total_prov_with_gst', 'prov_prc_without_gst', 'diff_without_gst',
+                'expected_payout_pct_without_gst', 'gst_rate', 'gst_included','expected_payout_amount_without_gst',
+                'expected_payout_amount_without_gst', 'gst_amount', 'sugg_inv_amt', 'loan_amount_fin_payout_sheet', 'inv1_no', 'inv1_name', 'inv1_prov_gst', 'inv2_no' ,'inv2_name', 'inv2_prov_gst',
+                'total_prov_with_gst', 'total_prov_without_gst', 'consideration_no_gst', 'diff_without_gst', 'prov_prc_without_gst',
         'action'
     ];
 
@@ -168,7 +182,7 @@
         {
             headerName: 'Vehicle',
             headerClass: 'ag-header-center',
-            children: getCols(['segment','model','variant','color','seating','chasis_no'])
+            children: getCols(['segment','model','variant','color','seating','chassis_no'])
         },
         {
             headerName: 'Booking Detail',
@@ -181,16 +195,16 @@
             children: getCols([
                 'payout_category','do_number','loan_amount_dealer',
                 'expected_payout_pct',
-                'expected_payout_pct_without_gst','expected_payout_amount_without_gst',
-                'expected_payout_amount_without_gst'
+                'expected_payout_pct_without_gst', 'gst_rate', 'gst_included','expected_payout_amount_without_gst',
+                'expected_payout_amount_without_gst', 'gst_amount',
             ])
         },
         {
             headerName: 'RTO',
             headerClass: 'ag-header-center',
             children: getCols([
-                'sugg_inv_amt','loan_amount_fin_payout_sheet',
-                'total_prov_with_gst', 'prov_prc_without_gst', 'diff_without_gst'
+                'sugg_inv_amt', 'loan_amount_fin_payout_sheet', 'inv1_no', 'inv1_name', 'inv1_prov_gst', 'inv2_no' ,'inv2_name', 'inv2_prov_gst',
+                'total_prov_with_gst', 'total_prov_without_gst', 'consideration_no_gst', 'diff_without_gst', 'prov_prc_without_gst'
             ])
         },
         {
@@ -250,7 +264,7 @@
         }
     };
 
-    // Customise Headers Bubble
+     Bubble
     function openColumnBubble() {
         const bubble = document.getElementById('columnBubble');
         const tbody = document.getElementById('columnBubbleBody');
@@ -325,12 +339,11 @@
         bubble.style.display = 'block';
     }
 
-    // Event Listeners
     document.addEventListener('DOMContentLoaded', () => {
         const gridDiv = document.querySelector('#myGrid');
         gridApi = agGrid.createGrid(gridDiv, gridOptions);
 
-        // Quick Filter
+        
         document.getElementById('quickFilter')?.addEventListener('input', e => {
             gridApi.setGridOption('quickFilterText', e.target.value);
         });
@@ -346,7 +359,6 @@
             window.location.href = this.value;
         });
 
-        // Difference Filter
         document.getElementById('status_filter')?.addEventListener('change', function() {
             const url = new URL(window.location);
             if (this.value === 'all') {
@@ -357,7 +369,7 @@
             window.location = url;
         });
 
-        // Customise Headers
+        
         document.getElementById('btnCustomiseHeaders')?.addEventListener('click', e => {
             e.stopPropagation();
             openColumnBubble();
@@ -388,7 +400,6 @@
             setTimeout(() => gridApi.autoSizeColumns(gridApi.getAllDisplayedColumns().map(c => c.getColId()), false), 200);
         });
 
-        // Export Excel
         document.getElementById('exportExcel')?.addEventListener('click', () => {
             const visibleColumns = gridApi.getAllDisplayedColumns()
                 .map(col => col.getColDef())
@@ -409,7 +420,6 @@
             XLSX.writeFile(workbook, `finance-payout-completed-${new Date().toISOString().slice(0,10)}.xlsx`);
         });
 
-        // Export PDF
         document.getElementById('exportPdf')?.addEventListener('click', () => {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF('l', 'pt', 'a4');
@@ -440,6 +450,18 @@
             });
 
             doc.save('finance-payout-completed.pdf');
+        });
+
+        document.getElementById('financier_filter')?.addEventListener('change', function() {
+            const url = new URL(window.location);
+
+            if (this.value) {
+                url.searchParams.set('financier', this.value);
+            } else {
+                url.searchParams.delete('financier');
+            }
+
+            window.location = url;
         });
     });
 </script>

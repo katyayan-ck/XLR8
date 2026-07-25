@@ -31,7 +31,6 @@
 
     let gridApi;
 
-    // ==================== COLUMN DEFINITION (Flat - No Grouping) ====================
     const columnDefs = [
         ...getCols(['serial_no', 'code', 'name']).map(col => {
             if (['serial_no', 'code'].includes(col.field)) {
@@ -85,7 +84,6 @@
         }
     };
 
-    // ==================== Customise Headers Popup (Flat Version) ====================
     function openColumnBubble() {
         const bubble = document.getElementById('columnBubble');
         const tbody = document.getElementById('columnBubbleBody');
@@ -112,12 +110,11 @@
             checkbox.type = 'checkbox';
             checkbox.checked = gridApi.getColumn(col.field)?.isVisible() ?? false;
 
-            // Primary fields disable karo
             if (['serial_no', 'code', 'name', 'brand'].includes(col.field)) {
                 checkbox.disabled = true;
             }
 
-            // Action column disable karo
+            
             if (col.field === 'action') {
                 checkbox.disabled = true;
             }
@@ -142,12 +139,12 @@
         const gridDiv = document.querySelector('#myGrid');
         agGrid.createGrid(gridDiv, gridOptions);
 
-        // Quick Filter
+        
         document.getElementById('quickFilter').addEventListener('input', e => {
             gridApi.setGridOption('quickFilterText', e.target.value);
         });
 
-        // Reset All
+        
         document.getElementById('resetAll').addEventListener('click', () => {
             gridApi.setFilterModel(null);
             document.getElementById('quickFilter').value = '';
@@ -155,7 +152,7 @@
             gridApi.setSortModel(null);
         });
 
-        // Customise Headers
+        
         document.getElementById('btnCustomiseHeaders').addEventListener('click', e => {
             e.stopPropagation();
             openColumnBubble();
@@ -172,7 +169,7 @@
             if (bubble && bubble.style.display === 'block') bubble.style.display = 'none';
         });
 
-        // All Headers
+        
         document.getElementById('btnAllHeaders').addEventListener('click', () => {
             const allCols = [];
             gridApi.getAllGridColumns().forEach(col => allCols.push(col.getColId()));
@@ -180,7 +177,7 @@
             setTimeout(() => gridApi.autoSizeAllColumns(), 200);
         });
 
-        // Default Headers
+        
         document.getElementById('btnDefaultHeaders').addEventListener('click', () => {
             const defaultFields = ['serial_no', 'code', 'name', 'brand','is_active', 'action'];
             const allCols = [];
@@ -190,7 +187,7 @@
             setTimeout(() => gridApi.autoSizeAllColumns(), 200);
         });
 
-        // Excel Export
+        
         document.getElementById('exportCsv').addEventListener('click', () => {
             const visibleColumns = gridApi.getAllDisplayedColumns()
                 .map(col => col.getColDef())
@@ -211,7 +208,7 @@
             XLSX.writeFile(wb, `segments-${new Date().toISOString().slice(0,10)}.xlsx`);
         });
 
-        // PDF Export
+        
         document.getElementById('exportPdf').addEventListener('click', () => {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
@@ -260,6 +257,19 @@
 
             <!-- BODY -->
             <div class="card-body p-0" style="background:#f8fafc">
+                <div class="p-3 border-bottom bg-white">
+                    <div class="row align-items-end">
+                        <form action="{{ backpack_url('brand/import') }}" method="POST" 
+                              onsubmit="return confirm('Are you sure you want to import latest data from Google Sheet?')"
+                              class="d-inline">
+                            @csrf
+                            <button type="submit" class="btn btn-success btn-sm d-flex align-items-center gap-2">
+                                <i class="la la-cloud-download"></i>
+                                <span>Import Now</span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
                 <div
                     class="d-flex justify-content-between align-items-center flex-wrap gap-3 p-3 border-bottom bg-white">
                     <div class="d-flex align-items-center gap-2 flex-nowrap">

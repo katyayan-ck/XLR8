@@ -155,7 +155,7 @@
             <div class="col-md-2 form-group readonly-field">
                 <label class="readonly-label">Chassis No.</label>
                 <div class="readonly-value">
-                    {{ $booking->chassis_no ?? $booking->chasis_no ?? '—' }}
+                    {{ $booking->chassis_no ?? $booking->chassis_no ?? '—' }}
                 </div>
             </div>
 
@@ -263,14 +263,26 @@
 
                 <div class="col-md-3">
                     <label class="form-label">Registration Type</label>
-                    <select name="registration_type" id="registration_type" class="form-control form-select">
+                    <select name="registration_type" class="form-control form-select">
+
                         <option value="">Select Registration Type</option>
-                        <option value="1" {{ old('registration_type', $rto->rgn_type ?? '') == '1' ? 'selected' : ''
-                            }}>TRC Only</option>
-                        <option value="2" {{ old('registration_type', $rto->rgn_type ?? '') == '2' ? 'selected' : ''
-                            }}>Tax Only</option>
-                        <option value="3" {{ old('registration_type', $rto->rgn_type ?? '') == '3' ? 'selected' : ''
-                            }}>TRC + Tax</option>
+
+                        <option value="0" {{ old('registration_type', $rto->rgn_type ?? '') == '0' ? 'selected' : '' }}>
+                            Exempted (Reg & Hypo Fee Only)
+                        </option>
+
+                        <option value="1" {{ old('registration_type', $rto->rgn_type ?? '') == '1' ? 'selected' : '' }}>
+                            TRC Only
+                        </option>
+
+                        <option value="2" {{ old('registration_type', $rto->rgn_type ?? '') == '2' ? 'selected' : '' }}>
+                            Tax Only
+                        </option>
+
+                        <option value="3" {{ old('registration_type', $rto->rgn_type ?? '') == '3' ? 'selected' : '' }}>
+                            TRC + Tax
+                        </option>
+
                     </select>
                     @error('registration_type') <span class="text-danger small">{{ $message }}</span> @enderror
                 </div>
@@ -313,13 +325,42 @@
 
                 <div class="col-md-3" id="trc_copy_group">
                     <label class="form-label">TRC Copy</label>
+
+                    @php
+                    $trcMedia = $rto?->getFirstMedia('trc_copy');
+                    @endphp
+
+                    <!-- Existing saved file (shown only if one is already uploaded) -->
+                    <div id="trcCopyExisting" class="mb-2" style="{{ $trcMedia ? '' : 'display:none;' }}">
+                        @if($trcMedia)
+                        <span class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2 px-3 py-2"
+                            style="cursor:pointer;"
+                            onclick="openPolicyModal('{{ $trcMedia->getUrl() }}', '{{ addslashes($trcMedia->file_name) }}')">
+                            <i class="la la-paperclip"></i>
+                            <span class="fw-medium small text-truncate" style="max-width:140px;">
+                                {{ Str::limit($trcMedia->file_name, 20) }}
+                            </span>
+                        </span>
+                        <button type="button" class="btn btn-outline-danger btn-sm ms-1" title="Remove file"
+                            onclick="removeExistingFile('trc_copy')">
+                            <i class="la la-trash"></i>
+                        </button>
+                        @endif
+                    </div>
+
                     <input type="file" name="trc_copy" id="trcCopyInput" class="form-control" accept=".pdf">
                     @error('trc_copy') <span class="text-danger small d-block mt-1">{{ $message }}</span> @enderror
 
-                    <!-- Chip Preview Area -->
-                    <div id="trcCopyPreview" class="mt-3"></div>
+                    <!-- Flag sent to server: '1' means delete the existing file (only acted on if no new file is uploaded) -->
+                    <input type="hidden" name="remove_trc_copy" id="removeTrcCopyFlag" value="0">
 
+                    <!-- Chip Preview Area for a newly selected (not yet saved) file -->
+                    <div id="trcCopyPreview" class="mt-2"></div>
 
+                    <small class="text-muted d-block mt-1" id="trcCopyHint"
+                        style="{{ $trcMedia ? '' : 'display:none;' }}">
+                        Uploading a new file will replace the existing one.
+                    </small>
 
                 </div>
 
@@ -334,12 +375,42 @@
 
                 <div class="col-md-3" id="tax_receipt_copy_group">
                     <label class="form-label">Tax Receipt Copy</label>
+
+                    @php
+                    $taxMedia = $rto?->getFirstMedia('tax_receipt_copy');
+                    @endphp
+
+                    <!-- Existing saved file (shown only if one is already uploaded) -->
+                    <div id="taxCopyExisting" class="mb-2" style="{{ $taxMedia ? '' : 'display:none;' }}">
+                        @if($taxMedia)
+                        <span class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-2 px-3 py-2"
+                            style="cursor:pointer;"
+                            onclick="openPolicyModal('{{ $taxMedia->getUrl() }}', '{{ addslashes($taxMedia->file_name) }}')">
+                            <i class="la la-paperclip"></i>
+                            <span class="fw-medium small text-truncate" style="max-width:140px;">
+                                {{ Str::limit($taxMedia->file_name, 20) }}
+                            </span>
+                        </span>
+                        <button type="button" class="btn btn-outline-danger btn-sm ms-1" title="Remove file"
+                            onclick="removeExistingFile('tax_receipt_copy')">
+                            <i class="la la-trash"></i>
+                        </button>
+                        @endif
+                    </div>
+
                     <input type="file" name="tax_receipt_copy" id="taxCopyInput" class="form-control" accept=".pdf">
                     @error('tax_receipt_copy') <span class="text-danger small d-block mt-1">{{ $message }}</span>
                     @enderror
 
-                    <div id="taxCopyPreview" class="mt-3"></div>
+                    <!-- Flag sent to server: '1' means delete the existing file (only acted on if no new file is uploaded) -->
+                    <input type="hidden" name="remove_tax_receipt_copy" id="removeTaxCopyFlag" value="0">
 
+                    <div id="taxCopyPreview" class="mt-2"></div>
+
+                    <small class="text-muted d-block mt-1" id="taxCopyHint"
+                        style="{{ $taxMedia ? '' : 'display:none;' }}">
+                        Uploading a new file will replace the existing one.
+                    </small>
 
                 </div>
 
@@ -454,14 +525,46 @@
     if (trcInput) {
         trcInput.addEventListener('change', function() {
             handlePolicyFile(this, 'trcCopyPreview');
+            
+            const flag = document.getElementById('removeTrcCopyFlag');
+            const existing = document.getElementById('trcCopyExisting');
+            if (flag) flag.value = '0';
+            if (existing) existing.style.display = 'none';
         });
     }
 
     if (taxInput) {
         taxInput.addEventListener('change', function() {
             handlePolicyFile(this, 'taxCopyPreview');
+            const flag = document.getElementById('removeTaxCopyFlag');
+            const existing = document.getElementById('taxCopyExisting');
+            if (flag) flag.value = '0';
+            if (existing) existing.style.display = 'none';
         });
     }
+
+    // Remove an already-saved TRC / Tax Receipt copy (sets a hidden flag the
+    // controller checks; actual delete only happens if no replacement file is uploaded)
+    window.removeExistingFile = function(type) {
+        Swal.fire({
+            title: 'Remove this file?',
+            text: 'This will delete the saved copy when you submit the form. You can upload a new one instead.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, remove',
+            confirmButtonColor: '#dc3545'
+        }).then(function(result) {
+            if (!result.isConfirmed) return;
+
+            if (type === 'trc_copy') {
+                document.getElementById('trcCopyExisting').style.display = 'none';
+                document.getElementById('removeTrcCopyFlag').value = '1';
+            } else if (type === 'tax_receipt_copy') {
+                document.getElementById('taxCopyExisting').style.display = 'none';
+                document.getElementById('removeTaxCopyFlag').value = '1';
+            }
+        });
+    };
 
     
     const policyModal = document.getElementById('policyCopyModal');

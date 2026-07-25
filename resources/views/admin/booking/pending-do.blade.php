@@ -149,8 +149,9 @@
         'model',
         'variant',
         'color',
-        'chasis_no',
+        'chassis_no',
         'fin_mode',
+        'financier_short_name',
         'action'
     ];
 
@@ -196,7 +197,7 @@
                 'variant',
                 'color',
                 'seating',
-                'chasis_no'
+                'chassis_no'
             ])
         },
         {
@@ -205,6 +206,7 @@
             children: getCols([
                 'fin_mode',
                 'financier',
+                'financier_short_name',
                 'loan_status'
             ])
         },
@@ -423,7 +425,7 @@
             document.getElementById('quickFilter').value = '';
         });
 
-        // Excel Export
+        
         document.getElementById('exportCsv')?.addEventListener('click', () => {
             const visibleColumns = gridApi.getAllDisplayedColumns()
                 .map(col => col.getColDef())

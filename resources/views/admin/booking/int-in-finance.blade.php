@@ -21,9 +21,9 @@
                     Int in Finance Dashboard
                 </h2>
             </div>
-            <a href="{{ backpack_url('finance/import') }}" 
-               class="btn btn-success btn-sm d-flex align-items-center gap-2"
-               onclick="return confirm('Are you sure you want to import latest data from Google Sheet?')">
+            <a href="{{ backpack_url('finance/import') }}"
+                class="btn btn-success btn-sm d-flex align-items-center gap-2"
+                onclick="return confirm('Are you sure you want to import latest data from Google Sheet?')">
                 <i class="la la-cloud-download"></i>
                 <span>Import Now</span>
             </a>
@@ -165,8 +165,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
 
 <script>
-
-
     // Import with custom GID
 function importWithGid() {
     const gid = document.getElementById('gidInput').value.trim();
@@ -344,7 +342,7 @@ function importWithGid() {
     };
 
     // ────────────────────────────────────────────────
-    // Customise Headers – grouped + parent/child sync
+    //  grouped + parent/child sync
     // ────────────────────────────────────────────────
     function openColumnBubble() {
         const bubble = document.getElementById('columnBubble');
@@ -438,9 +436,6 @@ function importWithGid() {
         bubble.style.display = 'block';
     }
 
-    // ────────────────────────────────────────────────
-    // Event Listeners
-    // ────────────────────────────────────────────────
     document.getElementById('btnCustomiseHeaders')?.addEventListener('click', e => {
         e.stopPropagation();
         openColumnBubble();
@@ -506,7 +501,7 @@ function importWithGid() {
             document.getElementById('quickFilter').value = '';
         });
 
-        // Excel Export
+        
         document.getElementById('exportCsv')?.addEventListener('click', () => {
             const visibleColumns = gridApi.getAllDisplayedColumns()
                 .map(col => col.getColDef())
@@ -527,7 +522,7 @@ function importWithGid() {
             XLSX.writeFile(workbook, `int-in-finance-${new Date().toISOString().slice(0,10)}.xlsx`);
         });
 
-        // PDF Export
+        
         document.getElementById('exportExcel')?.addEventListener('click', () => {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF('l', 'pt', 'a4');

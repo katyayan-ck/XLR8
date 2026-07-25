@@ -1,13 +1,12 @@
 <?php
 
-namespace App\Models\Module\Rto;
+namespace App\Models\Module\Booking;
 
 use Illuminate\Database\Eloquent\SoftDeletes;
 use DataTables, Auth;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use App\Models\Traits\HasHashedMediaTrait;
-use App\Models\BaseModel;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 

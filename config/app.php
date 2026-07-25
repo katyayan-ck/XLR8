@@ -52,7 +52,7 @@ return [
     |
     */
 
-    'url' => env('APP_URL', 'http://localhost/XLRB/public'),
+    'url' => env('APP_URL', 'http://localhost/XLRN'),
 
     /*
     |--------------------------------------------------------------------------

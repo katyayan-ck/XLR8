@@ -163,7 +163,7 @@
         'variant',
         'color',
         'seating',
-        'chasis_no',
+        'chassis_no',
 
         'b_source',
         'consultant',
@@ -220,7 +220,7 @@
                 'variant',
                 'color',
                 'seating',
-                'chasis_no'
+                'chassis_no'
             ])
         },
         {
@@ -263,7 +263,7 @@
         },
 
         components: {
-            htmlRenderer: params => params.value || '',  // Raw HTML for action column
+            htmlRenderer: params => params.value || '', 
         },
 
         onGridReady: params => {
@@ -446,7 +446,7 @@
             document.getElementById('quickFilter').value = '';
         });
 
-        // Excel Export
+        
         document.getElementById('exportCsv')?.addEventListener('click', () => {
             const visibleColumns = gridApi.getAllDisplayedColumns()
                 .map(col => col.getColDef())

@@ -191,7 +191,7 @@
                 'model',
                 'variant',
                 'color',
-                'chasis_no'
+                'chassis_no'
             ])
         },
         {

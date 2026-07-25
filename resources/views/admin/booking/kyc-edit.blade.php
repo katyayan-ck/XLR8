@@ -82,7 +82,7 @@
                 <div class="readonly-value">
                     {{ $booking->name ?? '—' }}
                     @if($booking->care_of)
-                    <small class="text-muted d-block mt-1">(C/o: {{ $booking->care_of }})</small>
+                    (C/o: {{ $booking->care_of }})
                     @endif
                 </div>
             </div>
@@ -268,7 +268,7 @@
         $('#kyc-form').validate().element('#gstn');
     }).trigger('change');
 
-    // PAN uppercase
+    
     $('#panno').on('input', function() {
         $(this).val($(this).val().toUpperCase());
     });

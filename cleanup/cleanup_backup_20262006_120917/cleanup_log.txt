@@ -1,0 +1,34 @@
+Cleanup started at 20-06-2026 12:09:17.89 
+ 
+[NOT FOUND] Controller: DashboardController-090526.bak.php 
+[NOT FOUND] Controller: DashboardController-100526Bak.php 
+[NOT FOUND] Controller: ApprovalHierarchyCrudController.php 
+[NOT FOUND] Controller: DashboardControllerCrudController.php 
+[NOT FOUND] Controller: EmpPostAssignmentCrudController.php 
+[NOT FOUND] Controller: GraphEdgeCrudController.php 
+[NOT FOUND] Controller: GraphNodeCrudController.php 
+[NOT FOUND] Controller: ModulesCrudController.php 
+[NOT FOUND] Controller: PostCrudController.php 
+[NOT FOUND] Controller: PostPermissionCrudController.php 
+[NOT FOUND] Controller: PostReportingCrudController.php 
+[NOT FOUND] Controller: ProcessCrudController.php 
+[NOT FOUND] Controller: ReportingHierarchyCrudController.php 
+[NOT FOUND] Controller: RoleCrudController.php 
+[NOT FOUND] Controller: UserTypeCrudController.php 
+[NOT FOUND] Model: Admin\UserDataScope.php 
+[NOT FOUND] Model: Admin\EmpPostAssignment.php 
+[NOT FOUND] Model: IAM\Post.php 
+[NOT FOUND] Model: IAM\PostReporting.php 
+[NOT FOUND] Model: Core\GraphEdge.php 
+[NOT FOUND] Model: Core\GraphNode.php 
+[NOT FOUND] Model: Core\ApprovalHierarchy.php 
+[NOT FOUND] Service: Importers\UserImporter.php 
+[NOT FOUND] Service: Exporters\UserExporter.php 
+[NOT FOUND] Service: ApprovalService.php 
+[NOT FOUND] Service: HR\UserReportingService.php 
+[NOT FOUND] Import: UserImporter.php 
+[NOT FOUND] Export: VehicleDataExport.php 
+[NOT FOUND] View Folder: admin\temp2copy 
+[NOT FOUND] View Folder: admin\hr\temp2copy 
+Cleanup finished at 20-06-2026 12:09:18.13 
+Total Moved: 0 | Skipped: 0 | Not Found: 30 

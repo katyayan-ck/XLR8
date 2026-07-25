@@ -108,7 +108,7 @@
         <div class="col-md-3 form-group readonly-field">
             <label class="readonly-label">Chassis No.</label>
             <div class="readonly-value">
-                {{ $booking->chassis_no ?? $booking->chasis_no ?? '—' }}
+                {{ $booking->chassis_no ?? $booking->chassis_no ?? '—' }}
             </div>
         </div>
 

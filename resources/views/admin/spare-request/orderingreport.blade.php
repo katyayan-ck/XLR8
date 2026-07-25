@@ -76,7 +76,7 @@
     let gridApi;
 
     const columnDefs = [
-        { field: 'serial_no',           headerName: 'S.No',           width: 80, pinned: 'left' },
+        { field: 'serial_no',           headerName: 'S.No.',           width: 80, pinned: 'left' },
         { field: 'part_number',         headerName: 'Part Number',    pinned: 'left', filter: true, width: 140 },
         { field: 'part_description',    headerName: 'Description',    minWidth: 280, filter: true },
         { field: 'mrp',                 headerName: 'MRP',            width: 110 },
@@ -144,7 +144,7 @@
         const gridDiv = document.querySelector('#myGrid');
         agGrid.createGrid(gridDiv, gridOptions);
 
-        // Quick Filter
+        
         document.getElementById('quickFilter').addEventListener('input', e => {
             gridApi.setGridOption('quickFilterText', e.target.value);
         });
@@ -156,7 +156,7 @@
             gridApi.setSortModel(null);
         });
 
-        // Export CSV
+       
         document.getElementById('exportCsv').addEventListener('click', () => {
             const rows = [];
             gridApi.forEachNodeAfterFilterAndSort(node => rows.push(node.data));
@@ -166,7 +166,7 @@
             XLSX.writeFile(wb, `parts-ordering-report-${new Date().toISOString().slice(0,10)}.xlsx`);
         });
 
-        // Export PDF (placeholder)
+        
         document.getElementById('exportPdf').addEventListener('click', () => {
             alert("PDF Export feature coming soon...");
         });

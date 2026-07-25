@@ -162,10 +162,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
 
 <script>
-
-
-
-
     function importWithGid() {
         const gid = document.getElementById('gidInput').value.trim();
         if (!gid) {
@@ -319,7 +315,7 @@
     };
 
     // ────────────────────────────────────────────────
-    // Customise Headers – grouped + selection sync
+     – grouped + selection sync
     // ────────────────────────────────────────────────
     function openColumnBubble() {
         const bubble = document.getElementById('columnBubble');
@@ -415,9 +411,7 @@
         bubble.style.display = 'block';
     }
 
-    // ────────────────────────────────────────────────
-    // Event Listeners
-    // ────────────────────────────────────────────────
+  
     document.getElementById('btnCustomiseHeaders')?.addEventListener('click', e => {
         e.stopPropagation();
         openColumnBubble();
@@ -490,7 +484,7 @@
             window.location = url;
         });
 
-        // Excel Export – visible columns only
+         – visible columns only
         document.getElementById('exportCsv')?.addEventListener('click', () => {
             const visibleColumns = gridApi.getAllDisplayedColumns()
                 .map(col => col.getColDef())
@@ -511,7 +505,7 @@
             XLSX.writeFile(workbook, `pending-rto-${new Date().toISOString().slice(0,10)}.xlsx`);
         });
 
-        // PDF Export – visible columns only
+         – visible columns only
         document.getElementById('exportPdf')?.addEventListener('click', () => {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF('l', 'pt', 'a4');

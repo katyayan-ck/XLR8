@@ -48,8 +48,8 @@
                             <select name="enum_master1" id="enum_master1" class="form-select select2">
                                 <option value="0">Please Select...</option>
                                 @foreach($data['enum_master'] as $enum)
-                                <option value="{{ $enum->id }}" {{ old('enum_master1', $exchange->enum_master1
-                                    ?? $booking->exist_oem1 ?? '') == $enum->id ? 'selected' : '' }}>
+                                <option value="{{ $enum->code }}" {{ ($booking->exist_oem1 ?? '') == ($enum->code ?? '')
+                                    ? 'selected' : '' }}>
                                     {{ $enum->value }}
                                 </option>
                                 @endforeach
@@ -71,8 +71,8 @@
                             <select name="enum_master2" id="enum_master2" class="form-select select2">
                                 <option value="0">Please Select...</option>
                                 @foreach($data['enum_master'] as $enum)
-                                <option value="{{ $enum->id }}" {{ old('enum_master2', $exchange->enum_master2
-                                    ?? $booking->exist_oem2 ?? '') == $enum->id ? 'selected' : '' }}>
+                                <option value="{{ $enum->code }}" {{ ($booking->exist_oem2 ?? '') == ($enum->code ?? '')
+                                    ? 'selected' : '' }}>
                                     {{ $enum->value }}
                                 </option>
                                 @endforeach
@@ -368,7 +368,7 @@
                     <div class="col-sm-2">
                         <label class="form-label">Allotted Chassis Number</label>
                         <input type="text" class="form-control"
-                            value="{{ $booking->chasis_no ?? ($data['bchasis'] ?? 'N/A') }}" readonly>
+                            value="{{ $booking->chassis_no ?? ($data['bchasis'] ?? 'N/A') }}" readonly>
                     </div>
                 </div>
             </div>

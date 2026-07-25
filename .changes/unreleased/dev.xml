@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feature>
+  <change type="added">added project documentation</change>
+  <change type="feature">Introduced PersonUserType system (xlr8_admin_person_user_types) to support multiple associations (Emp/Cust/DSA/etc.) per Person with primary flag</change>
+  <change type="feature">Created PersonUserTypeService with assign, setPrimary, remove, getUserTypes, getPrimary, getSummary, syncFromUsers and syncFromPersons methods</change>
+  <change type="feature">Completely rewrote PersonService with smart find/search/get/upsert methods supporting person_code, PAN, Aadhaar, mobile, email, username and employee_code lookup</change>
+  <change type="changed">PersonService::get() now returns a clean short profile array (display_name, employee_code, user_id, username, primary_mobile/email, user_types, contacts, addresses, banking, media)</change>
+  <change type="fixed">Fixed cleanPhone() method – previous ltrim('91') was incorrectly stripping leading 9, breaking all mobile searches</change>
+  <change type="added">Added support for finding Person by username and employee_code in PersonService::find()</change>
+  <change type="added">Integrated PersonUserType associations into PersonService profile output</change>
+</feature>

@@ -23,7 +23,6 @@ class VehicleModelCrudController extends CrudController
         $this->crud->setListView('admin.vehicle-model.list');
     }
 
-    // ====================== LIST ======================
     public function index()
     {
         $this->crud->setListView('admin.vehicle-model.list');
@@ -55,7 +54,7 @@ class VehicleModelCrudController extends CrudController
             'title' => 'All Vehicle Models',
             'gridConfig' => [
                 'columns' => [
-                    ['field' => 'serial_no', 'headerName' => 'S.No'],
+                    ['field' => 'serial_no', 'headerName' => 'S.No.'],
                     ['field' => 'segment', 'headerName' => 'Segment'],
                     ['field' => 'sub_segment', 'headerName' => 'Sub Segment'],
                     ['field' => 'name', 'headerName' => 'Model Name'],
@@ -70,7 +69,6 @@ class VehicleModelCrudController extends CrudController
         ]);
     }
 
-    // ====================== CREATE ======================
     public function create()
     {
         return view('admin.vehicle-model.create', [
@@ -102,7 +100,6 @@ class VehicleModelCrudController extends CrudController
         return redirect(backpack_url('vehicle-model'));
     }
 
-    // ====================== EDIT & UPDATE ======================
     public function edit($id)
     {
         $vehiclemodel = VehicleModel::with([
@@ -183,7 +180,6 @@ class VehicleModelCrudController extends CrudController
         return redirect(backpack_url('vehicle-model'));
     }
 
-    // ====================== AJAX ======================
     public function getSubSegmentsBySegment($segmentCode)
     {
         return SubSegment::where('segment_code', $segmentCode)

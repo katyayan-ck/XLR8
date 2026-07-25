@@ -185,7 +185,7 @@
             'serial_no', 'booking_no', 'created_at', 'booking_date', 'days_count',
             'b_cat', 'col_type', 'booking_amount','accessories_amount',
             'name', 'mobile', 'branch_name', 'location_name',
-            'model', 'variant', 'color', 'seating', 'chasis_no',
+            'model', 'variant', 'color', 'seating', 'chassis_no',
             'b_source', 'consultant',
             'del_date', 'fin_mode', 'financier_short_name', 'loan_status',
             'buyer_type', 'dms_otf', 'dms_so',
@@ -197,14 +197,14 @@
             'b_cat', 'col_type', 'booking_amount',
             'name', 'mobile', 'branch_name', 'location_name',
             'model', 'variant', 'color', 'seating',
-             'chasis_no',
+             'chassis_no',
             'b_source', 'consultant',
             'action'
         ],
         invoiced: [
             'serial_no', 'booking_no', 'created_at', 'booking_date', 'days_count',
             'inv_no', 'inv_date', 'b_cat',  'name', 'mobile', 'branch_name', 'location_name',
-            'model', 'variant', 'color', 'seating', 'chasis_no', 'b_source',
+            'model', 'variant', 'color', 'seating', 'chassis_no', 'b_source',
             'consultant',
             'action'
         ],
@@ -213,7 +213,7 @@
             'cancel_date',
             'b_cat', 'col_type', 'booking_amount',
             'name', 'mobile', 'branch_name', 'location_name',
-            'model', 'variant', 'color', 'seating', 'chasis_no',
+            'model', 'variant', 'color', 'seating', 'chassis_no',
             'b_source', 'consultant',
             'action'
         ]
@@ -283,7 +283,7 @@
                     'color',
                     'seating',
                     'accessories_amount',
-                    'chasis_no'
+                    'chassis_no'
                 ])
             },
             {
@@ -304,7 +304,7 @@
                 ])
             },
             {
-                headerName: 'Purchase type details',
+                headerName: 'Purchase Type Details',
                 children: getCols([
                     'buyer_type',
                     'exist_oem1',
@@ -407,7 +407,7 @@
                     'color',
                     'seating',
                     'accessories_amount',
-                    'chasis_no'
+                    'chassis_no'
                 ])
             },
             {
@@ -428,7 +428,7 @@
                 ])
             },
             {
-                headerName: 'Purchase type details',
+                headerName: 'Purchase Type Details',
                 children: getCols([
                     'buyer_type',
                     'exist_oem1',
@@ -533,7 +533,7 @@
                     'color',
                     'seating',
                     'accessories_amount',
-                    'chasis_no'
+                    'chassis_no'
                 ])
             },
             {
@@ -554,7 +554,7 @@
                 ])
             },
             {
-                headerName: 'Purchase type details',
+                headerName: 'Purchase Type Details',
                 children: getCols([
                     'buyer_type',
                     'exist_oem1',
@@ -628,7 +628,7 @@
                 headerName: 'DO',
                 children: getCols([
                     'instrument_type',
-                    'loan_amount_dealer_entry',
+                    'loan_amount_dealer',
                     'margin_money',
                     'file_charge',
                     'net_payment_amount'
@@ -695,7 +695,7 @@
                     'color',
                     'seating',
                     'accessories_amount',
-                    'chasis_no'
+                    'chassis_no'
                 ])
             },
             {
@@ -716,7 +716,7 @@
                 ])
             },
             {
-                headerName: 'Purchase type details',
+                headerName: 'Purchase Type Details',
                 children: getCols([
                     'buyer_type',
                     'exist_oem1',

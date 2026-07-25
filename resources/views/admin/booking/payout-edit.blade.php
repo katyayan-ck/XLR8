@@ -45,7 +45,7 @@ $isViewMode = request()->routeIs('finance.view');
     <div class="col-lg-10">
     </div>
     <div class="col-lg-2">
-        <nav class="breadcrumb-container" aria-label="breadcrumb">
+        {{-- <nav class="breadcrumb-container" aria-label="breadcrumb">
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a href="{{ backpack_url('dashboard') }}"><i class="ik ik-home"></i>
                         Dashboard</a></li>
@@ -54,7 +54,7 @@ $isViewMode = request()->routeIs('finance.view');
                     {{ $isViewMode ? 'Payout View' : 'Payout Edit' }}
                 </li>
             </ol>
-        </nav>
+        </nav> --}}
     </div>
 </div>
 
@@ -335,7 +335,7 @@ $isViewMode = request()->routeIs('finance.view');
                     </div>
 
                     <div class="col-sm-3 form-group">
-                        <label>DO Number <span class="text-danger">*</span></label>
+                        <label>Receipt Number <span class="text-danger">*</span></label>
                         <input type="text" name="do_number" id="do_number" class="form-control"
                             value="{{ old('do_number', $finance->instrument_ref_no ?? '') }}" placeholder="e.g. DO12345"
                             required>

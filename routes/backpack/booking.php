@@ -1,6 +1,9 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\BookingCrudController;
+use App\Http\Controllers\Admin\QuotationCrudController;
+
 
 Route::group([
     'prefix'     => config('backpack.base.route_prefix', 'admin'),
@@ -14,6 +17,93 @@ Route::group([
     // ================= CRUD =================
     Route::crud('user', 'UserCrudController');
     Route::crud('booking', 'BookingCrudController');
+
+    Route::get('booking/errors', 'BookingCrudController@erroneousEntries')
+        ->name('booking.errors');
+
+    Route::get('booking/errors/data', 'BookingCrudController@erroneousEntriesData')
+        ->name('booking.errors.data');
+
+    Route::get(
+        'booking/erroneous-bookings',
+        'BookingCrudController@erroneousBookings'
+    )->name('booking.erroneous-bookings');
+
+    Route::get(
+        'finance/erroneous',
+        'BookingCrudController@erroneousFinance'
+    )->name('finance.erroneous');
+
+    Route::get(
+        'insurance/erroneous',
+        'BookingCrudController@erroneousInsurance'
+    )->name('insurance.erroneous');
+
+    Route::get(
+        'rto/erroneous',
+        'BookingCrudController@erroneousRTO'
+    )->name('rto.erroneous');
+
+    Route::get(
+        'booking/otf-form/{id}',
+        [BookingCrudController::class, 'otfProcess']
+    )->name('booking.otf-process');
+
+    Route::get(
+        'booking/otf-form',
+        [BookingCrudController::class, 'liveNotInvoiced']
+    )->name('booking.otf-form');
+
+    Route::get(
+        'get-do-amount',
+        [BookingCrudController::class, 'getDOAmount']
+    )->name('booking.get-do-amount');
+
+    // Route::get(
+    //     'quotation-form',
+    //     [BookingCrudController::class, 'quotationForm']
+    // )->name('booking.quotation-form');
+
+
+    // ================= QUOTATION =================
+
+
+    Route::get(
+        'quotation-form',
+        [QuotationCrudController::class, 'index']
+    )->name('quotation.index');
+
+    Route::get(
+        'quotation-form/create',
+        [QuotationCrudController::class, 'create']
+    )->name('quotation.create');
+
+    Route::post(
+        'quotation-form/store',
+        [QuotationCrudController::class, 'store']
+    )->name('quotation.store');
+
+    Route::get(
+        'quotation-form/{id}/edit',
+        [QuotationCrudController::class, 'edit']
+    )->name('quotation.edit');
+
+    Route::put(
+        'quotation-form/{id}',
+        [QuotationCrudController::class, 'update']
+    )->name('quotation.update');
+
+    Route::get('quotation/{quotation_no}/preview', [QuotationCrudController::class, 'preview'])->name('quotation.preview');
+
+
+    Route::get(
+        'quotation-form/{id}/history',
+        [QuotationCrudController::class, 'history']
+    )->name('quotation.history');
+    Route::get(
+        'booking-process/{id}/preview',
+        'BookingCrudController@preview'
+    )->name('booking.preview');
 
     // ================= ADD BOOKING AMOUNT / RECEIPT =================
     Route::get('booking/{id}/add-amount', [
@@ -44,13 +134,13 @@ Route::group([
         'as'    => 'admin.booking.orderupdate',
     ])->where(['id' => '[0-9]+', 'status' => '[0-5]']);
 
-    // ================= ORDERED VERIFICATION (if you have this function) =================
+    // ================= ORDERED VERIFICATION =================
     Route::get('booking/pending/sales-order', 'BookingCrudController@pendingorder')
         ->name('booking.pending-order');
 
 
 
-    // ================= PENDING KYC (CORRECTED) =================
+    // ================= PENDING KYC =================
     Route::get(
         'booking/pending-kyc',
         'BookingCrudController@pendingKyc'
@@ -58,13 +148,13 @@ Route::group([
 
 
 
-    // ================= KYC Edit & Update (NEW - यहीं जोड़ें) =================
+    // ================= KYC Edit & Update =================
     Route::get('booking/{id}/kyc-edit', 'BookingCrudController@kycEdit')
         ->name('booking.kyc.edit');
     Route::put('booking/{id}/kyc-update', 'BookingCrudController@kycUpdate')
         ->name('kyc.update');
 
-    // ================= PENDING DMS (NEW) =================
+    // ================= PENDING DMS =================
     Route::get('booking/pending-dms', 'BookingCrudController@pendingDms')
         ->name('booking.pending-dms');
 
@@ -73,7 +163,7 @@ Route::group([
     Route::get('booking/{id}/dms-edit', 'BookingCrudController@dmsedit')->name('dms-edit');
     Route::put('booking/{id}/dms-update', 'BookingCrudController@dmsupdate')->name('dms.update');
 
-    // ================= PENDING PAYMENT (NEW) =================
+    // ================= PENDING PAYMENT =================
     Route::get('booking/pending-payment', 'BookingCrudController@pendingPayment')
         ->name('booking.pending-payment');
 
@@ -85,52 +175,52 @@ Route::group([
     // Cancelled Bookings
     Route::get('booking/cancelled', 'BookingCrudController@cancelled')
         ->name('booking.cancelled');
-    // ================= INVOICED BOOKINGS (NEW) =================
+    // ================= INVOICED BOOKINGS =================
     Route::get('booking/invoiced', 'BookingCrudController@invoiced')
         ->name('booking.invoiced');
     Route::get('booking/invoiced/list', 'BookingCrudController@invoicedList')
         ->name('booking.invoiced.list');
 
 
-    // ================= PENDING INSURANCE (NEW) =================
+    // ================= PENDING INSURANCE =================
     Route::get('booking/pending-insurance', 'BookingCrudController@pendingInsurance')
         ->name('booking.pending-insurance');
 
-    // ================= PENDING RTO (NEW) =================
+    // ================= PENDING RTO =================
     Route::get('booking/pending-rto', 'BookingCrudController@pendingRto')
         ->name('booking.pending-rto');
 
-    // ================= PENDING DELIVERIES (NEW) =================
+    // ================= PENDING DELIVERIES =================
     Route::get('booking/pending-deliveries', 'BookingCrudController@pendingDeliveries')
         ->name('booking.pending-deliveries');
 
     // ================= PENDING REGISTRATION =================
     Route::get('booking/pending-registration', [App\Http\Controllers\Admin\BookingCrudController::class, 'pendingRegistration'])
-        ->name('booking.pending-registration'); 
+        ->name('booking.pending-registration');
 
     // ================= PENDING DO (Delivery Order) =================
     Route::get('booking/pending-do', 'BookingCrudController@pendingDO')
         ->name('booking.pending-do');
 
 
-    // =====================================================
     // AJAX / HELPER ROUTES
-    // =====================================================
 
     Route::get('/branchlocations/{bid}', 'BookingCrudController@getBranchLocation')
         ->name('get.branch');
-   
-    
-    Route::get('get-locations/{branchCode?}', 
-        [App\Http\Controllers\Admin\BookingCrudController::class, 'getLocationsByBranch'])
+
+
+    Route::get(
+        'get-locations/{branchCode?}',
+        [App\Http\Controllers\Admin\BookingCrudController::class, 'getLocationsByBranch']
+    )
         ->name('get-locations.by.branch');
-               
+
 
     Route::get('get-locations/{state_id}', [App\Http\Controllers\Admin\BookingCrudController::class, 'getLocations'])
-         ->name('get.locations');
+        ->name('get.locations');
 
     Route::get('get-locations-by-pincode/{pincode}', [App\Http\Controllers\Admin\BookingCrudController::class, 'getLocationsByPincode'])
-         ->name('get.locations.by.pincode');
+        ->name('get.locations.by.pincode');
 
     Route::get('/get-models/{segment_id}', 'BookingCrudController@getModels')
         ->name('get.models');
@@ -150,7 +240,7 @@ Route::group([
     Route::get('/get-accessories/{segment}/{model}/{variant}', 'BookingCrudController@getAccessories')
         ->name('get.accessories');
 
-   
+
     Route::get('/get-state-by-location/{location_id}', 'BookingCrudController@getStateByLocation')
         ->name('get.state.by.location');
     Route::post('booking/followup', 'BookingCrudController@storeFollowup')
@@ -177,7 +267,6 @@ Route::group([
         ->name('refunded.view')
         ->middleware('admin');
 
-    // ── Naye routes yahan daal do ──
     Route::get('booking/rejected', 'BookingCrudController@rejected')
         ->name('booking.rejected')
         ->middleware('admin');
@@ -232,7 +321,7 @@ Route::group([
         ->name('finance.retailed')
         ->middleware('admin');
 
-    // ── Add these new ones ──
+
     Route::get('finance/payout', 'BookingCrudController@finPayout')
         ->name('finance.payout')
         ->middleware('admin');
@@ -242,11 +331,10 @@ Route::group([
         ->middleware('admin');
     Route::get('booking/{id}/invoiced-show', 'BookingCrudController@showInvoiced')
         ->name('booking.invoiced.show');
-    // Pending Edit Route (GET for view, POST for update if needed)
     Route::get('booking/{id}/pending-edit', 'BookingCrudController@pendingEdit')
         ->name('booking.pending-edit');
     Route::post('booking/{id}/pending-update', 'BookingCrudController@pendingUpdate')
-        ->name('booking.pending-update');  // If you have update logic, add this
+        ->name('booking.pending-update');
     Route::get('reports/consolidated-booking', 'BookingCrudController@consolidatedBookingReport')
         ->name('reports.consolidated-booking')
         ->middleware('admin');
@@ -285,7 +373,6 @@ Route::group([
 
 
 
-    // Add these routes to custom.php at the end, before the closing });
     Route::get('booking/delivered', 'BookingCrudController@delivered')
         ->name('booking.delivered');
 
@@ -294,14 +381,13 @@ Route::group([
 
     Route::get('booking/delivered-view/{id}', 'BookingCrudController@deliveredView')
         ->name('delivered-view');
-    // ================= PENDING INVOICES (PURANA VERSION) =================
+    // ================= PENDING INVOICES =================
     Route::get('booking/pending-invoices', 'BookingCrudController@pendingInvoices')
         ->name('booking.pending-invoices');
 
     Route::get('booking/pending-invoices/list', 'BookingCrudController@pendingInvoicesList')
         ->name('booking.pending-invoices.list');
 
-    // Usually inside backpack routes group
     Route::get('booking/{id}/receipt/{receipt_id}/edit', 'BookingCrudController@receiptEdit')
         ->name('receipt.edit');
     // ================= DEALER INVOICE OPERATIONS =================
@@ -351,7 +437,6 @@ Route::group([
         ->name('payout.update')
         ->middleware('admin');
 
-    // Backpack ke andar (admin prefix ke saath)
     Route::get('booking/{id}/refund-view', 'BookingCrudController@refundView')
         ->name('booking.refund-view');
     Route::put('booking/{id}/refund-update', 'BookingCrudController@refundUpdate')
@@ -374,4 +459,6 @@ Route::group([
 
     Route::get('booking/{id}/check-field-payment', 'BookingCrudController@checkFieldPayment')
         ->name('booking.check-field-payment');
+    Route::post('booking/otf/{id}/save', 'BookingCrudController@otfSave')
+        ->name('booking.otf.save');
 });
