@@ -54,5 +54,6 @@ auth.json
 Homestead.json
 Homestead.yaml
 Thumbs.db
-gscred.json
+/gscred.json
+/config/google.php
 
